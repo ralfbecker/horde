@@ -1648,6 +1648,8 @@ abstract class Kronolith_Event
      */
     public function toASAppointment(array $options = array())
     {
+        global $prefs, $registry;
+
         $message = new Horde_ActiveSync_Message_Appointment(
             array(
                 'logger' => $GLOBALS['injector']->getInstance('Horde_Log_Logger'),
@@ -1696,10 +1698,24 @@ abstract class Kronolith_Event
 
         // Organizer
         if (count($this->attendees)) {
-            $name = Kronolith::getUserName($this->creator);
+            if ($this->creator == $registry->getAuth()) {
+                $as_ident = $prefs->getValue('activesync_identity') == 'horde'
+                    ? $prefs->getValue('default_identity')
+                    : $prefs->getValue('activesync_identity');
+
+                $name = $GLOBALS['injector']
+                    ->getInstance('Horde_Core_Factory_Identity')
+                    ->create($this->creator)->getValue('fullname', $as_ident);
+                $email = $GLOBALS['injector']
+                    ->getInstance('Horde_Core_Factory_Identity')
+                    ->create($this->creator)->getValue('from_addr', $as_ident);
+            } else {
+                $name = Kronolith::getUserName($this->creator);
+                $email = Kronolith::getUserEmail($this->creator);
+            }
             $message->setOrganizer(array(
                 'name' => $name,
-                'email' => Kronolith::getUserEmail($this->creator))
+                'email' => $email)
             );
         }
 

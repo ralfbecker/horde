@@ -73,6 +73,8 @@ input {
 
 /* Columns */
 div.msgStatus {
+    /* Ignore white-space in element. */
+    font-size: 0;
     margin-top: 1px;
     padding-left: 8px;
     width: 70px;
@@ -211,6 +213,9 @@ div.vpRow .msCheck:hover {
 .msCheckOn,
 div.vpRowSelected .msCheck {
     background-image: url("../graphics/checkbox_on.png");
+}
+div.msgStatus .msCheck {
+    margin-right: 1px;
 }
 
 /* Rows (vertical mode) */
@@ -419,6 +424,9 @@ div.vpRowVert div.msgSubject {
 }
 .msgHeaders .subject {
     font-weight: bold;
+}
+#msgHeaderAtc td.label {
+    display: table-cell;
 }
 #msgHeaderAtc td.label a {
     font-weight: normal;

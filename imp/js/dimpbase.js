@@ -435,10 +435,13 @@ var DimpBase = {
             }.bind(this),
             container: container,
             onContent: function(r, mode) {
-                var bg, u,
+                var bg, escapeAttr, u,
                     thread = $H(this.viewport.getMetaData('thread')),
                     tsort = this.isThreadSort();
 
+                escapeAttr = function(s) {
+                    return s.escapeHTML().replace(/"/g, '&quot;');
+                };
                 r.status = r.subjectdata = '';
 
                 // Add thread graphics
@@ -452,11 +455,7 @@ var DimpBase = {
                 }
 
                 /* Generate the subject/status flags. */
-                if (r.flag) {
-                    escapeAttr = function(s) {
-                        return s.escapeHTML().replace(/"/g, '&quot;');
-                    };
-
+                if (r.flag && this.flags_o.size()) {
                     r.flag.each(function(a) {
                         var ptr = this.flags[a];
                         if (ptr.u) {
@@ -1326,10 +1325,10 @@ var DimpBase = {
 
             tmp = Object.isUndefined(baseelt.retrieve('u'));
             if (DimpCore.conf.poll_alter) {
-                [ $('ctx_mbox_poll') ].invoke(tmp ? 'show' : 'hide');
-                [ $('ctx_mbox_nopoll') ].invoke(tmp ? 'hide' : 'show');
+                [ $('ctx_mbox_poll') ].compact().invoke(tmp ? 'show' : 'hide');
+                [ $('ctx_mbox_nopoll') ].compact().invoke(tmp ? 'hide' : 'show');
             } else {
-                $('ctx_mbox_poll', 'ctx_mbox_nopoll').invoke('hide');
+                $('ctx_mbox_poll', 'ctx_mbox_nopoll').compact().invoke('hide');
             }
 
             [ $('ctx_mbox_expand').up() ].invoke(this.getSubMboxElt(baseelt) ? 'show' : 'hide');
@@ -2442,7 +2441,7 @@ var DimpBase = {
             }
 
             args = { right: e.memo.isRightClick() };
-            d.selectIfNoDrag = false;
+            d.fromClick = d.selectIfNoDrag = false;
 
             // Handle selection first.
             if (DimpCore.DMenu.operaCheck(e)) {
@@ -4130,7 +4129,9 @@ var DimpBase = {
             DimpCore.addPopdown('button_forward', 'forward');
         }
 
-        new Drop('dropbase', this._mboxDropConfig);
+        if ($('dropbase')) {
+            new Drop('dropbase', this._mboxDropConfig);
+        }
 
         // See: http://www.thecssninja.com/javascript/gmail-dragout
         $('messageBody').on('dragstart', 'DIV.mimePartInfo A.downloadAtc', this._dragAtc.bind(this));

@@ -33,6 +33,7 @@
  </stability>
  <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
  <notes>
+* [mms] Add configurable IMAP quota checking interval (Request #12907).
 * [mms] Honor &apos;from_link&apos; preference in dynamic view.
 * [mms] Add support for storing image data within HTML signatures.
 * [mms] Ensure that viewing large mailboxes does not overload the session storage size.
@@ -3565,6 +3566,7 @@
 * [mms] SECURITY: Fix XSS in displaying user-defined flags in basic mailbox and message view.
 * [mms] SECURITY: Fix XSS in displaying user-defined flags in dynamic mailbox view (João Machado &lt;geral@jpaulo.eu&gt;).
 * [mms] SECURITY: Fix XSS in displaying mailbox name in dynamic mailbox view (João Machado &lt;geral@jpaulo.eu&gt;).
+* [mms] Fix scrolling through large search mailboxes in dynamic view (Bug #13138).
 * [mms] Better handling of malformed message dates in mailbox listing (Bug #13114).
 * [jan] Update Korean translation (Deokgon Kim &lt;dgkim@dgkim.net&gt;).
    </notes>

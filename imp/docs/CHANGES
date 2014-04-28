@@ -2,6 +2,7 @@
 v6.2.0-git
 ----------
 
+[mms] Add configurable IMAP quota checking interval (Request #12907).
 [mms] Honor 'from_link' preference in dynamic view.
 [mms] Add support for storing image data within HTML signatures.
 [mms] Ensure that viewing large mailboxes does not overload the session
@@ -77,6 +78,8 @@ v6.1.8
       view (João Machado <geral@jpaulo.eu>).
 [mms] SECURITY: Fix XSS in displaying mailbox name in dynamic mailbox view
       (João Machado <geral@jpaulo.eu>).
+[mms] Fix scrolling through large search mailboxes in dynamic view (Bug
+      #13138).
 [mms] Better handling of malformed message dates in mailbox listing (Bug
       #13114).
 [jan] Update Korean translation (Deokgon Kim <dgkim@dgkim.net>).

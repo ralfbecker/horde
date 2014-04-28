@@ -193,41 +193,46 @@ class Horde_Imap_Client_Socket_Pop3 extends Horde_Imap_Client_Base
 
         $this->_connect();
 
-        $secure = $this->getParam('secure');
+        $first_login = empty($this->_init['authmethod']);
 
         // Switch to secure channel if using TLS.
-        if (!$this->isSecureConnection() &&
-            (($secure === 'tls') || $secure === true)) {
-            // Switch over to a TLS connection.
-            if (!$this->queryCapability('STLS')) {
-                if ($secure === 'tls') {
-                    throw new Horde_Imap_Client_Exception(
-                        Horde_Imap_Client_Translation::r("Could not open secure connection to the POP3 server.") . ' ' . Horde_Imap_Client_Translation::r("Server does not support secure connections."),
-                        Horde_Imap_Client_Exception::LOGIN_TLSFAILURE
-                    );
+        if (!$this->isSecureConnection()) {
+            $secure = $this->getParam('secure');
+
+            if (($secure === 'tls') || $secure === true) {
+                // Switch over to a TLS connection.
+                if ($first_login && !$this->queryCapability('STLS')) {
+                    if ($secure === 'tls') {
+                        throw new Horde_Imap_Client_Exception(
+                            Horde_Imap_Client_Translation::r("Could not open secure connection to the POP3 server.") . ' ' . Horde_Imap_Client_Translation::r("Server does not support secure connections."),
+                            Horde_Imap_Client_Exception::LOGIN_TLSFAILURE
+                        );
+                    } else {
+                        $this->setParam('secure', false);
+                    }
                 } else {
-                    $this->setParam('secure', false);
+                    $this->_sendLine('STLS');
+
+                    $this->setParam('secure', 'tls');
+
+                    if (!$this->_connection->startTls()) {
+                        $this->logout();
+                        throw new Horde_Imap_Client_Exception(
+                            Horde_Imap_Client_Translation::r("Could not open secure connection to the POP3 server."),
+                            Horde_Imap_Client_Exception::LOGIN_TLSFAILURE
+                        );
+                    }
+                    $this->_debug->info('Successfully completed TLS negotiation.');
                 }
+
+                // Expire cached CAPABILITY information
+                $this->_setInit('capability');
             } else {
-                $this->_sendLine('STLS');
-
-                $this->setParam('secure', 'tls');
-
-                if (!$this->_connection->startTls()) {
-                    $this->logout();
-                    throw new Horde_Imap_Client_Exception(
-                        Horde_Imap_Client_Translation::r("Could not open secure connection to the POP3 server."),
-                        Horde_Imap_Client_Exception::LOGIN_TLSFAILURE
-                    );
-                }
-                $this->_debug->info('Successfully completed TLS negotiation.');
+                $this->setParam('secure', false);
             }
-
-            // Expire cached CAPABILITY information
-            $this->_setInit('capability');
         }
 
-        if (empty($this->_init['authmethod'])) {
+        if ($first_login) {
             /* Sanity checking: at least one server (Dovecot 1.x) may return
              * SASL response with no arguments. */
             $auth_mech = (($sasl = $this->queryCapability('SASL')) && is_array($sasl))
@@ -255,7 +260,9 @@ class Horde_Imap_Client_Socket_Pop3 extends Horde_Imap_Client_Base
 
                 return true;
             } catch (Horde_Imap_Client_Exception $e) {
-                if (!empty($this->_init['authmethod'])) {
+                if (!empty($this->_init['authmethod']) &&
+                    ($e->getCode() != $e::LOGIN_UNAVAILABLE) &&
+                    ($e->getCode() != $e::POP3_TEMP_ERROR)) {
                     $this->_setInit();
                     return $this->login();
                 }
@@ -264,7 +271,7 @@ class Horde_Imap_Client_Socket_Pop3 extends Horde_Imap_Client_Base
 
         throw new Horde_Imap_Client_Exception(
             Horde_Imap_Client_Translation::r("POP3 server denied authentication."),
-            $e->getCode() ? $e->getCode() : Horde_Imap_Client_Exception::LOGIN_AUTHENTICATIONFAILED
+            $e->getCode() ?: $e::LOGIN_AUTHENTICATIONFAILED
         );
     }
 
@@ -289,9 +296,6 @@ class Horde_Imap_Client_Socket_Pop3 extends Horde_Imap_Client_Base
                     'debug' => $this->_debug
                 )
             );
-            if (!$this->_connection->secure) {
-                $this->setParam('secure', false);
-            }
         } catch (Horde\Socket\Client\Exception $e) {
             $e2 = new Horde_Imap_Client_Exception(
                 Horde_Imap_Client_Translation::r("Error connecting to mail server."),
