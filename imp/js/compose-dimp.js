@@ -1,10 +1,9 @@
 /**
- * compose.js - Javascript code used in the dynamic compose view.
+ * Dynamic compose view.
  *
- * Copyright 2005-2014 Horde LLC (http://www.horde.org/)
- *
- * See the enclosed file COPYING for license information (GPL). If you
- * did not receive this file, see http://www.horde.org/licenses/gpl.
+ * @author     Michael Slusarz <slusarz@horde.org>
+ * @copyright  2005-2014 Horde LLC
+ * @license    GPLv2 (http://www.horde.org/licenses/gpl)
  */
 
 var DimpCompose = {
@@ -824,12 +823,15 @@ var DimpCompose = {
 
         if (opts.icon) {
             canvas = new Element('CANVAS', { height: '16px', width: '16px' });
-            li.insert(canvas);
-            img = new Image();
-            img.onload = function() {
-                canvas.getContext('2d').drawImage(img, 0, 0, 16, 16);
-            };
-            img.src = opts.icon;
+            // IE8 doesn't support canvas
+            if (canvas.getContext) {
+                li.insert(canvas);
+                img = new Image();
+                img.onload = function() {
+                    canvas.getContext('2d').drawImage(img, 0, 0, 16, 16);
+                };
+                img.src = opts.icon;
+            }
         }
 
         li.insert(span);
@@ -962,8 +964,8 @@ var DimpCompose = {
         this.uniqueSubmit('addAttachment');
         u.up().hide();
         $('upload_wait').update(DimpCore.text.uploading + ' (' +
-            ((u.files && u.files.length > 1) ? DimpCore.text.multiple_atc.sub('%d', u.files.length) : $F(u).escapeHTML())
-            + ')').show();
+            ((u.files && u.files.length > 1) ? DimpCore.text.multiple_atc.sub('%d', u.files.length) : $F(u).escapeHTML()) +
+            ')').show();
     },
 
     uploadAttachmentAjax: function(data, params, callback)
@@ -1026,8 +1028,8 @@ var DimpCompose = {
             input: 'save_sent_mail_mbox',
             label: 'sent_mail_label'
         });
-        this.knl['sm'].knl.setSelected($F('save_sent_mail_mbox'));
-        this.knl['sm'].knl.show();
+        this.knl.sm.knl.setSelected($F('save_sent_mail_mbox'));
+        this.knl.sm.knl.show();
     },
 
     /* Open the addressbook window. */

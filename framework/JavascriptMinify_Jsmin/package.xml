@@ -10,9 +10,9 @@
   <email>slusarz@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-03-03</date>
+ <date>2014-05-02</date>
  <version>
-  <release>1.0.1</release>
+  <release>1.0.2</release>
   <api>1.0.0</api>
  </version>
  <stability>
@@ -71,7 +71,7 @@
    <package>
     <name>Horde_JavascriptMinify</name>
     <channel>pear.horde.org</channel>
-    <min>1.0.0</min>
+    <min>1.1.0</min>
     <max>2.0.0alpha1</max>
     <exclude>2.0.0alpha1</exclude>
    </package>
@@ -111,7 +111,20 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-03-03</date>
+   <date>2014-05-02</date>
+   <license uri="">JSMin</license>
+   <notes>
+* [mms] Add commented list of original source URLs in minified output, in order to comply with any license terms contained in original files.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>1.0.2</release>
+    <api>1.0.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-05-02</date>
    <license uri="">JSMin</license>
    <notes>
 * 

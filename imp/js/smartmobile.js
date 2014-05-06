@@ -1,10 +1,9 @@
 /**
  * jQuery Mobile UI application logic.
  *
- * Copyright 2005-2014 Horde LLC (http://www.horde.org/)
- *
- * See the enclosed file COPYING for license information (GPL). If you
- * did not receive this file, see http://www.horde.org/licenses/gpl.
+ * @author     Michael Slusarz <slusarz@horde.org>
+ * @copyright  2005-2014 Horde LLC
+ * @license    GPLv2 (http://www.horde.org/licenses/gpl)
  */
 var ImpMobile = {
 
@@ -1298,7 +1297,7 @@ var ImpMobile = {
 
         if (cmlist.find(':selected').hasClass('flistCreate')) {
             opts.newmbox = $.trim($('#imp-copymove-new').val());
-            if (opts.newmbox == "") {
+            if (opts.newmbox === "") {
                 window.alert(IMP.text.move_nombox);
                 return;
             }
@@ -1750,6 +1749,7 @@ var IMP_JS = {
         $.each(doc.find('[htmlimgblocked]'), function(k, v) {
             v = $(v);
             var src = v.attr('htmlimgblocked');
+            v.removeAttr('htmlimgblocked');
 
             if (v.attr('src')) {
                 v.one('load', function() { IMP_JS.iframeResize(iframe); });
@@ -1765,9 +1765,16 @@ var IMP_JS = {
             }
         });
 
+        $.each(doc.find('[htmlimgblocked_srcset]'), function(k, v) {
+            v = $(v);
+            v.attr('srcset', v.attr('htmlimgblocked_srcset'));
+            v.removeAttr('htmlimgblocked_srcset');
+        });
+
         $.each(doc.find('[htmlcssblocked]'), function(k, v) {
             v = $(v);
             v.attr('href', v.attr('htmlcssblocked'));
+            v.removeAttr('htmlcssblocked');
         });
 
         doc.find('STYLE[type="text/x-imp-cssblocked"]')

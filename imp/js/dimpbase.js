@@ -1,10 +1,9 @@
 /**
- * dimpbase.js - Javascript used in the base dynamic page.
+ * Base dynamic page.
  *
- * Copyright 2005-2014 Horde LLC (http://www.horde.org/)
- *
- * See the enclosed file COPYING for license information (GPL). If you
- * did not receive this file, see http://www.horde.org/licenses/gpl.
+ * @author     Michael Slusarz <slusarz@horde.org>
+ * @copyright  2005-2014 Horde LLC
+ * @license    GPLv2 (http://www.horde.org/licenses/gpl)
  */
 
 var DimpBase = {
@@ -407,7 +406,7 @@ var DimpBase = {
 
     _createViewPort: function()
     {
-        var container = $('msgSplitPane'), escapeAttr;
+        var container = $('msgSplitPane');
 
         this.template = {
             horiz: new Template(DimpCore.conf.msglist_template_horiz),
@@ -1449,7 +1448,7 @@ var DimpBase = {
 
             if (this.viewport.getMetaData('drafts') ||
                 this.viewport.getMetaData('templates')) {
-                $('ctx_message_innocent', 'ctx_message_spam').compact().invoke('hide')
+                $('ctx_message_innocent', 'ctx_message_spam').compact().invoke('hide');
             } else {
                 [ $('ctx_message_innocent') ].compact().invoke(this.viewport.getMetaData('innocent_show') ? 'show' : 'hide');
                 [ $('ctx_message_spam') ].compact().invoke(this.viewport.getMetaData('spam_show') ? 'show' : 'hide');
@@ -1606,8 +1605,8 @@ var DimpBase = {
         var elt, unseen,
             label = this.viewport.getMetaData('label');
 
-        // 'label' will not be set if there has been an error
-        // retrieving data from the server.
+        // 'label' will not be set if there has been an error retrieving data
+        // from the server.
         if (!label || !$('dimpmain_folder').visible()) {
             return;
         }
@@ -2077,16 +2076,18 @@ var DimpBase = {
 
     setMessageListTitle: function()
     {
-        var range,
-            rows = this.viewport.getMetaData('total_rows'),
+        var rows = this.viewport.getMetaData('total_rows'),
             text = this.viewport.getMetaData('label');
 
-        if (rows) {
-            range = this.viewport.currentViewableRange();
-            text += ' (' + this.messageCountText(rows) + ')';
-        }
+        // 'label' will not be set if there has been an error retrieving data
+        // from the server.
+        if (text) {
+            if (rows) {
+                text += ' (' + this.messageCountText(rows) + ')';
+            }
 
-        $('mailboxName').update(text.escapeHTML());
+            $('mailboxName').update(text.escapeHTML());
+        }
     },
 
     // m = (string|Element) Mailbox element.
@@ -2435,13 +2436,13 @@ var DimpBase = {
             d = DragDrop.Drags.getDrag(id);
 
         if (elt.hasClassName('vpRow')) {
-            if (DimpCore.conf.from_link && e.memo.findElement('.msgFrom a')) {
-                d.fromClick = true;
-                return;
-            }
-
             args = { right: e.memo.isRightClick() };
             d.fromClick = d.selectIfNoDrag = false;
+
+            if (DimpCore.conf.from_link && e.memo.findElement('.msgFrom a')) {
+                d.fromClick = !args.right;
+                return;
+            }
 
             // Handle selection first.
             if (DimpCore.DMenu.operaCheck(e)) {
@@ -2530,6 +2531,12 @@ var DimpBase = {
 
         if (!Object.isFunction(e.element)) {
             // Inside IFRAME. Wrap in prototypejs Event object.
+
+            // Ignore if IE 8
+            if (Prototype.Browser.IE && !document.addEventListener) {
+                return;
+            }
+
             e = new Event(e);
             e.preventDefault();
             noelt = true;
@@ -4163,7 +4170,7 @@ var DimpBase = {
         if ($('dimpmain_iframe').visible()) {
             $('dimpmain_iframe').down('IFRAME').setStyle({
                 height: $('horde-page').getHeight() + 'px'
-            })
+            });
         }
     },
 
@@ -4175,13 +4182,15 @@ var DimpBase = {
 
     onAjaxFailure: function(r)
     {
-        switch (r.request.action) {
-        case 'createMailboxPrepare':
-        case 'deleteMailboxPrepare':
-        case 'emptyMailboxPrepare':
-        case 'mailboxSize':
-            RedBox.close();
-            break;
+        if (r.request) {
+            switch (r.request.action) {
+            case 'createMailboxPrepare':
+            case 'deleteMailboxPrepare':
+            case 'emptyMailboxPrepare':
+            case 'mailboxSize':
+                RedBox.close();
+                break;
+            }
         }
     }
 

@@ -29,7 +29,8 @@
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
  <notes>
-* 
+* [jan] Change Horde_View_Helper_Date#distanceOfTimeInWords() to not round up the distance.
+* [jan] Make Horde_View_Helper_Text#truncate() and truncateMiddle() multibyte-safe (Bug #13163).
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -439,7 +440,8 @@
    <date>2013-08-22</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
-* 
+* [jan] Change Horde_View_Helper_Date#distanceOfTimeInWords() to not round up the distance.
+* [jan] Make Horde_View_Helper_Text#truncate() and truncateMiddle() multibyte-safe (Bug #13163).
    </notes>
   </release>
  </changelog>

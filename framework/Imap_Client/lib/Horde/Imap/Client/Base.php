@@ -1928,7 +1928,9 @@ abstract class Horde_Imap_Client_Base implements Serializable
      *   - nocache: (boolean) Don't cache the results.
      *              DEFAULT: false (results cached, if possible)
      *   - partial: (mixed) The range of results to return (message sequence
-     *              numbers).
+     *              numbers) Only a single range is supported (represented by
+     *              the minimum and maximum values contained in the range
+     *              given).
      *              DEFAULT: All messages are returned.
      *   - results: (array) The data to return. Consists of zero or more of
      *              the following flags:
@@ -2072,6 +2074,20 @@ abstract class Horde_Imap_Client_Base implements Serializable
         if (in_array(Horde_Imap_Client::SEARCH_RESULTS_RELEVANCY, $options['results']) &&
             !in_array('SEARCH=FUZZY', $options['_query']['exts_used'])) {
             throw new InvalidArgumentException('Cannot specify RELEVANCY results if not doing a FUZZY search.');
+        }
+
+        /* Check for partial matching. */
+        if (!empty($options['partial'])) {
+            $pids = $this->getIdsOb($options['partial'], true)->range_string;
+            if (!strlen($pids)) {
+                throw new InvalidArgumentException('Cannot specify empty sequence range for a PARTIAL search.');
+            }
+
+            if (strpos($pids, ':') === false) {
+                $pids .= ':' . $pids;
+            }
+
+            $options['partial'] = $pids;
         }
 
         /* Optimization - if query is just for a count of either RECENT or

@@ -1,8 +1,9 @@
 /**
- * Provides the javascript for managing remote accounts.
+ * Managing remote accounts.
  *
- * See the enclosed file COPYING for license information (GPL). If you
- * did not receive this file, see http://www.horde.org/licenses/gpl.
+ * @author     Michael Slusarz <slusarz@horde.org>
+ * @copyright  2013-2014 Horde LLC
+ * @license    GPLv2 (http://www.horde.org/licenses/gpl)
  */
 
 var ImpRemotePrefs = {
@@ -11,7 +12,7 @@ var ImpRemotePrefs = {
 
     _sendData: function(a, d, c)
     {
-        $('remote_action').setValue(a)
+        $('remote_action').setValue(a);
         $('remote_data').setValue(d);
         if (c) {
             $('prefs').getInputs('hidden', 'actionID').first().clear();

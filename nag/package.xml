@@ -5,12 +5,6 @@
  <summary>A web based task list manager</summary>
  <description>Nag is a web-based application built upon the Horde Application Framework which provides a simple, clean interface for managing online task lists (i.e., todo lists). It also includes strong integration with the other Horde applications and allows users to share task lists or enable light-weight project management.</description>
  <lead>
-  <name>Chuck Hagenbuch</name>
-  <user>chuck</user>
-  <email>chuck@horde.org</email>
-  <active>yes</active>
- </lead>
- <lead>
   <name>Jan Schneider</name>
   <user>jan</user>
   <email>jan@horde.org</email>
@@ -22,26 +16,24 @@
   <email>mrubinsk@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-04-02</date>
+ <lead>
+  <name>Chuck Hagenbuch</name>
+  <user>chuck</user>
+  <email>chuck@horde.org</email>
+  <active>false</active>
+ </lead>
+ <date>2014-05-05</date>
  <version>
-  <release>4.2.0</release>
+  <release>4.2.0alpha2</release>
   <api>4.2.0</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>alpha</release>
+  <api>alpha</api>
  </stability>
  <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
  <notes>
-* [jan] Show external tasks in the correct task type.
-* [jan] Purge old tasks from versions &lt; 2.3 too.
-* [jan] Allow to synchronize shared task lists via CalDAV (Request #12380).
-* [jan] Add script to import tasks from Open-Xchange.
-* [jan] Add recurrence controls to basic view (Request #11545).
-* [mjr] Add button for creating sub-task from task view (Request #12309).
-* [mjr] Add ability to return to existing search results after navigating to a task (Request #12879).
-* [jan] Make shares table compatible with Oracle.
-* [mjr] Add API support for multiple tasklists via ActiveSync.
+* 
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -738,6 +730,13 @@
     <min>2.0.0</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
+   </package>
+   <package>
+    <name>Horde_OpenXchange</name>
+    <channel>pear.horde.org</channel>
+    <min>1.0.0alpha1</min>
+    <max>2.0.0alpha1</max>
+    <exclude>2.0.0alpha1</exclude>
    </package>
    <package>
     <name>Horde_Test</name>
@@ -1476,12 +1475,12 @@
   </release>
   <release>
    <version>
-    <release>4.2.0</release>
+    <release>4.2.0alpha1</release>
     <api>4.2.0</api></version>
    <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-04-02</date>
+    <release>alpha</release>
+    <api>alpha</api></stability>
+   <date>2014-05-05</date>
    <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
    <notes>
 * [jan] Show external tasks in the correct task type.
@@ -1493,6 +1492,19 @@
 * [mjr] Add ability to return to existing search results after navigating to a task (Request #12879).
 * [jan] Make shares table compatible with Oracle.
 * [mjr] Add API support for multiple tasklists via ActiveSync.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>4.2.0alpha2</release>
+    <api>4.2.0</api></version>
+   <stability>
+    <release>alpha</release>
+    <api>alpha</api></stability>
+   <date>2014-05-06</date>
+   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
+   <notes>
+* 
    </notes>
   </release>
  </changelog>

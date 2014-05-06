@@ -580,9 +580,8 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
             }
 
             if ($val = $headers->getValue('references')) {
-                $ref_ob = new IMP_Compose_References();
-                $ref_ob->parse($val);
-                $this->_setMetadata('references', $ref_ob->references);
+                $ref_ob = new Horde_Mail_Rfc822_Identification($val);
+                $this->_setMetadata('references', $ref_ob->ids);
 
                 if ($val = $headers->getValue('in-reply-to')) {
                     $this->_setMetadata('in_reply_to', $val);
@@ -870,13 +869,29 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
                 $this->sendMessage($val['recipients'], $headers, $val['base']);
 
                 /* Store history information. */
-                $sentmail->log($senttype, $headers->getValue('message-id'), $val['recipients'], true);
+                $msg_id = new Horde_Mail_Rfc822_Identification(
+                    $headers->getValue('message-id')
+                );
+                $sentmail->log(
+                    $senttype,
+                    reset($msg_id->ids),
+                    $val['recipients'],
+                    true
+                );
             } catch (IMP_Compose_Exception_Address $e) {
                 throw $e;
             } catch (IMP_Compose_Exception $e) {
                 /* Unsuccessful send. */
                 if ($e->log()) {
-                    $sentmail->log($senttype, $headers->getValue('message-id'), $val['recipients'], false);
+                    $msg_id = new Horde_Mail_Rfc822_Identification(
+                        $headers->getValue('message-id')
+                    );
+                    $sentmail->log(
+                        $senttype,
+                        reset($msg_id->ids),
+                        $val['recipients'],
+                        false
+                    );
                 }
                 throw new IMP_Compose_Exception(sprintf(_("There was an error sending your message: %s"), $e->getMessage()));
             }
@@ -1820,19 +1835,31 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
         if (!$this->_replytype) {
             $this->_setMetadata('indices', $contents->getIndicesOb());
 
-            /* Set the message-id related headers. */
-            if (($msg_id = $h->getValue('message-id'))) {
-                $this->_setMetadata('in_reply_to', chop($msg_id));
+            /* Set the Message-ID related headers (RFC 5322 [3.6.4]). */
+            $msg_id = new Horde_Mail_Rfc822_Identification(
+                $h->getValue('message-id')
+            );
+            if (count($msg_id->ids)) {
+                $this->_setMetadata('in_reply_to', reset($msg_id->ids));
+            }
 
-                if ($refs = $h->getValue('references')) {
-                    $ref_ob = new IMP_Compose_References();
-                    $ref_ob->parse($refs);
-                    $refs = $ref_ob->references;
-                } else {
-                    $refs = array();
+            $ref_ob = new Horde_Mail_Rfc822_Identification(
+                $h->getValue('references')
+            );
+            if (!count($ref_ob->ids)) {
+                $ref_ob = new Horde_Mail_Rfc822_Identification(
+                    $h->getValue('in-reply-to')
+                );
+                if (count($ref_ob->ids) > 1) {
+                    $ref_ob->ids = array();
                 }
-                $refs[] = $this->getMetadata('in_reply_to');
-                $this->_setMetadata('references', $refs);
+            }
+
+            if (count($ref_ob->ids)) {
+                $this->_setMetadata(
+                    'references',
+                    array_merge($ref_ob->ids, array(reset($msg_id->ids)))
+                );
             }
         }
 
@@ -2402,14 +2429,18 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
 
                 if ($log) {
                     /* Store history information. */
+                    $msg_id = new Horde_Mail_Rfc822_Identification(
+                        $headers->getValue('message-id')
+                    );
+
                     $injector->getInstance('IMP_Maillog')->log(
-                        new IMP_Maillog_Message($headers->getValue('message-id')),
+                        new IMP_Maillog_Message(reset($msg_id->ids)),
                         new IMP_Maillog_Log_Redirect($recipients)
                     );
 
                     $injector->getInstance('IMP_Sentmail')->log(
                         IMP_Sentmail::REDIRECT,
-                        $headers->getValue('message-id'),
+                        reset($msg_id->ids),
                         $recipients
                     );
                 }

@@ -1,10 +1,9 @@
 /**
  * Paste attachment plugin for CKEditor.
  *
- * Copyright 2013-2014 Horde LLC (http://www.horde.org/)
- *
- * See the enclosed file COPYING for license information (GPL). If you
- * did not receive this file, see http://www.horde.org/licenses/gpl.
+ * @author     Michael Slusarz <slusarz@horde.org>
+ * @copyright  2013-2014 Horde LLC
+ * @license    GPLv2 (http://www.horde.org/licenses/gpl)
  */
 
 CKEDITOR.plugins.add('pasteattachment', {
@@ -24,7 +23,7 @@ CKEDITOR.plugins.add('pasteattachment', {
                     elt.parentNode.removeChild(elt);
                 }
             });
-        };
+        }
 
         function uploadAtc(files)
         {
@@ -44,7 +43,7 @@ CKEDITOR.plugins.add('pasteattachment', {
                 };
                 fr.readAsDataURL(file.value);
             });
-        };
+        }
 
         function fireEventInParent(type)
         {
@@ -57,7 +56,7 @@ CKEDITOR.plugins.add('pasteattachment', {
                 evt.initEvent(type, true, true);
             }
             editor.getThemeSpace('contents').$.dispatchEvent(evt);
-        };
+        }
 
         editor.on('contentDom', function(e1) {
             editor.document.on('drop', function(e2) {
@@ -83,7 +82,13 @@ CKEDITOR.plugins.add('pasteattachment', {
                 /* Only support images for now. */
                 if (span && span.match('IMG')) {
                     data = span.readAttribute('src').split(',', 2);
-                    data[1] = atob(data[1]);
+                    try {
+                        data[1] = Base64.atob(data[1]);
+                    } catch (e) {
+                        HordeCore.notify(DimpCore.text.paste_error, 'horde.error');
+                        ev.data.html = '';
+                        return;
+                    }
                     a.length = data[1].length;
 
                     for (i = 0; i < a.length; ++i) {

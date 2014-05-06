@@ -41,6 +41,12 @@ class Horde_Test_Autoload
             return;
         }
 
+        if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+            require __DIR__ . '/vendor/autoload.php';
+        } else {
+            require __DIR__ . '/../../../bundle/vendor/autoload.php';
+        }
+
         spl_autoload_register(
             function($class) {
                 $filename = Horde_Test_Autoload::resolve($class);

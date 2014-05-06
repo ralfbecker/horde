@@ -1,8 +1,9 @@
 /**
- * Provides the javascript for the basic view compose page.
+ * Basic compose view.
  *
- * See the enclosed file COPYING for license information (GPL). If you
- * did not receive this file, see http://www.horde.org/licenses/gpl.
+ * @author     Michael Slusarz <slusarz@horde.org>
+ * @copyright  2014 Horde LLC
+ * @license    GPLv2 (http://www.horde.org/licenses/gpl)
  */
 
 var ImpCompose = {
@@ -352,7 +353,7 @@ var ImpCompose = {
             if (ImpComposeBase.editor_on) {
                 config = Object.clone(IMP.ckeditor_config);
                 config.extraPlugins = 'pasteignore';
-                CKEDITOR.replace('composeMessage', config)
+                CKEDITOR.replace('composeMessage', config);
 
                 document.observe('SpellChecker:after', this._onAfterSpellCheck.bind(this));
                 document.observe('SpellChecker:before', this._onBeforeSpellCheck.bind(this));

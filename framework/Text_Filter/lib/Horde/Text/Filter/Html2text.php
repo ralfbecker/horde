@@ -106,7 +106,11 @@ class Horde_Text_Filter_Html2text extends Horde_Text_Filter_Base
 
         /* Bring down number of empty lines to 2 max, and remove trailing
          * ws. */
-        $text = preg_replace(array("/\s*\n{3,}/", "/ +\n/"), array("\n\n", "\n"), $text);
+        $text = preg_replace(
+            array("/\s*\n{3,}/", "/ +\n/"),
+            array("\n\n", "\n"),
+            $text
+        );
 
         /* Wrap the text to a readable format. */
         if ($this->_params['width']) {
@@ -194,7 +198,10 @@ class Horde_Text_Filter_Html2text extends Horde_Text_Filter_Base
                             if (!strspn(substr($out, -2), "\n")) {
                                 $out .= "\n";
                             }
-                            $out .= $tmp . "\n";
+
+                            if (strlen(trim($tmp))) {
+                                $out .= $tmp . "\n";
+                            }
                         }
                         break;
 
@@ -205,7 +212,7 @@ class Horde_Text_Filter_Html2text extends Horde_Text_Filter_Base
                         break;
 
                     case 'tr':
-                        $out .= "\n  " . rtrim($this->_node($doc, $child));
+                        $out .= "\n  " . trim($this->_node($doc, $child));
                         break;
 
                     case 'th':

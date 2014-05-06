@@ -1,8 +1,9 @@
 /**
- * Provides basic IMP javascript functions.
+ * Basic IMP javascript functions.
  *
- * See the enclosed file COPYING for license information (GPL). If you
- * did not receive this file, see http://www.horde.org/licenses/gpl.
+ * @author     Michael Slusarz <slusarz@horde.org>
+ * @copyright  2014 Horde LLC
+ * @license    GPLv2 (http://www.horde.org/licenses/gpl)
  */
 
 var IMP_JS = {
@@ -52,6 +53,8 @@ var IMP_JS = {
 
         Prototype.Selector.select('[htmlimgblocked]', doc).each(function(img) {
             var src = img.getAttribute('htmlimgblocked');
+            img.removeAttribute('htmlimgblocked');
+
             if (img.getAttribute('src')) {
                 img.onload = callback;
                 img.setAttribute('src', src);
@@ -70,8 +73,14 @@ var IMP_JS = {
             }
         }, this);
 
+        Prototype.Selector.select('[htmlimgblocked_srcset]', doc).each(function(img) {
+            img.setAttribute('srcset', img.getAttribute('htmlimgblocked_srcset'));
+            img.removeAttribute('htmlimgblocked_srcset');
+        });
+
         Prototype.Selector.select('[htmlcssblocked]', doc).each(function(link) {
             link.setAttribute('href', link.getAttribute('htmlcssblocked'));
+            link.removeAttribute('htmlcssblocked');
         });
 
         Prototype.Selector.select('STYLE[type="text/x-imp-cssblocked"]', doc).each(function(style) {
@@ -119,7 +128,8 @@ var IMP_JS = {
             delete Event.element(e).onload;
         }
 
-        if (id = $(id)) {
+        id = $(id);
+        if (id) {
             body = (id.contentDocument || id.contentWindow.document).body;
             html = body.parentNode;
 

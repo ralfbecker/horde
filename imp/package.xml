@@ -20,67 +20,20 @@
   <name>Chuck Hagenbuch</name>
   <user>chuck</user>
   <email>chuck@horde.org</email>
-  <active>yes</active>
+  <active>no</active>
  </lead>
- <date>2014-04-14</date>
+ <date>2014-05-05</date>
  <version>
-  <release>6.2.0</release>
+  <release>6.2.0alpha2</release>
   <api>6.2.0</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>alpha</release>
+  <api>alpha</api>
  </stability>
  <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
  <notes>
-* [mms] Add configurable IMAP quota checking interval (Request #12907).
-* [mms] Honor &apos;from_link&apos; preference in dynamic view.
-* [mms] Add support for storing image data within HTML signatures.
-* [mms] Ensure that viewing large mailboxes does not overload the session storage size.
-* [mms] Implement web notifications for new mail alerts.
-* [mms] Add bare address information to title attribute in viewport on dynamic mailbox page
-* [mms] Display flags on the smartmobile mailbox page (Request #12687).
-* [mms] Support non-ASCII characters in user-defined flag names (Request #12335).
-* [mms] Potentially save a call to the contacts backend when viewing HTML messages if no image data is present in the message.
-* [mms] Improved styling of dynamic mailbox page, to fix issues when resizing the browser font size (Bug #13071).
-* [mms] Don&apos;t send as multipart/alternative if plaintext part is empty.
-* [mms] Add smiley data to message when added via the HTML editor (Request #13051).
-* [mms] Add mailbox size information retrieval to dynamic view (Request #12965).
-* [mms] Display unread message count in title via favicon bubbles, if browser supports.
-* [mms] Abstracted maillog code.
-* [mms] Enable configuration of IMAP cache lifetime for Horde_Cache and Hashtable backends.
-* [mms] Only refresh quota information when switching to a mailbox the first time.
-* [mms] More efficiently store mailbox cache information in the session.
-* [mms] Load copy/move mailbox selection list on-demand in smartmobile view.
-* [mms] Cache results of inline image view status.
-* [mjr] Add IMP_Api::logRecipient.
-* [mms] Remove the mail_domain preference.
-* [mjr] Add display of reccurence data to iTip viewer (Request #12919).
-* [mms] Allow HTML data to be pasted within HTML compose editor paste dialog.
-* [mms] Filter outgoing HTML compose messages for XSS vulnerabilities.
-* [mms] Add permission to limit the maximum body size of a composed message.
-* [mms] Show placeholder image when dropping onto HTML editor while the image is uploaded to the server.
-* [mms] Add rate limiting to new mail notification alerts to prevent flooding of the remote mail server (Request #12705).
-* [mms] Browser stored preferences are now prefixed by user information.
-* [mms] Strip PGP armor text when replying to a message.
-* [mms] Move determination whether to scan plaintext messages for PGP data from preferences to MIME viewer configuration.
-* [mms] Add copy email option to the address context menu in dynamic view.
-* [mms] Support uploading multiple attachments at once in dynamic view.
-* [mms] Better reporting of e-mail address errors when composing.
-* [mms] Add list information display to dynamic view.
-* [jan] Add signatures to compose view.
-* [mms] Add keyboard shortcuts to allow a more granular scroll of the dynamic preview pane (Request #12750).
-* [mms] Add country flag graphic to contact image information in dynamic view.
-* [mms] Address autocompleter on dynamic and basic page now uses a fancy UI.
-* [mms] Add ability to specify maximum total attachment size in composed message before all attachments are converted to links.
-* [mms] Cache generation of print-specific CSS.
-* [mms] Add support for showing a contact image in the contacts popup box in dynamic view.
-* [mms] Add ability to create a new filter rule from context menus in the dynamic view.
-* [mms] More intelligent sizing of raw message parts opened in a popup window.
-* [mms] Load sent-mail mailbox list on demand in dynamic view.
-* [mms] Allow configurable access to remote accounts from within a session (Request #8077).
-* [jan] Display "Other Options" icon instead of "New Window" icon in collapsed preview headers.
-* [mms] More advanced auto-completion for smartmobile view.
+* 
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -232,7 +185,6 @@
      <file name="HtmlSignature.php" role="horde" />
      <file name="Link.php" role="horde" />
      <file name="LinkedAttachment.php" role="horde" />
-     <file name="References.php" role="horde" />
      <file name="Ui.php" role="horde" />
      <file name="View.php" role="horde" />
     </dir> <!-- /lib/Compose -->
@@ -1067,7 +1019,6 @@
       <file name="ComposeTest.php" role="test" />
       <file name="MboxParseTest.php" role="test" />
       <file name="QuotaTest.php" role="test" />
-      <file name="ReferencesTest.php" role="test" />
      </dir> <!-- /test/Imp/Unit -->
      <file name="AllTests.php" role="test" />
      <file name="Autoload.php" role="test" />
@@ -1295,7 +1246,7 @@
    <package>
     <name>Horde_Core</name>
     <channel>pear.horde.org</channel>
-    <min>2.12.0</min>
+    <min>2.12.0alpha1</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
    </package>
@@ -1316,7 +1267,7 @@
    <package>
     <name>Horde_Date</name>
     <channel>pear.horde.org</channel>
-    <min>2.1.0</min>
+    <min>2.0.0</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
    </package>
@@ -1379,7 +1330,7 @@
    <package>
     <name>Horde_Mail</name>
     <channel>pear.horde.org</channel>
-    <min>2.1.0</min>
+    <min>2.2.0</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
    </package>
@@ -1533,7 +1484,7 @@
    <package>
     <name>Horde_Service_Gravatar</name>
     <channel>pear.horde.org</channel>
-    <min>1.0.0</min>
+    <min>1.0.0alpha1</min>
     <max>2.0.0alpha1</max>
     <exclude>2.0.0alpha1</exclude>
    </package>
@@ -1669,7 +1620,6 @@
    <install as="imp/lib/Compose/HtmlSignature.php" name="lib/Compose/HtmlSignature.php" />
    <install as="imp/lib/Compose/Link.php" name="lib/Compose/Link.php" />
    <install as="imp/lib/Compose/LinkedAttachment.php" name="lib/Compose/LinkedAttachment.php" />
-   <install as="imp/lib/Compose/References.php" name="lib/Compose/References.php" />
    <install as="imp/lib/Compose/Ui.php" name="lib/Compose/Ui.php" />
    <install as="imp/lib/Compose/View.php" name="lib/Compose/View.php" />
    <install as="imp/lib/Compose/Attachment/Linked.php" name="lib/Compose/Attachment/Linked.php" />
@@ -2137,7 +2087,6 @@
    <install as="Imp/Unit/ComposeTest.php" name="test/Imp/Unit/ComposeTest.php" />
    <install as="Imp/Unit/MboxParseTest.php" name="test/Imp/Unit/MboxParseTest.php" />
    <install as="Imp/Unit/QuotaTest.php" name="test/Imp/Unit/QuotaTest.php" />
-   <install as="Imp/Unit/ReferencesTest.php" name="test/Imp/Unit/ReferencesTest.php" />
    <install as="Imp/Unit/Mime/Viewer/HtmlTest.php" name="test/Imp/Unit/Mime/Viewer/HtmlTest.php" />
    <install as="Imp/Unit/Mime/Viewer/ItipTest.php" name="test/Imp/Unit/Mime/Viewer/ItipTest.php" />
    <install as="imp/themes/default/mime.css" name="themes/default/mime.css" />
@@ -3569,6 +3518,82 @@
 * [mms] Fix scrolling through large search mailboxes in dynamic view (Bug #13138).
 * [mms] Better handling of malformed message dates in mailbox listing (Bug #13114).
 * [jan] Update Korean translation (Deokgon Kim &lt;dgkim@dgkim.net&gt;).
+   </notes>
+  </release>
+  <release>
+   <date>2014-05-05</date>
+   <version>
+    <release>6.2.0alpha1</release>
+    <api>6.2.0</api>
+   </version>
+   <stability>
+    <release>alpha</release>
+    <api>alpha</api>
+   </stability>
+   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
+   <notes>
+* [mms] Don&apos;t set References header in reply message if equal to In-Reply-To header (RFC 5322 [3.6.4]).
+* [mms] Add configurable IMAP quota checking interval (Request #12907).
+* [mms] Honor &apos;from_link&apos; preference in dynamic view.
+* [mms] Add support for storing image data within HTML signatures.
+* [mms] Ensure that viewing large mailboxes does not overload the session storage size.
+* [mms] Implement web notifications for new mail alerts.
+* [mms] Add bare address information to title attribute in viewport on dynamic mailbox page
+* [mms] Display flags on the smartmobile mailbox page (Request #12687).
+* [mms] Support non-ASCII characters in user-defined flag names (Request #12335).
+* [mms] Potentially save a call to the contacts backend when viewing HTML messages if no image data is present in the message.
+* [mms] Improved styling of dynamic mailbox page, to fix issues when resizing the browser font size (Bug #13071).
+* [mms] Don&apos;t send as multipart/alternative if plaintext part is empty.
+* [mms] Add smiley data to message when added via the HTML editor (Request #13051).
+* [mms] Add mailbox size information retrieval to dynamic view (Request #12965).
+* [mms] Display unread message count in title via favicon bubbles, if browser supports.
+* [mms] Abstracted maillog code.
+* [mms] Enable configuration of IMAP cache lifetime for Horde_Cache and Hashtable backends.
+* [mms] Only refresh quota information when switching to a mailbox the first time.
+* [mms] More efficiently store mailbox cache information in the session.
+* [mms] Load copy/move mailbox selection list on-demand in smartmobile view.
+* [mms] Cache results of inline image view status.
+* [mjr] Add IMP_Api::logRecipient.
+* [mms] Remove the mail_domain preference.
+* [mjr] Add display of reccurence data to iTip viewer (Request #12919).
+* [mms] Allow HTML data to be pasted within HTML compose editor paste dialog.
+* [mms] Filter outgoing HTML compose messages for XSS vulnerabilities.
+* [mms] Add permission to limit the maximum body size of a composed message.
+* [mms] Show placeholder image when dropping onto HTML editor while the image is uploaded to the server.
+* [mms] Add rate limiting to new mail notification alerts to prevent flooding of the remote mail server (Request #12705).
+* [mms] Browser stored preferences are now prefixed by user information.
+* [mms] Strip PGP armor text when replying to a message.
+* [mms] Move determination whether to scan plaintext messages for PGP data from preferences to MIME viewer configuration.
+* [mms] Add copy email option to the address context menu in dynamic view.
+* [mms] Support uploading multiple attachments at once in dynamic view.
+* [mms] Better reporting of e-mail address errors when composing.
+* [mms] Add list information display to dynamic view.
+* [jan] Add signatures to compose view.
+* [mms] Add keyboard shortcuts to allow a more granular scroll of the dynamic preview pane (Request #12750).
+* [mms] Add country flag graphic to contact image information in dynamic view.
+* [mms] Address autocompleter on dynamic and basic page now uses a fancy UI.
+* [mms] Add ability to specify maximum total attachment size in composed message before all attachments are converted to links.
+* [mms] Cache generation of print-specific CSS.
+* [mms] Add support for showing a contact image in the contacts popup box in dynamic view.
+* [mms] Add ability to create a new filter rule from context menus in the dynamic view.
+* [mms] More intelligent sizing of raw message parts opened in a popup window.
+* [mms] Load sent-mail mailbox list on demand in dynamic view.
+* [mms] Allow configurable access to remote accounts from within a session (Request #8077).
+* [jan] Display "Other Options" icon instead of "New Window" icon in collapsed preview headers.
+* [mms] More advanced auto-completion for smartmobile view.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>6.2.0alpha2</release>
+    <api>6.2.0</api></version>
+   <stability>
+    <release>alpha</release>
+    <api>alpha</api></stability>
+   <date>2014-05-05</date>
+   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
+   <notes>
+* 
    </notes>
   </release>
  </changelog>

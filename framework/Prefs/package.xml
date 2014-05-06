@@ -22,9 +22,9 @@
   <email>jan@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-04-16</date>
+ <date>2014-05-02</date>
  <version>
-  <release>2.6.0</release>
+  <release>2.6.1</release>
   <api>2.6.0</api>
  </version>
  <stability>
@@ -33,10 +33,7 @@
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
  <notes>
-* [mms] Add Horde_Prefs#getCache().
-* [mms] Add Horde_Cache based cache driver.
-* [mms] Pref scopes are now loaded on-demand.
-* [mms] Add Horde_Prefs#changeScope().
+* 
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -1107,13 +1104,26 @@ Initial release as a PEAR package
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-04-16</date>
+   <date>2014-05-02</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
 * [mms] Add Horde_Prefs#getCache().
 * [mms] Add Horde_Cache based cache driver.
 * [mms] Pref scopes are now loaded on-demand.
 * [mms] Add Horde_Prefs#changeScope().
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.6.1</release>
+    <api>2.6.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-05-02</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* 
    </notes>
   </release>
  </changelog>
