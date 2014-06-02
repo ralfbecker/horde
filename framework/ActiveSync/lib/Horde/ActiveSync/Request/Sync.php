@@ -140,6 +140,7 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
                         return true;
                     }
                     $this->_collections->shortSyncRequest = true;
+                    $this->_collections->hangingSync = true;
                     $this->_collections->save();
                 }
             } else {
@@ -149,11 +150,8 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
                 return true;
             }
         } else {
-            if ($this->_device->version >= Horde_ActiveSync::VERSION_TWELVEONE) {
-                $this->_collections->setHeartbeat(array('wait' => false, 'hbinterval' => false));
-            }
-
             // Start decoding request.
+            $this->_collections->hangingSync = false;
             while (($sync_tag = ($this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_WINDOWSIZE) ? Horde_ActiveSync::SYNC_WINDOWSIZE :
                    ($this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_FOLDERS) ? Horde_ActiveSync::SYNC_FOLDERS :
                    ($this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_PARTIAL) ? Horde_ActiveSync::SYNC_PARTIAL :
@@ -165,6 +163,7 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
                 case Horde_ActiveSync::SYNC_HEARTBEATINTERVAL:
                     if ($hbinterval = $this->_decoder->getElementContent()) {
                         $this->_collections->setHeartbeat(array('hbinterval' => $hbinterval));
+                        $this->_collections->hangingSync = true;
                         $this->_decoder->getElementEndTag();
                         if ($hbinterval > (self::MAX_HEARTBEAT)) {
                             $this->_logger->err(sprintf(
@@ -180,6 +179,7 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
                 case Horde_ActiveSync::SYNC_WAIT:
                     if ($wait = $this->_decoder->getElementContent()) {
                         $this->_collections->setHeartbeat(array('wait' => $wait));
+                        $this->_collections->hangingSync = true;
                         $this->_decoder->getElementEndTag();
                         if ($wait > (self::MAX_HEARTBEAT / 60)) {
                             $this->_logger->err(sprintf(
@@ -814,6 +814,10 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
 
             try {
                 $this->_collections->addCollection($collection);
+            } catch (Horde_ActiveSync_Exception_StateGone $e) {
+                $this->_statusCode = self::STATUS_FOLDERSYNC_REQUIRED;
+                $this->_handleError($collection);
+                return false;
             } catch (Horde_ActiveSync_Exception $e) {
                 $this->_statusCode = self::STATUS_SERVERERROR;
                 $this->_handleError($collection);

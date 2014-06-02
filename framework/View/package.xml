@@ -17,10 +17,9 @@
   <email>mike@maintainable.com</email>
   <active>yes</active>
  </lead>
- <date>2013-08-22</date>
- <time>16:06:26</time>
+ <date>2014-05-14</date>
  <version>
-  <release>2.0.4</release>
+  <release>2.0.5</release>
   <api>1.1.0</api>
  </version>
  <stability>
@@ -29,8 +28,7 @@
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
  <notes>
-* [jan] Change Horde_View_Helper_Date#distanceOfTimeInWords() to not round up the distance.
-* [jan] Make Horde_View_Helper_Text#truncate() and truncateMiddle() multibyte-safe (Bug #13163).
+* 
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -437,11 +435,24 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2013-08-22</date>
+   <date>2014-05-14</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
 * [jan] Change Horde_View_Helper_Date#distanceOfTimeInWords() to not round up the distance.
 * [jan] Make Horde_View_Helper_Text#truncate() and truncateMiddle() multibyte-safe (Bug #13163).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.0.5</release>
+    <api>1.1.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-05-14</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* 
    </notes>
   </release>
  </changelog>

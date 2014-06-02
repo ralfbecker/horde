@@ -1,5 +1,9 @@
 <div class="modal-form">
 
+<?php if (!is_null($auth_label)): ?>
+ <div class="label login-app"><?php echo $auth_label ?></div>
+<?php endif; ?>
+
 <?php $notification->notify(array('listeners' => 'status')) ?>
 
 <form name="horde_login" id="horde_login" method="post" action="<?php echo $loginurl ?>">
@@ -91,5 +95,5 @@ $reset_passwd = !empty($conf['auth']['resetpassword']) && $auth->hasCapability('
 
 <?php
 try {
-    echo $registry->loadConfigFile('motd.php', null, 'horde')->output;
+    echo $registry->loadConfigFile('motd.php', 'motd', 'horde')->config['motd'];
 } catch (Horde_Exception $e) {}

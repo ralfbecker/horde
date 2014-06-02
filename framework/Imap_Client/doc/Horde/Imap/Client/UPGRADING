@@ -11,6 +11,34 @@
 This lists the API changes between releases of the package.
 
 
+Upgrading to 2.21.0
+===================
+
+  - Horde_Imap_Client
+
+    These constants have been deprecated:
+
+      - NS_PERSONAL
+      - NS_OTHER
+      - NS_SHARED
+
+  - Horde_Imap_Client_Base
+
+    - getNamespaces()
+
+      Add optional parameter to allow a Horde_Imap_Client_Namespace_List
+      object to be returned, instead of an array.
+      (This will become the default action in 3.0.)
+
+
+Upgrading to 2.20.0
+===================
+
+  - Horde_Imap_Client_Ids
+
+    The 'min' and 'max' properties have been added.
+
+
 Upgrading to 2.19.0
 ===================
 

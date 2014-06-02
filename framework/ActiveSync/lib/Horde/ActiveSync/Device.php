@@ -23,25 +23,25 @@
  * @author    Michael J Rubinsky <mrubinsk@horde.org>
  * @package   ActiveSync
  *
- * @property string   $id              The device id.
- * @property string   $deviceType      The device type string.
- * @property string   $clientType      The client name, if available.
- * @property integer   $rwstatus        The RemoteWipe status - a
- *                                    Horde_ActiveSync::RWSTATUS_* constant.
+ * @property string   $id               The device id.
+ * @property string   $deviceType       The device type string.
+ * @property string   $clientType       The client name, if available.
+ * @property integer  $rwstatus         The RemoteWipe status - a
+ *                                      Horde_ActiveSync::RWSTATUS_* constant.
  * @property string   $userAgent        The device's user agent string.
  * @property string   $user             The userid for the current device account.
- * @property array   $supported        The SUPPORTED data sent from this device.
+ * @property array    $supported        The SUPPORTED data sent from this device.
  * @property string   $policykey        The current policykey, if provisioned.
- * @property array   $properties       The device properties, sent in DEVICEINFO,
- *                                    along with any custom properties set.
+ * @property array    $properties       The device properties, sent in DEVICEINFO,
+ *                                      along with any custom properties set.
  * @property string   $announcedVersion The most last EAS supported versions
- *                                    announced to the device.
- * @property integer   $multiplex       Bitmask describing collections that this
- *                                    device does not support user created
- *                                    folders for, therefore all sources must
- *                                    be multiplexed together. Masks are
- *                                    the MULTIPLEX_* constants.
- * @property boolean   $blocked          True if device has been marked as blocked.
+ *                                      announced to the device.
+ * @property integer  $multiplex        Bitmask describing collections that this
+ *                                      device does not support user created
+ *                                      folders for, therefore all sources must
+ *                                      be multiplexed together. Masks are
+ *                                      the MULTIPLEX_* constants.
+ * @property boolean   $blocked         True if device has been marked as blocked.
  *
  */
 class Horde_ActiveSync_Device
@@ -325,10 +325,18 @@ class Horde_ActiveSync_Device
 
     /**
      * Save the dirty device info data.
+     *
+     * @param boolean $all  If true, save all properties (deviceInfo and
+     *                      deviceProperties). Otherwise, just save dirty
+     *                      deviceProperties. @since 2.16.0
+     * @todo For 3.0, make it clearer taht deviceInfo is per-user and
+     *       deviceProperties is per-device.
      */
-    public function save()
+    public function save($all = true)
     {
-        $this->_state->setDeviceInfo($this, $this->_dirty);
+        if ($all) {
+            $this->_state->setDeviceInfo($this, $this->_dirty);
+        }
         if (!empty($this->_dirty['properties'])) {
             $this->_state->setDeviceProperties($this->properties, $this->id);
         }
@@ -501,7 +509,7 @@ class Horde_ActiveSync_Device
             // non-multiplexed calendars only.
             if (!empty($this->properties[self::OS]) &&
                 preg_match('/(\d+\.\d+\.\d+)/', $this->properties[self::OS], $matches) &&
-                version_compare($matches[0], '4.4.0') < 1) {
+                version_compare($matches[0], '4.4.0') >= 0) {
 
                 $this->_properties['properties'][self::MULTIPLEX] =
                     Horde_ActiveSync_Device::MULTIPLEX_NOTES |

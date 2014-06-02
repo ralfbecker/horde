@@ -463,30 +463,10 @@ class IMP_Imap implements Serializable
     }
 
     /**
-     * Get the namespace list.
-     *
-     * @return array  See Horde_Imap_Client_Base#getNamespaces().
-     */
-    public function getNamespaces()
-    {
-        if (!isset($this->_temp['ns'])) {
-            try {
-                $nsconfig = $this->config->namespace;
-                $this->_temp['ns'] = $this->__call('getNamespaces', array(
-                    is_null($nsconfig) ? array() : $nsconfig
-                ));
-            } catch (Horde_Imap_Client_Exception $e) {
-                return array();
-            }
-        }
-
-        return $this->_temp['ns'];
-    }
-
-    /**
      * Get namespace info for a full mailbox path.
      *
-     * @param string $mailbox    The mailbox path.
+     * @param string $mailbox    The mailbox path. (self:NS_DEFAULT will
+     *                           return the default personal namespace.)
      * @param boolean $personal  If true, will return empty namespace only
      *                           if it is a personal namespace.
      *
@@ -495,32 +475,20 @@ class IMP_Imap implements Serializable
      */
     public function getNamespace($mailbox, $personal = false)
     {
-        if (!$this->isImap()) {
-            return null;
-        }
+        if ($this->isImap()) {
+            $ns = $this->getNamespaces();
+            if ($mailbox !== self::NS_DEFAULT) {
+                return $ns->getNamespace($mailbox, $personal);
+            }
 
-        $ns = $this->getNamespaces();
-
-        if (isset($ns[$mailbox])) {
-            return $ns[$mailbox];
-        }
-
-        foreach ($ns as $key => $val) {
-            if ($mailbox === self::NS_DEFAULT) {
-                if ($val['type'] === Horde_Imap_Client::NS_PERSONAL) {
-                    return $val;
-                }
-            } else {
-                $mbox = $mailbox . $val['delimiter'];
-                if (strlen($key) && (strpos($mbox, $key) === 0)) {
+            foreach ($ns as $val) {
+                if ($val->type === $val::NS_PERSONAL) {
                     return $val;
                 }
             }
         }
 
-        return (isset($ns['']) && (!$personal || ($val['type'] == Horde_Imap_Client::NS_PERSONAL)))
-            ? $ns['']
-            : null;
+        return null;
     }
 
     /**
@@ -609,22 +577,16 @@ class IMP_Imap implements Serializable
     }
 
     /**
-     * Handle status() calls. This call may hit multiple servers, so need to
-     * handle separately from other IMAP calls.
+     * Handle status() calls. This call may hit multiple servers.
      *
      * @see Horde_Imap_Client_Base#status()
      */
-    public function status()
+    protected function _status($args)
     {
         global $injector;
 
         $accounts = $mboxes = $out = array();
-        $args = func_get_args();
         $imap_factory = $injector->getInstance('IMP_Factory_Imap');
-
-        if (!is_array($args[0])) {
-            return $this->__call('status', $args);
-        }
 
         foreach (IMP_Mailbox::get($args[0]) as $val) {
             if ($raccount = $val->remote_account) {
@@ -636,7 +598,7 @@ class IMP_Imap implements Serializable
         foreach ($mboxes as $key => $val) {
             $imap = $imap_factory->create($key);
             if ($imap->init) {
-                foreach ($imap->__call('status', array($val) + $args) as $key2 => $val2) {
+                foreach (call_user_func_array(array($imap, 'impStatus'), array($val) + $args) as $key2 => $val2) {
                     $out[isset($accounts[$key]) ? $accounts[$key]->mailbox($key2) : $key2] = $val2;
                 }
             }
@@ -675,10 +637,6 @@ class IMP_Imap implements Serializable
             );
         }
 
-        if (!method_exists($this->_ob, $method)) {
-            throw new BadMethodCallException(sprintf('%s: Invalid method call "%s".', __CLASS__, $method));
-        }
-
         switch ($method) {
         case 'append':
         case 'createMailbox':
@@ -693,7 +651,6 @@ class IMP_Imap implements Serializable
         case 'getSyncToken':
         case 'setMetadata':
         case 'setQuota':
-        case 'status':
         case 'store':
         case 'subscribeMailbox':
         case 'sync':
@@ -718,6 +675,22 @@ class IMP_Imap implements Serializable
             $params[1] = $dest->imap_mbox_ob;
             break;
 
+        case 'getNamespaces':
+            if (isset($this->_temp['ns'])) {
+                return $this->_temp['ns'];
+            }
+            $nsconfig = $this->config->namespace;
+            $params[0] = is_null($nsconfig) ? array() : $nsconfig;
+            $params[1] = array('ob_return' => true);
+            break;
+
+        case 'impStatus':
+            /* Internal method: allows status call with array of mailboxes,
+             * guaranteeing they are all on this server. */
+            $params[0] = IMP_Mailbox::getImapMboxOb($params[0]);
+            $method = 'status';
+            break;
+
         case 'openMailbox':
             $mbox = IMP_Mailbox::get($params[0]);
             if ($mbox->search) {
@@ -730,11 +703,31 @@ class IMP_Imap implements Serializable
         case 'search':
             $params = call_user_func_array(array($this, '_search'), $params);
             break;
+
+        case 'status':
+            if (is_array($params[0])) {
+                return $this->_status($params);
+            }
+            $params[0] = IMP_Mailbox::getImapMboxOb($params[0]);
+            break;
+
+        default:
+            if (!method_exists($this->_ob, $method)) {
+                throw new BadMethodCallException(
+                    sprintf('%s: Invalid method call "%s".', __CLASS__, $method)
+                );
+            }
+            break;
         }
 
         try {
             $result = call_user_func_array(array($this->_ob, $method), $params);
         } catch (Horde_Imap_Client_Exception $e) {
+            switch ($method) {
+            case 'getNamespaces':
+                return new Horde_Imap_Client_Namespace_List();
+            }
+
             Horde::log(
                 new Exception(
                     sprintf('[%s] %s', $method, $e->raw_msg),
@@ -751,6 +744,7 @@ class IMP_Imap implements Serializable
 
         /* Special handling for various methods. */
         switch ($method) {
+        case 'createMailbox':
         case 'deleteMailbox':
         case 'renameMailbox':
             $injector->getInstance('IMP_Mailbox_SessionCache')->expire(
@@ -758,6 +752,10 @@ class IMP_Imap implements Serializable
                 // Mailbox is first parameter.
                 IMP_Mailbox::get($params[0])
             );
+            break;
+
+        case 'getNamespaces':
+            $this->_temp['ns'] = $result;
             break;
 
         case 'login':

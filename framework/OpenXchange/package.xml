@@ -10,14 +10,14 @@
   <email>jan@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-05-05</date>
+ <date>2014-05-21</date>
  <version>
-  <release>1.0.0alpha2</release>
-  <api>1.0.0alpha1</api>
+  <release>1.0.1</release>
+  <api>1.0.0</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
  <notes>
@@ -107,12 +107,25 @@
   </release>
   <release>
    <version>
-    <release>1.0.0alpha2</release>
-    <api>1.0.0alpha1</api></version>
+    <release>1.0.0</release>
+    <api>1.0.0</api></version>
    <stability>
-    <release>alpha</release>
-    <api>alpha</api></stability>
-   <date>2014-05-05</date>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-05-21</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [jan] First stable release.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>1.0.1</release>
+    <api>1.0.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-05-21</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
 * 

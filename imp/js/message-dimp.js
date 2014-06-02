@@ -3,7 +3,7 @@
  *
  * @author     Michael Slusarz <slusarz@horde.org>
  * @copyright  2005-2014 Horde LLC
- * @license    GPLv2 (http://www.horde.org/licenses/gpl)
+ * @license    GPL-2 (http://www.horde.org/licenses/gpl)
  */
 
 var DimpMessage = {
@@ -111,7 +111,7 @@ var DimpMessage = {
         case 'button_delete':
         case 'button_innocent':
         case 'button_spam':
-            if (HordeCore.base.DimpBase) {
+            if (DimpCore.baseAvailable()) {
                 HordeCore.base.focus();
                 if (e.element().identify() == 'button_delete') {
                     HordeCore.base.DimpBase.deleteMsg({
@@ -273,7 +273,7 @@ var DimpMessage = {
         }, this);
         delete this.addr_limit;
 
-        if (HordeCore.base.DimpBase) {
+        if (DimpCore.baseAvailable()) {
             if (this.strip) {
                 HordeCore.base.DimpBase.poll();
             } else if (this.tasks) {

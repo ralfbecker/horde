@@ -98,15 +98,7 @@ abstract class Horde_ActiveSync_State_Base
     protected $_logger;
 
     /**
-     * Device info structure. Contains the following properties:
-     *  'rwstatus'   - Device RemoteWipe status.
-     *  'deviceType' - The device type.
-     *  'userAgent'  - The device's userAgent string.
-     *  'id'         - Device id.
-     *  'user'       - The user associated with the current account.
-     *  'supported'  - The SUPPORTED response for the device's collections.
-     *  'policykey'  - The device's current POLICYKEY.
-     *  'version'    - The currently requested EAS version.
+     * Device object.
      *
      * @var Horde_ActiveSync_Device
      */
@@ -462,34 +454,37 @@ abstract class Horde_ActiveSync_State_Base
                 switch ($this->_collection['class']) {
                 case Horde_ActiveSync::CLASS_EMAIL:
                     $mailmap = $this->_getMailMapChanges($changes);
+                    $flag_map = array(
+                        Horde_ActiveSync::CHANGE_TYPE_FLAGS =>  'flag change',
+                        Horde_ActiveSync::CHANGE_TYPE_DELETE => 'deletion',
+                        Horde_ActiveSync::CHANGE_TYPE_CHANGE => 'move'
+                    );
+                    Horde::debug($mailmap);
                     foreach ($changes as $change) {
-                        switch ($change['type']) {
-                        case Horde_ActiveSync::CHANGE_TYPE_FLAGS:
-                            if (!empty($mailmap[$change['id']][$change['type']])) {
-                                $this->_logger->info(sprintf(
-                                    '[%s] Ignoring PIM initiated flag change for %s',
-                                    $this->_procid,
-                                    $change['id']));
-                                $change['ignore'] = true;
+                        if (!empty($mailmap[$change['id']][$change['type']])) {
+                            // @todo For 3.0, create a Changes and
+                            // ChangeFilter classes to abstract out a bunch of
+                            // this stuff. (Needs BC breaking changes in
+                            // storage/state classes).
+                            //
+                            // OL2013 is broken and duplicates the destination
+                            // email during MOVEITEMS requests (instead it
+                            // reassigns the existing email the new UID). Don't
+                            // send the ADD command for these changes.
+                            if ($change['type'] == Horde_ActiveSync::CHANGE_TYPE_CHANGE &&
+                                $change['flags'] == Horde_ActiveSync::FLAG_NEWMESSAGE &&
+                                $this->_deviceInfo->deviceType != 'WindowsOutlook15') {
+                                $this->_changes[] = $change;
+                                continue;
                             }
-                            $this->_changes[] = $change;
-                            break;
-
-                        case Horde_ActiveSync::CHANGE_TYPE_DELETE:
-                            if (!empty($mailmap[$change['id']][$change['type']])) {
-                               $this->_logger->info(sprintf(
-                                    '[%s] Ignoring PIM initiated deletion for %s',
-                                    $this->_procid,
-                                    $change['id']));
-                                $change['ignore'] = true;
-                            }
-                            $this->_changes[] = $change;
-                            break;
-
-                        default:
-                            // New message.
-                            $this->_changes[] = $change;
+                            $this->_logger->info(sprintf(
+                                '[%s] Ignoring PIM initiated %s for %s',
+                                $this->_procid,
+                                $flag_map[$change['type']],
+                                $change['id']));
+                            $change['ignore'] = true;
                         }
+                        $this->_changes[] = $change;
                     }
                     break;
 

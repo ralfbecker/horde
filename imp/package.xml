@@ -22,18 +22,19 @@
   <email>chuck@horde.org</email>
   <active>no</active>
  </lead>
- <date>2014-05-05</date>
+ <date>2014-05-21</date>
  <version>
-  <release>6.2.0alpha2</release>
+  <release>6.2.0beta2</release>
   <api>6.2.0</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
  <notes>
-* 
+* [mms] Allow drag/drop to HTML compose body work with text data (Firefox only).
+* [mms] Cache mailbox exists results in the current access.
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -91,6 +92,7 @@
     <file name="dimpbase.js" role="horde" />
     <file name="dimpcore.js" role="horde" />
     <file name="draghandler.js" role="horde" />
+    <file name="editor.js" role="horde" />
     <file name="flagprefs.js" role="horde" />
     <file name="folderprefs.js" role="horde" />
     <file name="folders.js" role="horde" />
@@ -122,6 +124,7 @@
        <file name="Mboxtoggle.php" role="horde" />
        <file name="Passphrase.php" role="horde" />
        <file name="Remote.php" role="horde" />
+       <file name="RemotePrefs.php" role="horde" />
        <file name="Search.php" role="horde" />
        <file name="Smartmobile.php" role="horde" />
       </dir> <!-- /lib/Ajax/Application/Handler -->
@@ -231,6 +234,7 @@
      <file name="Identity.php" role="horde" />
      <file name="Imap.php" role="horde" />
      <file name="Mail.php" role="horde" />
+     <file name="MailAutoconfig.php" role="horde" />
      <file name="Mailbox.php" role="horde" />
      <file name="MailboxCache.php" role="horde" />
      <file name="MailboxList.php" role="horde" />
@@ -719,6 +723,7 @@
       <file name="imp.mo" role="horde" />
       <file name="imp.po" role="horde" />
      </dir> <!-- /locale/ja/LC_MESSAGES -->
+     <file name="help.xml" role="horde" />
     </dir> <!-- /locale/ja -->
     <dir name="km">
      <dir name="LC_MESSAGES">
@@ -1135,6 +1140,7 @@
       <file name="forward.png" role="horde" />
       <file name="forwarded.png" role="horde" />
       <file name="gallery.png" role="horde" />
+      <file name="group.png" role="horde" />
       <file name="ico_message_off.png" role="horde" />
       <file name="imp.png" role="horde" />
       <file name="info_icon.png" role="horde" />
@@ -1246,7 +1252,7 @@
    <package>
     <name>Horde_Core</name>
     <channel>pear.horde.org</channel>
-    <min>2.12.0alpha1</min>
+    <min>2.12.0beta1</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
    </package>
@@ -1302,7 +1308,7 @@
    <package>
     <name>Horde_Imap_Client</name>
     <channel>pear.horde.org</channel>
-    <min>2.18.4</min>
+    <min>2.21.0</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
    </package>
@@ -1333,6 +1339,13 @@
     <min>2.2.0</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
+   </package>
+   <package>
+    <name>Horde_Mail_Autoconfig</name>
+    <channel>pear.horde.org</channel>
+    <min>1.0.0beta1</min>
+    <max>2.0.0alpha1</max>
+    <exclude>2.0.0alpha1</exclude>
    </package>
    <package>
     <name>Horde_Mime</name>
@@ -1526,6 +1539,7 @@
    <install as="imp/js/dimpbase.js" name="js/dimpbase.js" />
    <install as="imp/js/dimpcore.js" name="js/dimpcore.js" />
    <install as="imp/js/draghandler.js" name="js/draghandler.js" />
+   <install as="imp/js/editor.js" name="js/editor.js" />
    <install as="imp/js/flagprefs.js" name="js/flagprefs.js" />
    <install as="imp/js/folderprefs.js" name="js/folderprefs.js" />
    <install as="imp/js/folders.js" name="js/folders.js" />
@@ -1591,6 +1605,7 @@
    <install as="imp/lib/Ajax/Application/Handler/Mboxtoggle.php" name="lib/Ajax/Application/Handler/Mboxtoggle.php" />
    <install as="imp/lib/Ajax/Application/Handler/Passphrase.php" name="lib/Ajax/Application/Handler/Passphrase.php" />
    <install as="imp/lib/Ajax/Application/Handler/Remote.php" name="lib/Ajax/Application/Handler/Remote.php" />
+   <install as="imp/lib/Ajax/Application/Handler/RemotePrefs.php" name="lib/Ajax/Application/Handler/RemotePrefs.php" />
    <install as="imp/lib/Ajax/Application/Handler/Search.php" name="lib/Ajax/Application/Handler/Search.php" />
    <install as="imp/lib/Ajax/Application/Handler/Smartmobile.php" name="lib/Ajax/Application/Handler/Smartmobile.php" />
    <install as="imp/lib/Ajax/Application/Viewport/Error.php" name="lib/Ajax/Application/Viewport/Error.php" />
@@ -1654,6 +1669,7 @@
    <install as="imp/lib/Factory/Identity.php" name="lib/Factory/Identity.php" />
    <install as="imp/lib/Factory/Imap.php" name="lib/Factory/Imap.php" />
    <install as="imp/lib/Factory/Mail.php" name="lib/Factory/Mail.php" />
+   <install as="imp/lib/Factory/MailAutoconfig.php" name="lib/Factory/MailAutoconfig.php" />
    <install as="imp/lib/Factory/Mailbox.php" name="lib/Factory/Mailbox.php" />
    <install as="imp/lib/Factory/MailboxCache.php" name="lib/Factory/MailboxCache.php" />
    <install as="imp/lib/Factory/MailboxList.php" name="lib/Factory/MailboxList.php" />
@@ -1930,6 +1946,7 @@
    <install as="imp/locale/it/help.xml" name="locale/it/help.xml" />
    <install as="imp/locale/it/LC_MESSAGES/imp.mo" name="locale/it/LC_MESSAGES/imp.mo" />
    <install as="imp/locale/it/LC_MESSAGES/imp.po" name="locale/it/LC_MESSAGES/imp.po" />
+   <install as="imp/locale/ja/help.xml" name="locale/ja/help.xml" />
    <install as="imp/locale/ja/LC_MESSAGES/imp.mo" name="locale/ja/LC_MESSAGES/imp.mo" />
    <install as="imp/locale/ja/LC_MESSAGES/imp.po" name="locale/ja/LC_MESSAGES/imp.po" />
    <install as="imp/locale/km/LC_MESSAGES/imp.mo" name="locale/km/LC_MESSAGES/imp.mo" />
@@ -2130,6 +2147,7 @@
    <install as="imp/themes/default/graphics/forward.png" name="themes/default/graphics/forward.png" />
    <install as="imp/themes/default/graphics/forwarded.png" name="themes/default/graphics/forwarded.png" />
    <install as="imp/themes/default/graphics/gallery.png" name="themes/default/graphics/gallery.png" />
+   <install as="imp/themes/default/graphics/group.png" name="themes/default/graphics/group.png" />
    <install as="imp/themes/default/graphics/ico_message_off.png" name="themes/default/graphics/ico_message_off.png" />
    <install as="imp/themes/default/graphics/imp.png" name="themes/default/graphics/imp.png" />
    <install as="imp/themes/default/graphics/info_icon.png" name="themes/default/graphics/info_icon.png" />
@@ -3585,15 +3603,35 @@
   </release>
   <release>
    <version>
-    <release>6.2.0alpha2</release>
+    <release>6.2.0beta1</release>
     <api>6.2.0</api></version>
    <stability>
-    <release>alpha</release>
-    <api>alpha</api></stability>
-   <date>2014-05-05</date>
+    <release>beta</release>
+    <api>beta</api></stability>
+   <date>2014-05-21</date>
    <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
    <notes>
-* 
+* [jan] Add Japanese help file (Hiromi Kimura &lt;hiromi@tac.tsukuba.ac.jp&gt;).
+* [mms] Add automatic configuration of remote account connection details.
+* [mms] Support LMTP servers when sending mail.
+* [mms] Fix regression where creating a mailbox that is currently a container would not subscribe to that mailbox.
+* [mms] Add checks to ensure that saved session expiration message was created by the user rather than an outside source.
+* [mms] Improved handling for multiple expand/collapse actions in the dynamic folder list (Bug #13170).
+* [mms] Provide visual UI info to user that file is uploading when drag/drop attachments in dynamic view.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>6.2.0beta2</release>
+    <api>6.2.0</api></version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api></stability>
+   <date>2014-05-21</date>
+   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
+   <notes>
+* [mms] Allow drag/drop to HTML compose body work with text data (Firefox only).
+* [mms] Cache mailbox exists results in the current access.
    </notes>
   </release>
  </changelog>

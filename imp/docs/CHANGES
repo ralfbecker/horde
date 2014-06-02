@@ -2,6 +2,25 @@
 v6.2.0-git
 ----------
 
+[mms] Allow drag/drop to HTML compose body work with text data.
+[mms] Cache mailbox exists results in the current access.
+
+
+-----------
+v6.2.0beta1
+-----------
+
+[jan] Add Japanese help file (Hiromi Kimura <hiromi@tac.tsukuba.ac.jp>).
+[mms] Add automatic configuration of remote account connection details.
+[mms] Support LMTP servers when sending mail.
+[mms] Fix regression where creating a mailbox that is currently a container
+      would not subscribe to that mailbox.
+[mms] Add checks to ensure that saved session expiration message was created by
+      the user rather than an outside source.
+[mms] Improved handling for multiple expand/collapse actions in the dynamic
+      folder list (Bug #13170).
+[mms] Provide visual UI info to user that file is uploading when drag/drop
+      attachments in dynamic view.
 
 
 ------------

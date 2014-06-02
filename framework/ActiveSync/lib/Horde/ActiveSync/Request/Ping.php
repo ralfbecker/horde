@@ -103,6 +103,7 @@ class Horde_ActiveSync_Request_Ping extends Horde_ActiveSync_Request_Base
     protected function _handle()
     {
         $now = time();
+        $forceCacheSave = false;
         $this->_logger->info(sprintf(
             '[%s] Handling PING command received at timestamp: %s.',
             $this->_procid,
@@ -130,9 +131,9 @@ class Horde_ActiveSync_Request_Ping extends Horde_ActiveSync_Request_Base
         if (!$heartbeat = $collections->getHeartbeat()) {
             $heartbeat = !empty($this->_pingSettings['heartbeatdefault'])
                 ? $this->_pingSettings['heartbeatdefault']
-                : 10;
+                : 60;
             $this->_logger->info(sprintf(
-                '[%s] Using cached heartbeat of %s',
+                '[%s] Cached heartbeat is %s',
                 $this->_procid,
                 $heartbeat));
         }
@@ -161,9 +162,12 @@ class Horde_ActiveSync_Request_Ping extends Horde_ActiveSync_Request_Base
                     $heartbeat = $this->_pingSettings['heartbeatdefault'];
                 }
                 $collections->setHeartbeat(array('hbinterval' => $heartbeat));
+                $forceCacheSave = true;
                 $this->_decoder->getElementEndTag();
             }
-
+            $this->_logger->info(sprintf(
+                '[%s] Actual heartbeat value in use is %s.',
+                $this->_procid, $heartbeat));
             if ($this->_decoder->getElementStartTag(self::FOLDERS)) {
                 while ($this->_decoder->getElementStartTag(self::FOLDER)) {
                     $collection = array();
@@ -249,7 +253,7 @@ class Horde_ActiveSync_Request_Ping extends Horde_ActiveSync_Request_Base
                         $this->_logger->warn(sprintf(
                             '[%s] Version is >= 14.0 returning status code 132 since we have no PINGABLE collections.',
                             $this->_procid));
-                        $this->_statusCode = Horde_ActiveSync_Status::STATEFILE_NOT_FOUND;
+                        $this->_statusCode = self::STATUS_NEEDSYNC;
                         $this->_handleGlobalError();
                         return true;
                     }
@@ -257,6 +261,8 @@ class Horde_ActiveSync_Request_Ping extends Horde_ActiveSync_Request_Base
             } elseif ($changes) {
                 $collections->save();
                 $this->_statusCode = self::STATUS_NEEDSYNC;
+            } elseif ($forceCacheSave) {
+                $collections->save();
             }
         }
 

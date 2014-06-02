@@ -1363,7 +1363,7 @@
    <configswitch name="type" desc="What method should we use for sending
    mail?">sendmail
     <case name="null" desc="Disable mailing" />
-    <case name="sendmail" desc="Use the local sendmail binary">
+    <case name="sendmail" desc="Local sendmail binary">
      <configsection name="params">
       <configstring name="sendmail_path" required="false" desc="The location
       of the sendmail binary on the filesystem
@@ -1378,13 +1378,13 @@
       blank, the system default is used)."></configstring>
      </configsection>
     </case>
-    <case name="smtp" desc="Use a SMTP server (HIGHLY RECOMMENDED)">
+    <case name="smtp" desc="SMTP server (HIGHLY RECOMMENDED)">
      <configsection name="params">
       <configstring name="host" required="false" desc="The server to connect
       to [localhost]"/>
       <configinteger name="port" required="false" desc="The port to connect
       to [25]. This is HIGHLY RECOMMENDED to be 587, the mail submission port.
-      (Sending mail via port 25 is DEPRECATED.)"/>
+      (RFC 6409/STD 72; sending mail via port 25 is DEPRECATED.)"/>
       <configstring name="localhost" required="false" desc="The local hostname
       / domain [localhost]"/>
       <configenum name="auth" desc="Authenticate to SMTP server?">false
@@ -1397,6 +1397,8 @@
       for SMTP auth. If empty, uses the Horde authentication username."/>
       <configstring name="password" required="false" desc="The password to use
       for SMTP auth. If empty, uses the Horde authentication password."/>
+      <configboolean name="lmtp" required="false" desc="Is this an LMTP
+      (Local Mail Transfer Protocol) server?">false</configboolean>
      </configsection>
     </case>
    </configswitch>
@@ -1413,6 +1415,11 @@
  <configtab name="session" desc="Session Handler">
   <configsection name="sessionhandler">
    <configheader>Session Handler Settings</configheader>
+   <configdescription>
+    &lt;strong&gt;Unless you are running Horde on a PHP cluster, there is NO
+    reason to use any session handler backend other than Builtin (i.e. session
+    data stored on local filesystem).&lt;/strong&gt;
+   </configdescription>
    <configswitch name="type" desc="What sessionhandler driver should we
    use?">Builtin
     <case name="Builtin" desc="Use the default PHP session handler (file-based
@@ -2150,7 +2157,7 @@
        <configswitch name="type" desc="Select the authentication methods that
        should be supported.">basic
          <case name="basic" desc="HTTP Basic"/>
-         <case name="cert" desc="Cient Certificates">
+         <case name="cert" desc="Client Certificates">
            <configsection name="params">
              <configstring name="username_field" desc="The X509 field containing the username">
              SSL_CLIENT_S_DN_CN</configstring>

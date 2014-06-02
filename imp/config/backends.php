@@ -161,6 +161,7 @@
  *                   used by the Horde-wide SMTP configuration (only if those
  *                   fields are not defined for this backend in IMP).
  *     - host: [*] (string) SMTP server host.
+ *     - lmtp: [*] (boolean) If true, the server uses the LMTP protocol.
  *     - localhost: [*] (string) The local hostname.
  *     - password: (string) Password to use for SMTP server authentication.
  *     - port: [*] (integer) SMTP server port.
@@ -390,14 +391,15 @@ $servers['advanced'] = array(
     //    'debug' => false,
     //    'horde_auth' => false,
     //    'host' => 'smtp.example.com',
+    //    'lmtp' => false,
     //    'localhost' => 'localhost',
     //    'password' => null,
     //    /* Mail from a MUA SHOULD be sent via the mail submission port (587)
-    //     * rather than the MTA port (25). Note that mail submission
-    //     * REQUIRES some method of authentication (whether explicit
-    //     * user/password credentials or configuring the mail submission
-    //     * agent to automatically authenticate this host based on the
-    //     * network location). */
+    //     * rather than the MTA port (25). (See RFC 6409/STD 72).
+    //     * Note that mail submission REQUIRES some method of authentication
+    //     * (whether explicit user/password credentials or configuring the
+    //     * mail submission agent to automatically authenticate this host
+    //     * based on the network location). */
     //    'port' => 587,
     //    'username' => null
     ),

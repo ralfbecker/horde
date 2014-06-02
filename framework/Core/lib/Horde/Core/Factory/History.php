@@ -24,7 +24,7 @@
 class Horde_Core_Factory_History extends Horde_Core_Factory_Injector
 {
     /**
-     * @return Horde_History
+     * @return Horde_Core_History
      * @throws Horde_Exception
      */
     public function create(Horde_Injector $injector)
@@ -35,7 +35,6 @@ class Horde_Core_Factory_History extends Horde_Core_Factory_Injector
         $driver = empty($conf['history']['driver'])
             ? 'Sql'
             : $conf['history']['driver'];
-        $params = Horde::getDriverConfig('history', $driver);
 
         $history = null;
         $user = $injector->getInstance('Horde_Registry')->getAuth();
@@ -65,6 +64,7 @@ class Horde_Core_Factory_History extends Horde_Core_Factory_Injector
             $history = new Horde_History_Null($user);
         } elseif ($cache = $injector->getInstance('Horde_Cache')) {
             $history->setCache($cache);
+            $history = new Horde_Core_History($history);
         }
 
         return $history;

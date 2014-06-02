@@ -23,10 +23,9 @@
   <email>mrubinsk@horde.org</email>
   <active>yes</active>
  </developer>
- <date>2013-07-16</date>
- <time>19:27:35</time>
+ <date>2014-06-02</date>
  <version>
-  <release>2.0.8</release>
+  <release>2.0.9</release>
   <api>1.1.0</api>
  </version>
  <stability>
@@ -35,7 +34,7 @@
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
  <notes>
-* 
+* [jan] Fix detecting the current DST rule from certain VTIMEZONE components (Bug #13223).
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -347,6 +346,8 @@
         <file name="arsenal32FC.txt" role="test" />
         <file name="AuthorChats.ics" role="test" />
         <file name="AuthorChats.txt" role="test" />
+        <file name="Brisbane.ics" role="test" />
+        <file name="Brisbane.txt" role="test" />
         <file name="events.ics" role="test" />
         <file name="events.txt" role="test" />
         <file name="exchange.ics" role="test" />
@@ -631,6 +632,8 @@
    <install as="Horde/Icalendar/fixtures/vTimezone/arsenal32FC.txt" name="test/Horde/Icalendar/fixtures/vTimezone/arsenal32FC.txt" />
    <install as="Horde/Icalendar/fixtures/vTimezone/AuthorChats.ics" name="test/Horde/Icalendar/fixtures/vTimezone/AuthorChats.ics" />
    <install as="Horde/Icalendar/fixtures/vTimezone/AuthorChats.txt" name="test/Horde/Icalendar/fixtures/vTimezone/AuthorChats.txt" />
+   <install as="Horde/Icalendar/fixtures/vTimezone/Brisbane.ics" name="test/Horde/Icalendar/fixtures/vTimezone/Brisbane.ics" />
+   <install as="Horde/Icalendar/fixtures/vTimezone/Brisbane.txt" name="test/Horde/Icalendar/fixtures/vTimezone/Brisbane.txt" />
    <install as="Horde/Icalendar/fixtures/vTimezone/events.ics" name="test/Horde/Icalendar/fixtures/vTimezone/events.ics" />
    <install as="Horde/Icalendar/fixtures/vTimezone/events.txt" name="test/Horde/Icalendar/fixtures/vTimezone/events.txt" />
    <install as="Horde/Icalendar/fixtures/vTimezone/exchange.ics" name="test/Horde/Icalendar/fixtures/vTimezone/exchange.ics" />
@@ -1121,10 +1124,23 @@ Lots of improvements, bugfixes and support for more fields and members of the iC
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2013-07-16</date>
+   <date>2014-05-14</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
-* 
+* [jan] Export VTIMEZONE components only once per TZID (Bug #12988).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.0.9</release>
+    <api>1.1.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-06-02</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [jan] Fix detecting the current DST rule from certain VTIMEZONE components (Bug #13223).
    </notes>
   </release>
  </changelog>

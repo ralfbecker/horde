@@ -1435,33 +1435,33 @@ class Horde_Mime_Part implements ArrayAccess, Countable, Serializable
      */
     public function getBytes($approx = false)
     {
-        $bytes = 0;
-
-        if (isset($this->_bytes)) {
-            $bytes = $this->_bytes;
-
-            /* Base64 transfer encoding is approx. 33% larger than original
-             * data size (RFC 2045 [6.8]). */
-            if ($approx && ($this->_transferEncoding == 'base64')) {
-                $bytes *= 0.75;
+        if ($this->getPrimaryType() == 'multipart') {
+            if (isset($this->_bytes)) {
+                return $this->_bytes;
             }
-        } elseif ($this->getPrimaryType() == 'multipart') {
+
+            $bytes = 0;
             reset($this->_parts);
             while (list(,$part) = each($this->_parts)) {
                 $bytes += $part->getBytes($approx);
             }
-        } elseif ($this->_contents) {
-            fseek($this->_contents, 0, SEEK_END);
-            $bytes = ftell($this->_contents);
-
-            /* Base64 transfer encoding is approx. 33% larger than original
-             * data size (RFC 2045 [6.8]). */
-            if ($approx && ($this->_transferEncoding == 'base64')) {
-                $bytes *= 0.75;
-            }
+            return $bytes;
         }
 
-        return $bytes;
+        if ($this->_contents) {
+            fseek($this->_contents, 0, SEEK_END);
+            $bytes = ftell($this->_contents);
+        } else {
+            $bytes = $this->_bytes;
+        }
+
+        /* Base64 transfer encoding is approx. 33% larger than original
+         * data size (RFC 2045 [6.8]). */
+        if ($approx && ($this->_transferEncoding == 'base64')) {
+            $bytes *= 0.75;
+        }
+
+        return intval($bytes);
     }
 
     /**

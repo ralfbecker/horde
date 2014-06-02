@@ -132,6 +132,13 @@ class Horde_ActiveSync_Collections implements IteratorAggregate
     protected $_changes;
 
     /**
+     * Flag to indicate the client is requesting a hanging SYNC.
+     *
+     * @var boolean
+     */
+    protected $_hangingSync = false;
+
+    /**
      * Const'r
      *
      * @param Horde_ActiveSync_SyncCache $cache  The SyncCache.
@@ -208,6 +215,7 @@ class Horde_ActiveSync_Collections implements IteratorAggregate
             return $this->_cache->$property;
         case 'importedChanges':
         case 'shortSyncRequest':
+        case 'hangingSync':
             $p = '_' . $property;
             return $this->$p;
         }
@@ -223,6 +231,7 @@ class Horde_ActiveSync_Collections implements IteratorAggregate
         switch ($property) {
         case 'importedChanges':
         case 'shortSyncRequest':
+        case 'hangingSync':
             $p = '_' . $property;
             $this->$p = $value;
             return;
@@ -260,7 +269,7 @@ class Horde_ActiveSync_Collections implements IteratorAggregate
     }
 
     /**
-     * Add a new populated collection array to this collection.
+     * Add a new populated collection array to the sync cache.
      *
      * @param array $collection        The collection array.
      * @param boolean $requireSyncKey  Attempt to read missing synckey from
@@ -548,7 +557,7 @@ class Horde_ActiveSync_Collections implements IteratorAggregate
      */
     public function canDoLoopingSync()
     {
-        return !$this->_importedChanges && ($this->_shortSyncRequest || $this->_cache->hbinterval !== false || $this->_cache->wait !== false);
+        return $this->_hangingSync && !$this->_importedChanges && ($this->_shortSyncRequest || $this->_cache->hbinterval !== false || $this->_cache->wait !== false);
     }
 
     /**
@@ -605,7 +614,9 @@ class Horde_ActiveSync_Collections implements IteratorAggregate
         Horde_ActiveSync_Message_Folder $folder, $update = false)
     {
         $this->_cache->updateFolder($folder);
-
+        $cols = $this->_cache->getCollections(false);
+        $cols[$folder->serverid]['serverid'] = $folder->_serverid;
+        $this->_cache->updateCollection($cols[$folder->serverid]);
         if ($update) {
             $this->_as->state->updateServerIdInState($folder->serverid, $folder->_serverid);
         }
@@ -807,7 +818,7 @@ class Horde_ActiveSync_Collections implements IteratorAggregate
     public function canSendEmptyResponse()
     {
         return !$this->_importedChanges &&
-            ($this->_cache->wait !== false || $this->_cache->hbinterval !== false);
+            ($this->_hangingSync && ($this->_cache->wait !== false || $this->_cache->hbinterval !== false));
     }
 
     /**
@@ -869,9 +880,9 @@ class Horde_ActiveSync_Collections implements IteratorAggregate
             !is_null($filter) &&
             $cc[$id]['filtertype'] != $filter) {
 
-            $this->_cache->removeCollection($id);
+            $this->_cache->removeCollection($id, true);
             $this->_cache->save();
-            $this->_logger->info('Invalidating SYNCKEY - found updated filtertype');
+            $this->_logger->info('Invalidating SYNCKEY and removing collection - found updated filtertype');
 
             return false;
         }
@@ -1086,6 +1097,11 @@ class Horde_ActiveSync_Collections implements IteratorAggregate
                         $this->_procid,
                         $e->getMessage())
                     );
+                    // If we are missing a folder, we should clear the PING
+                    // cache also, to be sure it picks up any hierarchy changes
+                    // since most clients don't seem smart enough to figure this
+                    // out on their own.
+                    $this->resetPingCache();
                     return self::COLLECTION_ERR_FOLDERSYNC_REQUIRED;
 
                 } catch (Horde_ActiveSync_Exception $e) {
@@ -1170,6 +1186,23 @@ class Horde_ActiveSync_Collections implements IteratorAggregate
                     $id));
                 $this->_cache->removePingableCollection($id);
             }
+        }
+    }
+
+    /**
+     * Force reset all collection's PINGABLE flag. Used to force client
+     * to issue a non-empty PING request.
+     *
+     */
+    public function resetPingCache()
+    {
+        $collections = $this->_cache->getCollections(false);
+        foreach ($collections as $id => $collection) {
+            $this->_logger->info(sprintf(
+                'UNSETTING collection %s (%s) PINGABLE flag.',
+                $collection['serverid'],
+                $id));
+            $this->_cache->removePingableCollection($id);
         }
     }
 

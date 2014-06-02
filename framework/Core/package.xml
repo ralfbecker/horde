@@ -28,18 +28,19 @@
   <email>mrubinsk@horde.org</email>
   <active>yes</active>
  </developer>
- <date>2014-05-02</date>
+ <date>2014-05-24</date>
  <version>
-  <release>2.12.0alpha2</release>
+  <release>2.12.0beta2</release>
   <api>2.12.0</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
  <notes>
-* 
+* [mjr] Fix copying forwarded messages to Sent mail folder when using EAS.
+* [mjr] Fix generating From address when sending email via ActiveSync when personal part must be quoted (Bug# 13208).
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -304,6 +305,7 @@
        <file name="Auth.php" role="php" />
        <file name="Connector.php" role="php" />
        <file name="Driver.php" role="php" />
+       <file name="Mail.php" role="php" />
       </dir> <!-- /lib/Horde/Core/ActiveSync -->
       <dir name="Ajax">
        <dir name="Application">
@@ -616,6 +618,7 @@
       <file name="Browser.php" role="php" />
       <file name="Bundle.php" role="php" />
       <file name="Cli.php" role="php" />
+      <file name="History.php" role="php" />
       <file name="Hooks.php" role="php" />
       <file name="HordeMap.php" role="php" />
       <file name="LoginTasks.php" role="php" />
@@ -1127,7 +1130,7 @@
    <package>
     <name>Horde_Mime</name>
     <channel>pear.horde.org</channel>
-    <min>2.0.0</min>
+    <min>2.4.0</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
    </package>
@@ -1186,13 +1189,6 @@
     <min>2.0.0</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
-   </package>
-   <package>
-    <name>Horde_Smtp</name>
-    <channel>pear.horde.org</channel>
-    <min>1.0.0</min>
-    <max>2.0.0alpha1</max>
-    <exclude>2.0.0alpha1</exclude>
    </package>
    <package>
     <name>Horde_Support</name>
@@ -1381,7 +1377,7 @@
    <package>
     <name>Horde_Mail</name>
     <channel>pear.horde.org</channel>
-    <min>2.1.0</min>
+    <min>2.3.0</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
    </package>
@@ -1720,6 +1716,7 @@
    <install as="Horde/Core/Browser.php" name="lib/Horde/Core/Browser.php" />
    <install as="Horde/Core/Bundle.php" name="lib/Horde/Core/Bundle.php" />
    <install as="Horde/Core/Cli.php" name="lib/Horde/Core/Cli.php" />
+   <install as="Horde/Core/History.php" name="lib/Horde/Core/History.php" />
    <install as="Horde/Core/Hooks.php" name="lib/Horde/Core/Hooks.php" />
    <install as="Horde/Core/HordeMap.php" name="lib/Horde/Core/HordeMap.php" />
    <install as="Horde/Core/LoginTasks.php" name="lib/Horde/Core/LoginTasks.php" />
@@ -1733,6 +1730,7 @@
    <install as="Horde/Core/ActiveSync/Auth.php" name="lib/Horde/Core/ActiveSync/Auth.php" />
    <install as="Horde/Core/ActiveSync/Connector.php" name="lib/Horde/Core/ActiveSync/Connector.php" />
    <install as="Horde/Core/ActiveSync/Driver.php" name="lib/Horde/Core/ActiveSync/Driver.php" />
+   <install as="Horde/Core/ActiveSync/Mail.php" name="lib/Horde/Core/ActiveSync/Mail.php" />
    <install as="Horde/Core/ActiveSync/Imap/Factory.php" name="lib/Horde/Core/ActiveSync/Imap/Factory.php" />
    <install as="Horde/Core/ActiveSync/Logger/Factory.php" name="lib/Horde/Core/ActiveSync/Logger/Factory.php" />
    <install as="Horde/Core/Ajax/Application.php" name="lib/Horde/Core/Ajax/Application.php" />
@@ -3384,15 +3382,33 @@
   </release>
   <release>
    <version>
-    <release>2.12.0alpha2</release>
+    <release>2.12.0beta1</release>
     <api>2.12.0</api></version>
    <stability>
-    <release>alpha</release>
-    <api>alpha</api></stability>
-   <date>2014-05-02</date>
+    <release>beta</release>
+    <api>beta</api></stability>
+   <date>2014-05-21</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
-* 
+* [mjr] Fix tracking bad login count and honoring the lock setting when using Application auth backend.
+* [mms] Support LMTP servers when sending mail.
+* [mms] Add Horde_Registry#hasLink() (Bug #13175).
+* [mjr] Fix returning mailbox list for ActiveSync clients when not using IMAP subscriptions (Bug #13177).
+* [jan] Update Hungarian translation (Andras Galos &lt;galosa@netinform.hu&gt;).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.12.0beta2</release>
+    <api>2.12.0</api></version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api></stability>
+   <date>2014-05-24</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mjr] Fix copying forwarded messages to Sent mail folder when using EAS.
+* [mjr] Fix generating From address when sending email via ActiveSync when personal part must be quoted (Bug# 13208).
    </notes>
   </release>
  </changelog>

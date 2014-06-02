@@ -239,7 +239,17 @@ class Ingo_Storage_Filters_Sql extends Ingo_Storage_Filters
             $newrule = $this->_filters[$id];
             $newrule['name'] = sprintf(_("Copy of %s"), $this->_filters[$id]['name']);
             $this->addRule($newrule, false);
-            $this->ruleUp(count($this->_filters) - 1, count($this->_filters) - $id - 2);
+
+            $rules = array();
+            foreach (array_slice(array_keys($this->_filters), 0, -1) as $key) {
+                $rules[] = $key;
+                if ($key == $id) {
+                    $end = end($this->_filters);
+                    $rules[] = key($this->_filters);
+                }
+            }
+
+            $this->sort($rules);
             return true;
         }
 

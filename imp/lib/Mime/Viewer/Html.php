@@ -347,6 +347,13 @@ class IMP_Mime_Viewer_Html extends Horde_Mime_Viewer_Html
             }
             break;
 
+        case 'body':
+            $style = $node->hasAttribute('style')
+                ? (rtrim($node->getAttribute('style'), ';') . ';')
+                : '';
+            $node->setAttribute('style', $style . 'width:auto !important');
+            break;
+
         case 'img':
         case 'input':
             if ($node->hasAttribute('src')) {
@@ -528,7 +535,8 @@ class IMP_Mime_Viewer_Html extends Horde_Mime_Viewer_Html
         }
 
         if (strlen($css_text)) {
-            $style_elt = $doc->createElement('style', $css_text);
+            $style_elt = $doc->createElement('style');
+            $style_elt->appendChild(new DOMText($css_text));
             $style_elt->setAttribute('type', 'text/css');
             $headelt->appendChild($style_elt);
         }
@@ -537,7 +545,8 @@ class IMP_Mime_Viewer_Html extends Horde_Mime_Viewer_Html
          * output - then we simply need to change the type attribute to
          * text/css, and the browser should load the definitions on-demand. */
         if (strlen($blocked_text)) {
-            $block_elt = $doc->createElement('style', $blocked_text);
+            $block_elt = $doc->createElement('style');
+            $block_elt->appendChild(new DOMText($blocked_text));
             $block_elt->setAttribute('type', 'text/x-imp-cssblocked');
             $headelt->appendChild($block_elt);
         }

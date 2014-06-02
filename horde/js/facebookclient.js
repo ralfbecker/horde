@@ -1,11 +1,9 @@
 /**
  * Facebook client javascript.
  *
- * See the enclosed file COPYING for license information (GPL). If you
- * did not receive this file, see http://www.horde.org/licenses/gpl.
- *
- * @author Michael J. Rubinsky <mrubinsk@horde.org>
- * @package Horde
+ * @author     Michael J. Rubinsky <mrubinsk@horde.org>
+ * @copyright  2014 Horde LLC
+ * @license    http://www.horde.org/licenses/lgpl LGPL-2
  */
 
 var Horde_Facebook = Class.create({

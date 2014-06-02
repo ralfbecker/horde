@@ -84,7 +84,8 @@
  *                                               namespace information appended.
  * @property-read string $namespace_delimiter  The delimiter for this
  *                                             namespace.
- * @property-read array $namespace_info  See IMP_Imap::getNamespace().
+ * @property-read Horde_Imap_Client_Data_Namespace $namespace_info  Namespace
+ *                                                                  info.
  * @property-read boolean $nonimap  Is this a non-IMAP element?
  * @property-read IMP_Mailbox $parent  The parent element. Returns null if no
  *                                     parent. (Base of tree is returned as
@@ -386,19 +387,7 @@ class IMP_Mailbox
             return $injector->getInstance('IMP_Search')->isVFolder($this->_mbox, true);
 
         case 'exists':
-            if ($this->search) {
-                return ($ob = $this->getSearchOb()) && $ob->enabled;
-            }
-
-            if ($elt = $this->tree_elt) {
-                return !$elt->container;
-            }
-
-            try {
-                return (bool)$this->imp_imap->listMailboxes($this->imap_mbox_ob, null, array('flat' => true));
-            } catch (IMP_Imap_Exception $e) {
-                return false;
-            }
+            return $injector->getInstance('IMP_Mailbox_SessionCache')->exists($this);
 
         case 'form_to':
             return $this->formTo($this->_mbox);
@@ -485,14 +474,14 @@ class IMP_Mailbox
              * If a non-default namespace is empty, then we must always use
              * default namespace. */
             if (!is_null($empty_ns) &&
-                ($def_ns['name'] == $empty_ns['name'])) {
+                ($def_ns->name == $empty_ns->name)) {
                 return $this;
             }
 
             $ns_info = $this->namespace_info;
 
             if (is_null($ns_info) || !is_null($empty_ns)) {
-                return self::get($def_ns['name'] . $this->_mbox);
+                return self::get($def_ns->name . $this->_mbox);
             }
 
             return $this;
@@ -501,7 +490,7 @@ class IMP_Mailbox
             $ns_info = $this->namespace_info;
             return is_null($ns_info)
                 ? ''
-                : $ns_info['delimiter'];
+                : $ns_info->delimiter;
 
         case 'namespace_info':
             return $this->imp_imap->getNamespace(strlen($this) ? $this->_mbox : IMP_Imap::NS_DEFAULT);
@@ -786,7 +775,9 @@ class IMP_Mailbox
         /* Subscribe, if requested. */
         if ((!isset($opts['subscribe']) && $prefs->getValue('subscribe')) ||
             !empty($opts['subscribe'])) {
-            $this->subscribe(true);
+            try {
+                $imp_imap->subscribeMailbox($this->_mbox, true);
+            } catch (IMP_Imap_Exception $e) {}
         }
 
         /* Update the mailbox tree. */
@@ -1307,8 +1298,8 @@ class IMP_Mailbox
         } else {
             $ns_info = $this->namespace_info;
             $new = strlen($this)
-                ? ($this->_mbox . $ns_info['delimiter'] . $new)
-                : $ns_info['name'] . $new;
+                ? ($this->_mbox . $ns_info->delimiter . $new)
+                : $ns_info->name . $new;
         }
 
         return self::get($new);
@@ -1406,13 +1397,13 @@ class IMP_Mailbox
         $empty_ns = $imp_imap->getNamespace('');
 
         if (!is_null($empty_ns) &&
-            (strpos($mbox, $empty_ns['delimiter']) === 0)) {
+            (strpos($mbox, $empty_ns->delimiter) === 0)) {
             /* Prefixed with delimiter => from empty namespace. */
-            return substr($mbox, strlen($empty_ns['delimiter']));
+            return substr($mbox, strlen($empty_ns->delimiter));
         } elseif ($imp_imap->getNamespace($mbox, true) === null) {
             /* No namespace prefix => from personal namespace. */
             $def_ns = $imp_imap->getNamespace($imp_imap::NS_DEFAULT);
-            return $def_ns['name'] . $mbox;
+            return $def_ns->name . $mbox;
         }
 
         return $mbox;
@@ -1440,14 +1431,14 @@ class IMP_Mailbox
             $imp_imap = $injector->getInstance('IMP_Factory_Imap')->create();
             $def_ns = $imp_imap->getNamespace($imp_imap::NS_DEFAULT);
 
-            if ($ns['name'] == $def_ns['name']) {
+            if ($ns->name == $def_ns->name) {
                 /* From personal namespace => strip namespace. */
-                $ret = substr($mbox_str, strlen($def_ns['name']));
+                $ret = substr($mbox_str, strlen($def_ns->name));
             } else {
                 $empty_ns = $imp_imap->getNamespace('');
-                if ($ns['name'] == $empty_ns['name']) {
+                if ($ns->name == $empty_ns->name) {
                     /* From empty namespace => prefix with delimiter. */
-                    $ret = $empty_ns['delimiter'] . $mbox_str;
+                    $ret = $empty_ns->delimiter . $mbox_str;
                 }
             }
         }
@@ -1541,16 +1532,14 @@ class IMP_Mailbox
 
         if (!is_null($ns_info)) {
             /* Return translated namespace information. */
-            if (!empty($ns_info['translation']) && $this->namespace) {
-                $cache->setDisplay($this->_mbox, $ns_info['translation']);
-                return $ns_info['translation'];
+            if (strlen($ns_info->translation) && $this->namespace) {
+                $cache->setDisplay($this->_mbox, $ns_info->translation);
+                return $ns_info->translation;
             }
 
-            /* Strip namespace information. */
-            if (!empty($ns_info['name']) &&
-                ($ns_info['type'] == Horde_Imap_Client::NS_PERSONAL) &&
-                (substr($this->_mbox, 0, strlen($ns_info['name'])) == $ns_info['name'])) {
-                $out = substr($this->_mbox, strlen($ns_info['name']));
+            /* Strip personal namespace information. */
+            if ($ns_info->type === $ns_info::NS_PERSONAL) {
+                $out = $ns_info->stripNamespace($this->_mbox);
             }
         }
 
@@ -1604,7 +1593,7 @@ class IMP_Mailbox
                 (($key != 'INBOX') || ($this->_mbox == $out)) &&
                 strpos($this->_mbox, $key) === 0) {
                 $len = strlen($key);
-                if ((strlen($this->_mbox) == $len) || ($this->_mbox[$len] == (is_null($ns_info) ? '' : $ns_info['delimiter']))) {
+                if ((strlen($this->_mbox) == $len) || ($this->_mbox[$len] == (is_null($ns_info) ? '' : $ns_info->delimiter))) {
                     $out = substr_replace($this->_mbox, $val, 0, $len);
                     break;
                 }

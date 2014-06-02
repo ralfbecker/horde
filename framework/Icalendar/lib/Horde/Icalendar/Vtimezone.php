@@ -32,20 +32,22 @@ class Horde_Icalendar_Vtimezone extends Horde_Icalendar
     }
 
     /**
-     * Parse child components of the vTimezone component. Returns an
-     * array with the exact time of the time change as well as the
-     * 'from' and 'to' offsets around the change. Time is arbitrarily
-     * based on UTC for comparison.
+     * Parses child components of vTimezone component.
      *
-     * @param &$child TODO
-     * @param $year TODO
+     * Returns an array with the exact time of the time change as well as the
+     * 'from' and 'to' offsets around the change. Time is arbitrarily based on
+     * UTC for comparison.
      *
-     * @return TODO
+     * @param Horde_Icalendar_Standard|Horde_Icalendar_Daylight $child
+     *        A timezone component.
+     * @param integer $year
+     *        The latest year we are interested in.
+     *
+     * @return array  A list of hashes with "time", "from", and "to" elements.
      */
-    public function parseChild(&$child, $year)
+    public function parseChild($child, $year)
     {
-        // Make sure 'time' key is first for sort().
-        $result['time'] = 0;
+        $result['time'] = $result['end'] = 0;
 
         try {
             $t = $child->getAttribute('TZOFFSETFROM');
@@ -79,9 +81,10 @@ class Horde_Icalendar_Vtimezone extends Horde_Icalendar
             $rdates = $child->getAttributeValues('RDATE');
             foreach ($rdates as $rdate) {
                 if ($rdate['year'] == $year || $rdate['year'] == $year - 1) {
-                    $result['time'] = gmmktime(
-                    $start['hours'], $start['minutes'], $start['seconds'],
-                    $rdate['month'], $rdate['mday'], $rdate['year']);
+                    $result['time'] = $result['end'] = gmmktime(
+                        $start['hours'], $start['minutes'], $start['seconds'],
+                        $rdate['month'], $rdate['mday'], $rdate['year']
+                    );
                     $results[] = $result;
                 }
             }
@@ -92,7 +95,7 @@ class Horde_Icalendar_Vtimezone extends Horde_Icalendar
             $rrules = $child->getAttribute('RRULE');
         } catch (Horde_Icalendar_Exception $e) {
             if (!$results) {
-                $result['time'] = $start[0];
+                $result['time'] = $result['end'] = $start[0];
                 $results[] = $result;
             }
             return $results;
@@ -138,9 +141,7 @@ class Horde_Icalendar_Vtimezone extends Horde_Icalendar
                 break;
 
             case 'UNTIL':
-                if (intval($year) > intval(substr($t[1], 0, 4))) {
-                    return array();
-                }
+                $result['end'] = intval(substr($t[1], 0, 4));
                 break;
             }
         }
@@ -165,7 +166,7 @@ class Horde_Icalendar_Vtimezone extends Horde_Icalendar
         // of $month.
         if ($which < 0) {
             do {
-                $when += 60*60*24*7;
+                $when += 60 * 60 * 24 * 7;
             } while (intval(gmstrftime('%m', $when)) == $month);
         }
 

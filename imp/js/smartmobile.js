@@ -3,7 +3,7 @@
  *
  * @author     Michael Slusarz <slusarz@horde.org>
  * @copyright  2005-2014 Horde LLC
- * @license    GPLv2 (http://www.horde.org/licenses/gpl)
+ * @license    GPL-2 (http://www.horde.org/licenses/gpl)
  */
 var ImpMobile = {
 
@@ -93,7 +93,7 @@ var ImpMobile = {
         case 'compose':
             $('#imp-compose-to-addr,#imp-compose-cc-addr').empty();
             if (!IMP.conf.disable_compose) {
-                $('#imp-compose-cache').val('');
+                $('#imp-compose-cache,#imp-compose-hmac').val('');
                 ImpMobile.compose(data);
             }
             e.preventDefault();
@@ -1004,7 +1004,7 @@ var ImpMobile = {
      */
     compose: function(data)
     {
-        var cache, func,
+        var func,
             params = {},
             purl = data.options.parsedUrl;
 
@@ -1027,13 +1027,11 @@ var ImpMobile = {
         case 'reply_auto':
         case 'reply_list':
             func = 'getReplyData';
-            cache = '#imp-compose-cache';
             params.format = 'text';
             break;
 
         case 'forward_auto':
             func = 'smartmobileGetForwardData';
-            cache = '#imp-compose-cache';
             params.format = 'text';
             break;
 
@@ -1041,13 +1039,11 @@ var ImpMobile = {
             $('#imp-compose-form').hide();
             $('#imp-redirect-form').show();
             func = 'getRedirectData';
-            cache = '#imp-redirect-cache';
             break;
 
         case 'resume':
         case 'template':
             func = 'getResumeData';
-            cache = '#imp-compose-cache';
             params.format = 'text';
             break;
 
@@ -1060,7 +1056,6 @@ var ImpMobile = {
             func,
             $.extend(params, {
                 buid: purl.params.buid,
-                imp_compose: $(cache).val(),
                 type: purl.params.type,
                 view: purl.params.mbox
             }),
@@ -1466,7 +1461,12 @@ var ImpMobile = {
         if ((v = d['imp:compose'])) {
             $.fn[v.atclimit ? 'hide' : 'show'].call($('#imp-compose-attach-form'));
             if (v.cacheid) {
-                $($('#imp-redirect-form:visible').length ? '#imp-redirect-cache' : '#imp-compose-cache').val(v.cacheid);
+                if ($('#imp-redirect-form:visible').length) {
+                    $('#imp-redirect-cache').val(v.cacheid);
+                } else {
+                    $('#imp-compose-cache').val(v.cacheid);
+                    $('#imp-compose-hmac').val(v.hmac);
+                }
             }
         }
 

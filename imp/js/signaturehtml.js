@@ -3,19 +3,19 @@
  *
  * @author     Michael Slusarz <slusarz@horde.org>
  * @copyright  2014 Horde LLC
- * @license    GPLv2 (http://www.horde.org/licenses/gpl)
+ * @license    GPL-2 (http://www.horde.org/licenses/gpl)
  */
 
 var ImpHtmlSignaturePrefs = {
 
-    // Variables defined by other code: ready, sigs
+    // Variables defined by other code: editor, sigs
 
     changeIdentity: function(e)
     {
         switch (e.memo.pref) {
         case 'signature_html_select':
-            if (this.ready) {
-                CKEDITOR.instances.signature_html.setData(this.sigs[e.memo.i]);
+            if (this.editor) {
+                this.editor.setData(this.sigs[e.memo.i]);
             } else {
                 this.changeIdentity.bind(this, e).delay(0.1);
             }
@@ -67,11 +67,7 @@ var ImpHtmlSignaturePrefs = {
             }
         });
 
-        CKEDITOR.on('instanceReady', function(e) {
-            this.ready = true;
-        }.bind(this));
-
-        CKEDITOR.replace('signature_html', Object.clone(IMP.ckeditor_config));
+        this.editor = new IMP_Editor('signature_html', IMP.ckeditor_config);
     }
 
 };

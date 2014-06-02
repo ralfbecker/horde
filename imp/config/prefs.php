@@ -16,8 +16,8 @@ $prefGroups['identities'] = array(
     'desc' => _("Change the name, address, and signature that people see when they read and reply to your email."),
     'members' => array(
         'replyto_addr', 'alias_addr', 'tieto_addr', 'bcc_addr', 'signature',
-        'sig_dashes', 'signature_html_select', 'signature_show_compose',
-        'save_sent_mail', 'sent_mail_folder', 'sentmailselect'
+        'sig_dashes', 'signature_html_select', 'save_sent_mail',
+        'sent_mail_folder', 'sentmailselect'
     ),
     'type' => 'identities'
 );
@@ -611,10 +611,9 @@ $_prefs['compose_confirm'] = array(
 // details on configuration
 $_prefs['ckeditor_buttons'] = array(
     'value' => "[['Bold','Italic','Underline'],['Font','FontSize'],['TextColor','BGColor'],['Cut','Copy','Paste'],['Undo','Redo'],['Link','Unlink'],['Image','Table','Smiley','SpecialChar']]",
-    // Use the following line for a very basic set of buttons:
+    // Very basic set of buttons:
     // 'value' => "['Bold','Italic','-','NumberedList','BulletedList','-','Link','Unlink']",
-    // Use the following for a more advanced set of buttons (default for IMP
-    // < 6.2):
+    // More advanced set of buttons (default for IMP < 6.2):
     // 'value' => "[['Source','Maximize','-','Templates'],['Cut','Copy','Paste'],['Undo','Redo','-','Find','Replace','-','SelectAll','RemoveFormat'],'/',['NumberedList','BulletedList','-','Outdent','Indent','Blockquote'],['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock'],['Link','Unlink'],['Image','Flash','Table','HorizontalRule','Smiley','SpecialChar'],'/',['Styles','Format','Font','FontSize'],['Bold','Italic','Underline','Strike','-','Subscript','Superscript'],['TextColor','BGColor']]",
 );
 

@@ -250,7 +250,9 @@ abstract class Horde_Imap_Client_Base implements Serializable
         }
 
         $this->_params = $params;
-        $this->setParam('password', $params['password']);
+        if (isset($params['password'])) {
+            $this->setParam('password', $params['password']);
+        }
 
         $this->changed = true;
         $this->_initOb();
@@ -342,6 +344,12 @@ abstract class Horde_Imap_Client_Base implements Serializable
             );
         } elseif (is_null($val)) {
             unset($this->_init[$key]);
+
+            switch ($key) {
+            case 'capability':
+                unset($this->_init['cmdlength']);
+                break;
+            }
         } else {
             switch ($key) {
             case 'capability':
@@ -357,12 +365,23 @@ abstract class Horde_Imap_Client_Base implements Serializable
                     $val = array_diff_key($val, array_flip($ci));
                 }
 
-                /* RFC 5162 [1] - QRESYNC implies CONDSTORE and ENABLE, even
-                 * if not listed as a capability. */
+                /* RFC 7162 [3.2.3] - QRESYNC implies CONDSTORE and ENABLE,
+                 * even if not listed as a capability. */
                 if (!empty($val['QRESYNC'])) {
                     $val['CONDSTORE'] = true;
                     $val['ENABLE'] = true;
                 }
+
+                /* RFC 2683 [3.2.1.5] originally recommended that lines should
+                 * be limited to "approximately 1000 octets". However, servers
+                 * should allow a command line of at least "8000 octets".
+                 * RFC 7162 [4] updates the recommendation to 8192 octets.
+                 * As a compromise, assume all modern IMAP servers handle
+                 * ~2000 octets and, if CONDSTORE/ENABLE is supported, assume
+                 * they can handle ~8000 octets. */
+                $this->_init['cmdlength'] = (isset($val['CONDSTORE']) || isset($val['QRESYNC']))
+                    ? 8000
+                    : 2000;
                 break;
             }
 
@@ -387,7 +406,7 @@ abstract class Horde_Imap_Client_Base implements Serializable
      */
     protected function _enabled($exts, $status)
     {
-        /* RFC 5162 [1] - Enabling QRESYNC also implies enabling of
+        /* RFC 7162 [3.2.3] - Enabling QRESYNC also implies enabling of
          * CONDSTORE. */
         if (in_array('QRESYNC', $exts)) {
             $exts[] = 'CONDSTORE';
@@ -465,7 +484,8 @@ abstract class Horde_Imap_Client_Base implements Serializable
         /* Passwords may be stored encrypted. */
         switch ($key) {
         case 'password':
-            if ($this->_params[$key] instanceof Horde_Imap_Client_Base_Password) {
+            if (isset($this->_params[$key]) &&
+                ($this->_params[$key] instanceof Horde_Imap_Client_Base_Password)) {
                 return $this->_params[$key]->getPassword();
             }
 
@@ -552,6 +572,8 @@ abstract class Horde_Imap_Client_Base implements Serializable
      */
     public function queryCapability($capability)
     {
+        // @todo: Remove this catch(); if capability fails due to connection
+        // error, should throw an exception.
         try {
             $this->capability();
         } catch (Horde_Imap_Client_Exception $e) {
@@ -606,10 +628,11 @@ abstract class Horde_Imap_Client_Base implements Serializable
      */
     public function noop()
     {
-        // NOOP only useful if we are already authenticated.
-        if ($this->_isAuthenticated) {
-            $this->_noop();
+        if (!$this->_connection) {
+            // NOOP can be called in the unauthenticated state.
+            $this->_connect();
         }
+        $this->_noop();
     }
 
     /**
@@ -627,9 +650,15 @@ abstract class Horde_Imap_Client_Base implements Serializable
      *                           namespace list that are not broadcast by
      *                           the server. The namespaces must be UTF-8
      *                           strings.
+     * @param array $opts        Additional options:
+     *   - ob_return: (boolean) If true, returns a
+     *                Horde_Imap_Client_Namespace_List object instead of an
+     *                array.
      *
-     * @return array  An array of namespace information with the name as the
-     *                key (UTF-8) and the following values:
+     * @return mixed  A Horde_Imap_Client_Namespace_List object if
+     *                'ob_return', is true. Otherwise, an array of namespace
+     *                objects (@deprecated) with the name as the key (UTF-8)
+     *                and the following values:
      * <pre>
      *  - delimiter: (string) The namespace delimiter.
      *  - hidden: (boolean) Is this a hidden namespace?
@@ -645,62 +674,76 @@ abstract class Horde_Imap_Client_Base implements Serializable
      *
      * @throws Horde_Imap_Client_Exception
      */
-    public function getNamespaces(array $additional = array())
+    public function getNamespaces(
+        array $additional = array(), array $opts = array()
+    )
     {
         $additional = array_map('strval', $additional);
         $sig = hash(
             (PHP_MINOR_VERSION >= 4) ? 'fnv132' : 'sha1',
-            json_encode($additional)
+            json_encode($additional) . intval(empty($opts['ob_return']))
         );
 
         if (isset($this->_init['namespace'][$sig])) {
-            return $this->_init['namespace'][$sig];
-        }
+            $ns = $this->_init['namespace'][$sig];
+        } else {
+            $this->login();
 
-        $this->login();
+            $ns = $this->_getNamespaces();
 
-        $ns = $this->_getNamespaces();
-
-        /* Skip namespaces if we have already auto-detected them. Also, hidden
-         * namespaces cannot be empty. */
-        $to_process = array_diff(array_filter($additional, 'strlen'), array_keys($ns));;
-        if (!empty($to_process)) {
-            foreach ($this->listMailboxes($to_process, Horde_Imap_Client::MBOX_ALL, array('delimiter' => true)) as $val) {
-                $ns[$val] = array(
-                    'delimiter' => $val['delimiter'],
-                    'hidden' => true,
-                    'name' => $val,
-                    'translation' => '',
-                    'type' => Horde_Imap_Client::NS_SHARED
-                );
+            /* Skip namespaces if we have already auto-detected them. Also,
+             * hidden namespaces cannot be empty. */
+            $to_process = array_diff(array_filter($additional, 'strlen'), array_map('strlen', iterator_to_array($ns)));
+            if (!empty($to_process)) {
+                foreach ($this->listMailboxes($to_process, Horde_Imap_Client::MBOX_ALL, array('delimiter' => true)) as $val) {
+                    $ob = new Horde_Imap_Client_Data_Namespace();
+                    $ob->delimiter = $val['delimiter'];
+                    $ob->hidden = true;
+                    $ob->name = $val;
+                    $ob->type = $ob::NS_SHARED;
+                    $ns[$val] = $ob;
+                }
             }
+
+            if (!count($ns)) {
+                /* This accurately determines the namespace information of the
+                 * base namespace if the NAMESPACE command is not supported.
+                 * See: RFC 3501 [6.3.8] */
+                $mbox = $this->listMailboxes('', Horde_Imap_Client::MBOX_ALL, array('delimiter' => true));
+                $first = reset($mbox);
+
+                $ob = new Horde_Imap_Client_Data_Namespace();
+                $ob->delimiter = $first['delimiter'];
+                $ns[''] = $ob;
+            }
+
+            $this->_init['namespace'][$sig] = $ns;
+            $this->_setInit('namespace', $this->_init['namespace']);
         }
 
-        if (empty($ns)) {
-            /* This accurately determines the namespace information of the
-             * base namespace if the NAMESPACE command is not supported.
-             * See: RFC 3501 [6.3.8] */
-            $mbox = $this->listMailboxes('', Horde_Imap_Client::MBOX_ALL, array('delimiter' => true));
-            $first = reset($mbox);
-            $ns[''] = array(
-                'delimiter' => $first['delimiter'],
-                'hidden' => false,
-                'name' => '',
-                'translation' => '',
-                'type' => Horde_Imap_Client::NS_PERSONAL
+        if (!empty($opts['ob_return'])) {
+            return $ns;
+        }
+
+        /* @todo Remove for 3.0 */
+        $out = array();
+        foreach ($ns as $key => $val) {
+            $out[$key] = array(
+                'delimiter' => $val->delimiter,
+                'hidden' => $val->hidden,
+                'name' => $val->name,
+                'translation' => $val->translation,
+                'type' => $val->type
             );
         }
 
-        $this->_setInit('namespace', array_merge($this->_init['namespace'], array($sig => $ns)));
-
-        return $ns;
+        return $out;
     }
 
     /**
      * Get the NAMESPACE information from the IMAP server.
      *
-     * @return array  An array of namespace information. See getNamespaces()
-     *                for format.
+     * @return Horde_Imap_Client_Namespace_List  Namespace list object.
      *
      * @throws Horde_Imap_Client_Exception
      */
@@ -2133,8 +2176,8 @@ abstract class Horde_Imap_Client_Base implements Serializable
         $status_res = $this->status($this->_selected, Horde_Imap_Client::STATUS_MESSAGES | Horde_Imap_Client::STATUS_HIGHESTMODSEQ);
         if ($status_res['messages'] ||
             in_array(Horde_Imap_Client::SEARCH_RESULTS_SAVE, $options['results'])) {
-            /* RFC 4551 [3.1] - trying to do a MODSEQ SEARCH on a mailbox that
-             * doesn't support it will return BAD. */
+            /* RFC 7162 [3.1.2.2] - trying to do a MODSEQ SEARCH on a mailbox
+             * that doesn't support it will return BAD. */
             if (in_array('CONDSTORE', $options['_query']['exts']) &&
                 !$this->_mailboxOb()->getStatus(Horde_Imap_Client::STATUS_HIGHESTMODSEQ)) {
                 throw new Horde_Imap_Client_Exception(
@@ -2145,36 +2188,15 @@ abstract class Horde_Imap_Client_Base implements Serializable
 
             $ret = $this->_search($query, $options);
         } else {
-            $ret = array();
-
-            foreach ($options['results'] as $val) {
-                switch ($val) {
-                case Horde_Imap_Client::SEARCH_RESULTS_COUNT:
-                    $ret['count'] = 0;
-                    break;
-
-                case Horde_Imap_Client::SEARCH_RESULTS_MATCH:
-                    $ret['match'] = $this->getIdsOb();
-                    break;
-
-                case Horde_Imap_Client::SEARCH_RESULTS_MAX:
-                    $ret['max'] = null;
-                    break;
-
-                case Horde_Imap_Client::SEARCH_RESULTS_MIN:
-                    $ret['min'] = null;
-                    break;
-
-                case Horde_Imap_Client::SEARCH_RESULTS_MIN:
-                    if (isset($status_res['highestmodseq'])) {
-                        $ret['modseq'] = $status_res['highestmodseq'];
-                    }
-                    break;
-
-                case Horde_Imap_Client::SEARCH_RESULTS_RELEVANCY:
-                    $ret['relevancy'] = array();
-                    break;
-                }
+            $ret = array(
+                'count' => 0,
+                'match' => $this->getIdsOb(),
+                'max' => null,
+                'min' => null,
+                'relevancy' => array()
+            );
+            if (isset($status_res['highestmodseq'])) {
+                $ret['modseq'] = $status_res['highestmodseq'];
             }
         }
 
@@ -2445,8 +2467,8 @@ abstract class Horde_Imap_Client_Base implements Serializable
 
         if ($modseq_check &&
             !$mbox_ob->getStatus(Horde_Imap_Client::STATUS_HIGHESTMODSEQ)) {
-            /* RFC 4551 [3.1] - trying to do a MODSEQ FETCH on a mailbox that
-             * doesn't support it will return BAD. */
+            /* RFC 7162 [3.1.2.2] - trying to do a MODSEQ FETCH on a mailbox
+             * that doesn't support it will return BAD. */
             throw new Horde_Imap_Client_Exception(
                 Horde_Imap_Client_Translation::r("Mailbox does not support mod-sequences."),
                 Horde_Imap_Client_Exception::MBOXNOMODSEQ
@@ -2797,7 +2819,7 @@ abstract class Horde_Imap_Client_Base implements Serializable
                 throw new Horde_Imap_Client_Exception_NoSupportExtension('CONDSTORE');
             }
 
-            /* RFC 4551 [3.1] - trying to do a UNCHANGEDSINCE STORE on a
+            /* RFC 7162 [3.1.2.2] - trying to do a UNCHANGEDSINCE STORE on a
              * mailbox that doesn't support it will return BAD. */
             if (!$this->_mailboxOb()->getStatus(Horde_Imap_Client::STATUS_HIGHESTMODSEQ)) {
                 throw new Horde_Imap_Client_Exception(

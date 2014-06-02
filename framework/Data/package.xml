@@ -22,10 +22,9 @@
   <email>chuck@horde.org</email>
   <active>yes</active>
  </developer>
- <date>2013-05-28</date>
- <time>13:12:19</time>
+ <date>2014-05-21</date>
  <version>
-  <release>2.0.5</release>
+  <release>2.0.6</release>
   <api>2.0.0</api>
  </version>
  <stability>
@@ -942,7 +941,22 @@ Converted to package.xml 2.0 for pear.horde.org
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2013-05-28</date>
+   <date>2014-05-21</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [jan] Update Hungarian translation (Andras Galos &lt;galosa@netinform.hu&gt;).
+* [jan] Update Danish translation (Erling Preben Hansen &lt;erling@eph.dk&gt;).
+* [mms] Store CSV and TSV data in storage object, instead of temporary file, to ensure import can work across a PHP cluster.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.0.6</release>
+    <api>2.0.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-05-21</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
 * 

@@ -3,12 +3,10 @@
  *
  * @author     Michael Slusarz <slusarz@horde.org>
  * @copyright  2014 Horde LLC
- * @license    GPLv2 (http://www.horde.org/licenses/gpl)
+ * @license    GPL-2 (http://www.horde.org/licenses/gpl)
  */
 
 var IMP_JS = {
-
-    keydownhandler: null,
 
     /**
      * Use DOM manipulation to un-block images.
@@ -96,7 +94,7 @@ var IMP_JS = {
             return;
         }
 
-        var d = id.contentDocument || id.contentWindow.document;
+        var d = id.contentDocument || id.contentWindow.document, ev;
 
         id.onload = function(e) {
             this.iframeResize(e, id);
@@ -107,12 +105,16 @@ var IMP_JS = {
         d.write(data);
         d.close();
 
-        if (this.keydownhandler) {
-            if (d.addEventListener) {
-                d.addEventListener('keydown', this.keydownhandler.bindAsEventListener(this), false);
-            } else {
-                d.attachEvent('onkeydown', this.keydownhandler.bindAsEventListener(this));
-            }
+        ev = function(name, e) {
+            id.fire('IMP_JS:' + name, e);
+        };
+
+        if (d.addEventListener) {
+            d.addEventListener('click', ev.curry('htmliframe_click'), false);
+            d.addEventListener('keydown', ev.curry('htmliframe_keydown'), false);
+        } else {
+            d.attachEvent('onclick', ev.curry('htmliframe_click'));
+            d.attachEvent('onkeydown', ev.curry('htmliframe_keydown'));
         }
 
         id.setStyle({ overflowY: 'hidden' });
@@ -137,6 +139,8 @@ var IMP_JS = {
 
             h = Math.max(
                 body.offsetHeight,
+                // IE 8 only
+                (Prototype.Browser.IE && !document.addEventListener) ? body.scrollHeight : 0,
                 html.offsetHeight,
                 html.scrollHeight
             );

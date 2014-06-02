@@ -10,10 +10,10 @@
   <email>slusarz@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-05-03</date>
+ <date>2014-05-26</date>
  <version>
-  <release>2.19.6</release>
-  <api>2.19.0</api>
+  <release>2.21.0</release>
+  <api>2.21.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -21,7 +21,10 @@
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
  <notes>
-* 
+* [mms] Fix working with mailboxes containing entirely integers (Bug #13157).
+* [mms] Horde_Imap_Client_Base#getNamespaces() can now return a Horde_Imap_Client_Namespace_List object instead of an array.
+* [mms] Use the new command length limitations defined in RFC 7162.
+* [mms] A noop() call before authentication will now correctly throw an exception on a connection issue (Bug #13205).
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -91,6 +94,7 @@
         <file name="Envelope.php" role="php" />
         <file name="Fetch.php" role="php" />
         <file name="Format.php" role="php" />
+        <file name="Namespace.php" role="php" />
         <file name="Sync.php" role="php" />
         <file name="Thread.php" role="php" />
        </dir> <!-- /lib/Horde/Imap/Client/Data -->
@@ -126,6 +130,9 @@
        <dir name="Mailbox">
         <file name="List.php" role="php" />
        </dir> <!-- /lib/Horde/Imap/Client/Mailbox -->
+       <dir name="Namespace">
+        <file name="List.php" role="php" />
+       </dir> <!-- /lib/Horde/Imap/Client/Namespace -->
        <dir name="Password">
         <file name="Xoauth2.php" role="php" />
        </dir> <!-- /lib/Horde/Imap/Client/Password -->
@@ -197,6 +204,12 @@
       <file name="Horde_Imap_Client.po" role="data" />
      </dir> <!-- /locale/fr/LC_MESSAGES -->
     </dir> <!-- /locale/fr -->
+    <dir name="hu">
+     <dir name="LC_MESSAGES">
+      <file name="Horde_Imap_Client.mo" role="data" />
+      <file name="Horde_Imap_Client.po" role="data" />
+     </dir> <!-- /locale/hu/LC_MESSAGES -->
+    </dir> <!-- /locale/hu -->
     <dir name="ja">
      <dir name="LC_MESSAGES">
       <file name="Horde_Imap_Client.mo" role="data" />
@@ -257,6 +270,10 @@
         <file name="remote3.txt" role="test" />
         <file name="remote4.txt" role="test" />
        </dir> <!-- /test/Horde/Imap/Client/fixtures -->
+       <dir name="Namespace">
+        <file name="DataTest.php" role="test" />
+        <file name="ListTest.php" role="test" />
+       </dir> <!-- /test/Horde/Imap/Client/Namespace -->
        <dir name="Stub">
         <file name="DigestMD5.php" role="test" />
         <file name="Socket.php" role="test" />
@@ -466,6 +483,7 @@
    <install as="Horde/Imap/Client/Data/Envelope.php" name="lib/Horde/Imap/Client/Data/Envelope.php" />
    <install as="Horde/Imap/Client/Data/Fetch.php" name="lib/Horde/Imap/Client/Data/Fetch.php" />
    <install as="Horde/Imap/Client/Data/Format.php" name="lib/Horde/Imap/Client/Data/Format.php" />
+   <install as="Horde/Imap/Client/Data/Namespace.php" name="lib/Horde/Imap/Client/Data/Namespace.php" />
    <install as="Horde/Imap/Client/Data/Sync.php" name="lib/Horde/Imap/Client/Data/Sync.php" />
    <install as="Horde/Imap/Client/Data/Thread.php" name="lib/Horde/Imap/Client/Data/Thread.php" />
    <install as="Horde/Imap/Client/Data/Fetch/Pop3.php" name="lib/Horde/Imap/Client/Data/Fetch/Pop3.php" />
@@ -501,6 +519,7 @@
    <install as="Horde/Imap/Client/Interaction/Server/Tagged.php" name="lib/Horde/Imap/Client/Interaction/Server/Tagged.php" />
    <install as="Horde/Imap/Client/Interaction/Server/Untagged.php" name="lib/Horde/Imap/Client/Interaction/Server/Untagged.php" />
    <install as="Horde/Imap/Client/Mailbox/List.php" name="lib/Horde/Imap/Client/Mailbox/List.php" />
+   <install as="Horde/Imap/Client/Namespace/List.php" name="lib/Horde/Imap/Client/Namespace/List.php" />
    <install as="Horde/Imap/Client/Password/Xoauth2.php" name="lib/Horde/Imap/Client/Password/Xoauth2.php" />
    <install as="Horde/Imap/Client/Search/Query.php" name="lib/Horde/Imap/Client/Search/Query.php" />
    <install as="Horde/Imap/Client/Socket/Catenate.php" name="lib/Horde/Imap/Client/Socket/Catenate.php" />
@@ -522,6 +541,8 @@
    <install as="locale/fi/LC_MESSAGES/Horde_Imap_Client.po" name="locale/fi/LC_MESSAGES/Horde_Imap_Client.po" />
    <install as="locale/fr/LC_MESSAGES/Horde_Imap_Client.mo" name="locale/fr/LC_MESSAGES/Horde_Imap_Client.mo" />
    <install as="locale/fr/LC_MESSAGES/Horde_Imap_Client.po" name="locale/fr/LC_MESSAGES/Horde_Imap_Client.po" />
+   <install as="locale/hu/LC_MESSAGES/Horde_Imap_Client.mo" name="locale/hu/LC_MESSAGES/Horde_Imap_Client.mo" />
+   <install as="locale/hu/LC_MESSAGES/Horde_Imap_Client.po" name="locale/hu/LC_MESSAGES/Horde_Imap_Client.po" />
    <install as="locale/ja/LC_MESSAGES/Horde_Imap_Client.mo" name="locale/ja/LC_MESSAGES/Horde_Imap_Client.mo" />
    <install as="locale/ja/LC_MESSAGES/Horde_Imap_Client.po" name="locale/ja/LC_MESSAGES/Horde_Imap_Client.po" />
    <install as="locale/nl/LC_MESSAGES/Horde_Imap_Client.mo" name="locale/nl/LC_MESSAGES/Horde_Imap_Client.mo" />
@@ -570,6 +591,8 @@
    <install as="Horde/Imap/Client/fixtures/remote2.txt" name="test/Horde/Imap/Client/fixtures/remote2.txt" />
    <install as="Horde/Imap/Client/fixtures/remote3.txt" name="test/Horde/Imap/Client/fixtures/remote3.txt" />
    <install as="Horde/Imap/Client/fixtures/remote4.txt" name="test/Horde/Imap/Client/fixtures/remote4.txt" />
+   <install as="Horde/Imap/Client/Namespace/DataTest.php" name="test/Horde/Imap/Client/Namespace/DataTest.php" />
+   <install as="Horde/Imap/Client/Namespace/ListTest.php" name="test/Horde/Imap/Client/Namespace/ListTest.php" />
    <install as="Horde/Imap/Client/Stub/DigestMD5.php" name="test/Horde/Imap/Client/Stub/DigestMD5.php" />
    <install as="Horde/Imap/Client/Stub/Socket.php" name="test/Horde/Imap/Client/Stub/Socket.php" />
    <install as="Horde/Imap/Client/Stub/SocketClientSort.php" name="test/Horde/Imap/Client/Stub/SocketClientSort.php" />
@@ -2384,10 +2407,43 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-05-03</date>
+   <date>2014-05-14</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
-* 
+* [mms] Workaround broken MIME parts that cannot be binary decoded on the server.
+* [jan] Add Hungarian translation (Andras Galos &lt;galosa@netinform.hu&gt;).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.20.0</release>
+    <api>2.20.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-05-21</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mms] Fix instantiating base object with an empty password.
+* [mms] Better error checking when writing data to the server (Bug #13187; Thomas Jarosch &lt;thomas.jarosch@intra2net.com&gt;).
+* [mms] Support partial search limitation even if the PARTIAL search return option is not available on the server (Request #13153).
+* [mms] Added the &apos;max&apos; and &apos;min&apos; properties to Horde_Imap_Client_Ids.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.21.0</release>
+    <api>2.21.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-05-26</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mms] Fix working with mailboxes containing entirely integers (Bug #13157).
+* [mms] Horde_Imap_Client_Base#getNamespaces() can now return a Horde_Imap_Client_Namespace_List object instead of an array.
+* [mms] Use the new command length limitations defined in RFC 7162.
+* [mms] A noop() call before authentication will now correctly throw an exception on a connection issue (Bug #13205).
    </notes>
   </release>
  </changelog>

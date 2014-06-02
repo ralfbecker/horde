@@ -29,9 +29,6 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
     const FOLDER_PART_CLASS       = 0;
     const FOLDER_PART_ID          = 1;
 
-    const HTML_BLOCKQUOTE = '<blockquote type="cite" style="border-left:2px solid blue;margin-left:2px;padding-left:12px;">';
-
-
     /**
      * Mappings for server uids -> display names. Populated in the const'r
      * so we can use localized text.
@@ -600,31 +597,28 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
     /**
      * Change a folder on the server.
      *
-     * @param string $id           The server's folder id
-     * @param string $displayname  The new display name.
-     * @param string $parent       The folder's parent, if needed.
-     * @param string $uid          The existing folder uid, if this is an edit.
-     *                             @since 2.5.0 (@todo Look at this for H6. It's
-     *                             here now to save an extra DB lookup for data
-     *                             we already have.)
-     * @param  integer $type       The EAS Folder type. @since 2.12.0
+     * @param string $old_name  The IMAP server's existing folder id.
+     * @param string $new_name  The new display name.
+     * @param string $parent    The folder's parent IMAP server id, if needed.
+     * @param string $uid       The existing folder uid, if this is an edit.
+     *                          @since 2.5.0 (@todo Look at this for H6. It's
+     *                          here now to save an extra DB lookup for data
+     *                          we already have.)
+     * @param  integer $type    The EAS Folder type. @since 2.12.0
      *
      * @return Horde_ActiveSync_Message_Folder
      * @throws  Horde_ActiveSync_Exception
      */
-    public function changeFolder($id, $displayname, $parent, $uid = null, $type = null)
+    public function changeFolder($old_name, $new_name, $parent, $uid = null, $type = null)
     {
         $this->_logger->info(sprintf(
             '[%s] Horde_Core_ActiveSync_Driver::changeFolder(%s, %s, %s, %s, %s)',
-            getmypid(), $id, $displayname, $parent, $uid, $type));
+            getmypid(), $old_name, $new_name, $parent, $uid, $type));
 
         // For FOLDERUPDATE requests, the EAS Folder type is not passed by
-        // the client so we need to figure it out. Unfortunately, since
-        // we support additional collections in each type we don't know
-        // for sure if it's a mail folder or not, so we must check by passing
-        // true to _parseFolderId.
-        if (empty($type) && !empty($id)) {
-            $parts = $this->_parseFolderId($id, true);
+        // the client so we need to figure it out.
+        if (empty($type) && !empty($old_name)) {
+            $parts = $this->_parseFolderId($old_name, true);
             if (is_array($parts)) {
                 $type = $parts[self::FOLDER_PART_CLASS];
             } else {
@@ -635,20 +629,17 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
         switch ($type) {
         case Horde_ActiveSync::CLASS_EMAIL;
         case Horde_ActiveSync::FOLDER_TYPE_USER_MAIL:
-            if (!$id) {
+            if (!$old_name) {
                 try {
-                    $serverid = $this->_imap->createMailbox($displayname, $parent);
+                    $serverid = $this->_imap->createMailbox($new_name, $parent);
                 } catch (Horde_ActiveSync_Exception $e) {
                     $this->_logger->err($e->getMessage());
                     throw $e;
                 }
-                $uid = $this->_getFolderUidForBackendId($displayname);
             } else {
                 try {
-                    $serverid = $this->_imap->renameMailbox($id, $displayname, $parent);
-                    if (empty($uid)) {
-                        $uid = $this->_getFolderUidForBackendId($id);
-                    }
+                    $serverid = $this->_imap->renameMailbox($old_name, $new_name, $parent);
+                    $uid = $this->_getFolderUidForBackendId($serverid, Horde_ActiveSync::FOLDER_TYPE_USER_MAIL, $old_name);
                 } catch (Horde_ActiveSync_Exception $e) {
                     $this->_logger->err($e->getMessage());
                     throw $e;
@@ -683,16 +674,16 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
             throw new Horde_ActiveSync_Exception('Unsupported EAS Collection Class.');
         }
 
-        if (!$id) {
+        if (!$old_name) {
             try {
-                $id = $this->_connector->createFolder($class, $displayname);
+                $id = $this->_connector->createFolder($class, $new_name);
             } catch (Horde_ActiveSync_Exception $e) {
                 $this->_logger->err($e->getMessage());
                 throw $e;
             }
         } else {
             if (empty($parts)) {
-                $parts = $this->_parseFolderId($id);
+                $parts = $this->_parseFolderId($old_name);
             }
             if (is_array($parts)) {
                 $id = $parts[self::FOLDER_PART_ID];
@@ -700,7 +691,7 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
                 $id = $parts;
             }
             try {
-                $this->_connector->changeFolder($class, $id, $displayname);
+                $this->_connector->changeFolder($class, $id, $new_name);
             } catch (Horde_ActiveSync_Exception $e) {
                 $this->_logger->err($e->getMessage());
                 throw $e;
@@ -708,7 +699,7 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
         }
 
         return $this->_buildNonMailFolder(
-            $class . ':' . $id, Horde_ActiveSync::FOLDER_ROOT, $type, $displayname
+            $class . ':' . $id, Horde_ActiveSync::FOLDER_ROOT, $type, $new_name
         );
     }
 
@@ -811,9 +802,11 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
      * @param integer $maxitems         Maximum number of recipients for a RI
      *                                  collection. @since 2.12.0
      *
-     * @return array A list of messge uids that have changed in the specified
-     *               time period.
+     * @return array  An array of hashes that contain the ids of items that have
+     *                changed in the specified collection along with a 'type'
+     *                flag that indicates the type of change.
      * @todo H6 - clean up method parameters, update parent class etc...
+     *            return a new ids object.
      */
     public function getServerChanges(
         $folder, $from_ts, $to_ts, $cutoffdate, $ping, $ignoreFirstSync = false, $maxitems = 100)
@@ -1830,177 +1823,43 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
         $rfc822, $forward = false, $reply = false, $parent = false, $save = true,
         Horde_ActiveSync_Message_SendMail $message = null)
     {
-        if (empty($rfc822) && !empty($message)) {
-            // Get the raw message from the message object.
-            $raw_message = new Horde_ActiveSync_Rfc822($message->mime);
+        ob_start();
+        $mailer = new Horde_Core_ActiveSync_Mail($this->_imap, $this->_user, $this->_version);
+        $raw_message = !empty($message)
+            ? new Horde_ActiveSync_Rfc822($message->mime)
+            : new Horde_ActiveSync_Rfc822($rfc822);
+        $mailer->setRawMessage($raw_message);
 
-            // Parse out any smart reply or forward requests.
-            if ($forward) {
-                $forward = $message->source->itemid;
-                $parent = $message->source->folderid;
-            } elseif ($reply) {
-                $reply = $message->source->itemid;
-                $parent = $message->source->folderid;
-            }
-
-            // Override the $save value since it's sent as part of the message
-            // object in EAS 14+
+        // Replace the entire original MIME part? Save in sent?
+        if (!empty($message)) {
+            $mailer->replacemime = $message->replacemime;
             $save = $message->saveinsent;
-
-            // Do we want to just replace the mime part?
-            $replacemime = $message->replacemime;
-        } else {
-            $raw_message = new Horde_ActiveSync_Rfc822($rfc822);
-            $replacemime = false;
         }
-        $headers = $raw_message->getHeaders();
 
-        // Always add From: since we allow selecting the identity.
-        $headers->removeHeader('From');
-        $headers->addHeader('From', $this->_getIdentityFromAddress());
+        // [Smart]Reply/[Smart]Forward?
+        try {
+            if ($forward === true) {
+                $mailer->setForward($message->source->folderid, $message->source->itemid);
+            } elseif (!empty($forward)) {
+                $mailer->setForward($parent, $forward);
+            }
+            if ($reply === true) {
+                $mailer->setReply($message->source->folderid, $message->source->itemid);
+            } elseif (!empty($reply)) {
+                $mailer->setReply($parent, $reply);
+            }
+        } catch (Horde_ActiveSync_Exception $e) {
+            $this->_logger->err($e->getMessage());
+            $this->_endBuffer();
+            throw $e;
+        }
 
-        // Use the raw base part parsed from the rfc822 message if we don't
-        // need a smart reply or smart forward. We MUST use the raw message body
-        // as sent from the client since it may be s/mime signed.The device will
-        // NOT send a smart reply/forward request if it is s/mime signed.
-        // Note that we also cannot use Horde_Mime_Part::send or Horde_Mime_Mail
-        // since these all rebuild the mime parts.
-        if (!$parent || ($parent && $replacemime)) {
-            $h_array = $headers->toArray(array('charset' => 'UTF-8'));
-            if (is_array($h_array['From'])) {
-                $h_array['From'] = current($h_array['From']);
-            }
-            $recipients = $h_array['To'];
-            if (!empty($h_array['Cc'])) {
-                $recipients .= ',' . $h_array['Cc'];
-            }
-            if (!empty($h_array['Bcc'])) {
-                $recipients .= ',' . $h_array['Bcc'];
-                unset($h_array['Bcc']);
-            }
-            $GLOBALS['injector']->getInstance('Horde_Mail')->send($recipients, $h_array, $raw_message->getMessage()->stream);
-
-            try {
-                // Need the message if we are saving to sent.
-                if ($save) {
-                    $copy = $raw_message->getString();
-                }
-            } catch (Horde_Mail_Exception $e) {
-                $this->_logger->err($e->getMessage());
-                throw new Horde_ActiveSync_Exception($e);
-            }
-            if ($replacemime) {
-                // Even though we don't need to the original body, we still need
-                // to get the message headers so we have the message-id.
-                $source_uid = empty($forward) ? $reply : $forward;
-                $imap_message = array_pop($this->_imap->getImapMessage($parent, $source_uid, array('headers' => true)));
-                if (empty($imap_message)) {
-                    throw new Horde_Exception_NotFound('The forwarded/replied message was not found.');
-                }
-                $this->_logger->info(sprintf(
-                    '[%s] Client sent a SMART request along with REPLACEMIME tag.',
-                    $this->_pid));
-            }
-        } else {
-            // Handle smartReplies and smartForward requests.
-            $mime_message = $raw_message->getMimeObject();
-            $mail = new Horde_Mime_Mail($headers->toArray());
-            $source_uid = empty($forward) ? $reply : $forward;
-            $imap_message = array_pop($this->_imap->getImapMessage($parent, $source_uid, array('headers' => true)));
-            if (empty($imap_message)) {
-                throw new Horde_Exception_NotFound('The forwarded/replied message was not found.');
-            }
-            $base_part = $imap_message->getStructure();
-            $plain_id = $base_part->findBody('plain');
-            $html_id = $base_part->findBody('html');
-            $body_data = $imap_message->getMessageBodyData(array(
-                'protocolversion' => $this->_version,
-                'bodyprefs' => array(Horde_ActiveSync::BODYPREF_TYPE_MIME => true))
-            );
-
-            $this->_logger->info(sprintf(
-                "[%s} Preparing %s for UID %s:%s",
-                $this->_pid,
-                (empty($forward) ? 'SMART_REPLY' : 'SMART_FORWARD'),
-                $parent,
-                $forward));
-
-            // Reply top?
-            $this->_params['reply_top'] = $GLOBALS['prefs']->getValue('activesync_replyposition') == 'top';
-
-            // Do we need to add to the HTML part?
-            if (!empty($html_id)) {
-                if (!$id = $mime_message->findBody('html')) {
-                    $smart_text = self::text2html(
-                        Horde_ActiveSync_Utils::ensureUtf8(
-                            $mime_message->getPart($mime_message->findBody('plain'))->getContents(),
-                            $mime_message->getCharset()));
-                } else {
-                    $smart_text = Horde_ActiveSync_Utils::ensureUtf8(
-                        $mime_message->getPart($id)->getContents(),
-                        $mime_message->getCharset());
-                }
-                if ($forward) {
-                    $newbody_text_html = $smart_text . $this->_forwardText($imap_message, $body_data, $base_part->getPart($html_id), true);
-               } else {
-                    $newbody_text_html = ($this->_params['reply_top'] ? $smart_text : '')
-                        . $this->_replyText($imap_message, $body_data, $base_part->getPart($html_id), true)
-                        . ($this->_params['reply_top'] ? '' : $smart_text);
-               }
-            }
-
-            // Do we need to add a PLAIN part?
-            if (!empty($plain_id)) {
-                if (!$id = $mime_message->findBody('plain')) {
-                    $smart_text = self::html2text(
-                        Horde_ActiveSync_Utils::ensureUtf8(
-                            $mime_message->getPart($mime_message->findBody())->getContents(),
-                            $mime_message->getCharset()));
-                } else {
-                    $smart_text = Horde_ActiveSync_Utils::ensureUtf8(
-                        $mime_message->getPart($id)->getContents(),
-                        $mime_message->getCharset());
-                }
-                if ($forward) {
-                    $newbody_text_plain = $smart_text . $this->_forwardText($imap_message, $body_data, $base_part->getPart($plain_id));
-                } else {
-                    $newbody_text_plain = ($this->_params['reply_top'] ? $smart_text : '')
-                        . $this->_replyText($imap_message, $body_data, $base_part->getPart($plain_id))
-                        . ($this->_params['reply_top'] ? '' : $smart_text);
-                }
-            }
-            if ($forward) {
-                foreach ($base_part->contentTypeMap() as $mid => $type) {
-                    if ($imap_message->isAttachment($mid, $type)) {
-                        $apart = $imap_message->getMimePart($mid);
-                        $mail->addMimePart($apart);
-                    }
-                }
-            }
-
-            // Set the mail email body and add any uploaded attachments.
-            if (!empty($newbody_text_html)) {
-                $mail->setHtmlBody($newbody_text_html);
-            }
-            if (!empty($newbody_text_plain)) {
-                $mail->setBody($newbody_text_plain);
-            }
-
-            foreach ($mime_message->contentTypeMap() as $mid => $type) {
-                if ($mid != 0 && $mid != $mime_message->findBody('plain') && $mid != $mime_message->findBody('html')) {
-                    $part = $mime_message->getPart($mid);
-                    $mail->addMimePart($part);
-                }
-            }
-            try {
-                $mail->send($GLOBALS['injector']->getInstance('Horde_Mail'));
-                if ($save) {
-                    $copy = $mail->getBasePart()->toString(array('stream' => true));
-                }
-            } catch (Horde_Mail_Exception $e) {
-                $this->_logger->err($e->getMessage());
-                throw new Horde_ActiveSync_Exception($e);
-            }
+        try {
+            $mailer->send();
+        } catch (Horde_ActiveSync_Exception $e) {
+            $this->_logger->err($e->getMessage());
+            $this->_endBuffer();
+            throw $e;
         }
 
         if ($save) {
@@ -2011,12 +1870,11 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
                     $this->_pid,
                     $sf));
                 $flags = array(Horde_Imap_Client::FLAG_SEEN);
-                $msg = $raw_message->getString();
 
                 // Ignore issues sending to sent, in case the folder isn't
                 // available.
                 try {
-                    $this->_imap->appendMessage($sf, $msg, $flags);
+                    $this->_imap->appendMessage($sf, $mailer->getSentMail(), $flags);
                 } catch (Horde_ActiveSync_Exception_FolderGone $e) {
                     $this->_logger->err($e->getMessage());
                 }
@@ -2024,176 +1882,35 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
         }
 
         // Attempt to write forward/reply state.
-        if ($this->_version > Horde_ActiveSync::VERSION_TWELVEONE) {
-            if (empty($forward) && empty($reply) && !empty($message)) {
-                if ($parentid = $raw_message->getHeaders()->getValue('In-Reply-To')) {
-                    $this->_logger->info(sprintf(
-                        'Logging LASTVERBEXECUTED to Maillog: reply, %s, %s',
-                        $parentid,
-                        $headers->getValue('To')));
-                    $this->_connector->mail_logMaillog(
-                        'reply',
-                        $parentid,
-                        $headers->getValue('To'));
-
-                    $this->_logger->info('Attempting to set reply flag by searching for parent message.');
-                    try {
-                        $parent = $this->_imap->getUidFromMidInFolders($parentid, $this->_getMailFolders());
-                        $this->_imap->setImapFlag($parent[0], $parent[1], Horde_ActiveSync::IMAP_FLAG_REPLY);
-                    } catch (Horde_Exception_NotFound $e) {
-                        $this->_logger->info($e->getMessage());
-                    }
-                }
-            } elseif (!empty($forward) || !empty($reply)) {
-                $this->_logger->info(sprintf(
-                    'Logging LASTVERBEXECUTED to Maillog: %s, %s, %s',
-                    !empty($reply) ? 'reply' : 'forward',
-                    $imap_message->getHeaders()->getValue('Message-ID'),
-                    $headers->getValue('To')));
-                $this->_connector->mail_logMaillog(
-                    !empty($reply) ? 'reply' : 'forward',
-                    $imap_message->getHeaders()->getValue('Message-ID'),
-                    $headers->getValue('To'));
-                $this->_imap->setImapFlag(
-                    $parent,
-                    !empty($reply) ? $reply : $forward,
-                    !empty($reply) ? Horde_ActiveSync::IMAP_FLAG_REPLY : Horde_ActiveSync::IMAP_FLAG_FORWARD);
-            }
+        if ($this->_version > Horde_ActiveSync::VERSION_TWELVEONE && $mailer->id) {
+            $this->_logger->info(sprintf(
+                'Logging LASTVERBEXECUTED to Maillog: %s, %s, %s',
+                $mailer->reply ? 'reply' : 'forward',
+                $mailer->imapMessage->getHeaders()->getValue('Message-ID'),
+                $mailer->headers->getValue('To')));
+            $this->_connector->mail_logMaillog(
+                $mailer->reply ? 'reply' : 'forward',
+                $mailer->imapMessage->getHeaders()->getValue('Message-ID'),
+                $mailer->headers->getValue('To'));
+            $this->_imap->setImapFlag(
+                $mailer->parentFolder,
+                $mailer->id,
+                $mailer->reply ? Horde_ActiveSync::IMAP_FLAG_REPLY : Horde_ActiveSync::IMAP_FLAG_FORWARD);
         }
 
         // Attempt to log the recipient.
         $this->_logger->info('Logging recipients for RI.');
-        if (!empty($reply)) {
-            $action = 'reply';
-        } elseif (!empty($forward)) {
-            $action = 'forward';
-        } else {
-            $action = 'new';
-        }
+        $action = $mailer->reply
+            ? 'reply'
+            : ($mailer->forward ? 'forward' : 'new');
         try {
             $this->_connector->mail_logRecipient(
-                $action, $headers->getValue('To'), $headers->getValue('Message-ID'));
+                $action, $mailer->headers->getValue('To'), $mailer->headers->getValue('Message-ID'));
         } catch (Horde_Exception $e) {
             $this->_logger->err($e->getMessage());
         }
-
+        $this->_endBuffer();
         return true;
-    }
-
-    /**
-     * Return the body of the forwarded message in the appropriate type.
-     *
-     * @param Horde_ActiveSync_Imap_Message $message  The imap message object.
-     * @param array $body_data         The body data array.
-     * @param Horde_Mime_Part $partId  The body part (minus contents).
-     * @param boolean $html            Is this an html part?
-     *
-     * @return string  The propertly formatted forwarded body text.
-     */
-    protected function _forwardText(Horde_ActiveSync_Imap_Message $message, array $body_data, Horde_Mime_Part $part, $html = false)
-    {
-        $fwd_headers = $message->getForwardHeaders();
-        $from = $message->getFromAddress();
-
-        $msg = $this->_msgBody($body_data, $part, $html);
-        $msg_pre = "\n----- "
-            . ($from ? sprintf(Horde_Core_Translation::t("Forwarded message from %s"), $from) : Horde_Core_Translation::t("Forwarded message"))
-            . " -----\n" . $fwd_headers . "\n";
-        $msg_post = "\n\n----- " . Horde_Core_Translation::t("End forwarded message") . " -----\n";
-
-        return ($html ? self::text2html($msg_pre) : $msg_pre)
-            . $msg
-            . ($html ? self::text2html($msg_post) : $msg_post);
-    }
-
-    /**
-     * Return the body of the replied message in the appropriate type.
-     *
-     * @param Horde_ActiveSync_Imap_Message $message  The imap message object.
-     * @param array $body_data         The body data array.
-     * @param Horde_Mime_Part $partId  The body part (minus contents).
-     * @param boolean $html            Is this an html part?
-     *
-     * @return string  The propertly formatted replied body text.
-     */
-    protected function _replyText(Horde_ActiveSync_Imap_Message $message, array $body_data, Horde_Mime_Part $part, $html = false)
-    {
-        $headers = $message->getHeaders();
-        $from = strval($headers->getOb('from'));
-        $msg_pre = ($from ? sprintf(Horde_Core_Translation::t("Quoting %s"), $from) : Horde_Core_Translation::t("Quoted")) . "\n\n";
-        $msg = $this->_msgBody($body_data, $part, $html, true);
-        if (!empty($msg) && $html) {
-            $msg = '<p>' . self::text2html($msg_pre) . '</p>'
-                . self::HTML_BLOCKQUOTE . $msg . '</blockquote><br /><br />';
-        } else {
-            $msg = empty($msg)
-                ? '[' . Horde_Core_Translation::t("No message body text") . ']'
-                : $msg_pre . $msg;
-        }
-
-        return $msg;
-    }
-
-    /**
-     * Return the body text of the original email from a smart request.
-     *
-     * @param array $body_data       The message's main mime part.
-     * @param Horde_Mime_Part $part  The body mime part (minus contents).
-     * @param boolean $html          Do we want an html body?
-     * @param boolean $flow          Should the body be flowed?
-     *
-     * @return string  The properly formatted/flowed message body.
-     */
-    protected function _msgBody(array $body_data, Horde_Mime_Part $part, $html, $flow = false)
-    {
-        $subtype = $html == true ? 'html' : 'plain';
-        $msg = Horde_String::convertCharset(
-            $body_data[$subtype]['body'],
-            $body_data[$subtype]['charset'],
-            'UTF-8');
-        trim($msg);
-        if (!$html) {
-            if ($part->getContentTypeParameter('format') == 'flowed') {
-                $flowed = new Horde_Text_Flowed($msg, 'UTF-8');
-                if (Horde_String::lower($part->getContentTypeParameter('delsp')) == 'yes') {
-                    $flowed->setDelSp(true);
-                }
-                $flowed->setMaxLength(0);
-                $msg = $flowed->toFixed(false);
-            } else {
-                // If not flowed, remove padding at eol
-                $msg = preg_replace("/\s*\n/U", "\n", $msg);
-            }
-            if ($flow) {
-                $flowed = new Horde_Text_Flowed($msg, 'UTF-8');
-                $msg = $flowed->toFlowed(true);
-            }
-        }
-
-        return $msg;
-    }
-
-    /**
-     * Shortcut function to convert text -> HTML.
-     *
-     * @param string $msg  The message text.
-     *
-     * @return string  HTML text.
-     */
-    static public function text2html($msg)
-    {
-        return Horde_Text_Filter::filter(
-            $msg,
-            'Text2html',
-            array(
-                'flowed' => self::HTML_BLOCKQUOTE,
-                'parselevel' => Horde_Text_Filter_Text2html::MICRO)
-        );
-    }
-
-    static public function html2text($msg)
-    {
-        Horde_Text_Filter::filter($msg, 'Html2text');
     }
 
     /**
@@ -2415,7 +2132,7 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
         }
 
         try {
-            $params = $hooks->callHook('activesync_autodisover_parameters', 'horde', array($params));
+            $params = $hooks->callHook('activesync_autodiscover_parameters', 'horde', array($params));
         } catch (Horde_Exception_HookNotSet $e) {}
 
         return $params;
@@ -3404,7 +3121,7 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
     /**
      * Return the current user's From/Reply_To address.
      *
-     * @return string
+     * @return string  A RFC822 valid email string.
      */
     protected function _getIdentityFromAddress()
     {
@@ -3417,8 +3134,10 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
         $as_ident = $prefs->getValue('activesync_identity');
         $name = $ident->getValue('fullname', $as_ident == 'horde' ? $prefs->getValue('default_identity') : $prefs->getValue('activesync_identity'));
         $from_addr = $ident->getValue('from_addr', $as_ident == 'horde' ? $prefs->getValue('default_identity') : $prefs->getValue('activesync_identity'));
+        $rfc822 = new Horde_Mail_Rfc822_Address($from_addr);
+        $rfc822->personal = $name;
 
-        return $name . ' <' . $from_addr . '>';
+        return $rfc822->encoded;
     }
 
     /**

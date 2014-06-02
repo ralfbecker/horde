@@ -164,7 +164,7 @@ class Horde_ActiveSync_State_Sql extends Horde_ActiveSync_State_Base
 
         try {
             $results = $this->_db->selectValues($sql,
-                array($this->_deviceInfo->id, $this->_devInfo->user, $uid));
+                array($this->_deviceInfo->id, $this->_deviceInfo->user, $uid));
         } catch (Horde_Db_Exception $e) {
             $this->_logger->err(sprintf(
                 '[%s] %s',
@@ -175,13 +175,14 @@ class Horde_ActiveSync_State_Sql extends Horde_ActiveSync_State_Base
         }
         $update = 'UPDATE ' . $this->_syncStateTable . ' SET sync_data = ? WHERE '
             . 'sync_devid = ? AND sync_user = ? AND sync_folderid = ?';
+
         foreach ($results as $folder) {
             $folder = unserialize($folder);
             $folder->setServerId($serverid);
             $folder = serialize($folder);
             try {
                 $this->_db->update($update,
-                    array($folder, $this->_deviceInfo->id, $this->_devInfo->user, $uid));
+                    array($folder, $this->_deviceInfo->id, $this->_deviceInfo->user, $uid));
             } catch (Horde_Db_Exception $e) {
                 $this->_logger->err(sprintf(
                     '[%s] %s',
@@ -376,6 +377,8 @@ class Horde_ActiveSync_State_Sql extends Horde_ActiveSync_State_Base
      * @param string $user      The current sync user, only needed if change
      *                          origin is CHANGE_ORIGIN_PIM
      * @param string $clientid  PIM clientid sent when adding a new message
+     *
+     * @todo This method needs some cleanup, abstraction.
      */
     public function updateState(
         $type, array $change, $origin = Horde_ActiveSync::CHANGE_ORIGIN_NA,
@@ -419,7 +422,8 @@ class Horde_ActiveSync_State_Sql extends Horde_ActiveSync_State_Base
                     !empty($change['flags'])) {
                     $type = Horde_ActiveSync::CHANGE_TYPE_FLAGS;
                 }
-                if ($type == Horde_ActiveSync::CHANGE_TYPE_FLAGS) {
+                switch ($type) {
+                case Horde_ActiveSync::CHANGE_TYPE_FLAGS:
                     if (isset($change['flags']['read'])) {
                         // This is a mail sync changing only a read flag.
                         $sql = 'INSERT INTO ' . $this->_syncMailMapTable
@@ -434,19 +438,26 @@ class Horde_ActiveSync_State_Sql extends Horde_ActiveSync_State_Base
                             . ' VALUES (?, ?, ?, ?, ?, ?)';
                         $flag_value = !empty($change['flags']['flagged']);
                     }
-                } else {
+                    break;
+                case Horde_ActiveSync::CHANGE_TYPE_DELETE:
                     $sql = 'INSERT INTO ' . $this->_syncMailMapTable
                         . ' (message_uid, sync_key, sync_devid,'
                         . ' sync_folderid, sync_user, sync_deleted)'
                         . ' VALUES (?, ?, ?, ?, ?, ?)';
+                    $flag_value = true;
+                    break;
+                case Horde_ActiveSync::CHANGE_TYPE_CHANGE:
+                    // Used to remember "new" messages that are a result of
+                    // a MOVEITEMS request.
+                    $sql = 'INSERT INTO ' . $this->_syncMailMapTable
+                        . ' (message_uid, sync_key, sync_devid,'
+                        . ' sync_folderid, sync_user, sync_changed)'
+                        . ' VALUES (?, ?, ?, ?, ?, ?)';
+                    $flag_value = true;
+                    break;
                 }
-                $params = array(
-                    $change['id'],
-                    $syncKey,
-                    $this->_deviceInfo->id,
-                    $change['serverid'],
-                    $user,
-                    ($type == Horde_ActiveSync::CHANGE_TYPE_FLAGS) ? $flag_value : true
+                $params = array($change['id'], $syncKey, $this->_deviceInfo->id,
+                    $change['serverid'], $user, $flag_value
                 );
                 break;
 
@@ -533,6 +544,11 @@ class Horde_ActiveSync_State_Sql extends Horde_ActiveSync_State_Base
             if (!$device = $this->_db->selectOne($query, array($devId))) {
                 throw new Horde_ActiveSync_Exception('Device not found.');
             }
+            $columns = $this->_db->columns($this->_syncDeviceTable);
+            $device['device_properties'] = $columns['device_properties']
+                ->binaryToString($device['device_properties']);
+            $device['device_supported'] = $columns['device_supported']
+                ->binaryToString($device['device_supported']);
         } catch (Horde_Db_Exception $e) {
             throw new Horde_ActiveSync_Exception($e);
         }
@@ -1004,8 +1020,9 @@ class Horde_ActiveSync_State_Sql extends Horde_ActiveSync_State_Base
         $sql = 'SELECT cache_data FROM ' . $this->_syncCacheTable
             . ' WHERE cache_devid = ? AND cache_user = ?';
         try {
-            $data = $this->_db->selectValue(
-                $sql, array($devid, $user));
+            $data = $this->_db->selectValue($sql, array($devid, $user));
+            $columns = $this->_db->columns($this->_syncCacheTable);
+            $data = $columns['cache_data']->binaryToString($data);
         } catch (Horde_Db_Exception $e) {
             throw new Horde_ActiveSync_Exception($e);
         }
@@ -1136,10 +1153,11 @@ class Horde_ActiveSync_State_Sql extends Horde_ActiveSync_State_Base
      * PIM-initiated change for the provided uid. Used to avoid mirroring back
      * changes to the PIM that it sent to the server.
      *
-     * @param array $changes  The changes array, containing 'id' and 'type'.
+     * @param array $changes  The changes array, each entry a hash containing
+     *                        'id' and 'type' keys.
      *
      * @return array  An array of UID -> timestamp of the last PIM-initiated
-     *                change for the specified uid, or null if none found.
+     *                change for the specified UIDs, or null if none found.
      */
     protected function _getPIMChangeTS(array $changes)
     {
@@ -1185,14 +1203,12 @@ class Horde_ActiveSync_State_Sql extends Horde_ActiveSync_State_Base
      */
     protected function _havePIMChanges()
     {
-        $class = $this->_collection['class'];
-
-        $table = $class == Horde_ActiveSync::CLASS_EMAIL ?
-            $this->_syncMailMapTable :
-            $this->_syncMapTable;
-        $sql = 'SELECT COUNT(*) FROM ' . $table
+        // No benefit from making this extra query for email collections.
+        if ($this->_collection['class'] == Horde_ActiveSync::CLASS_EMAIL) {
+            return true;
+        }
+        $sql = 'SELECT COUNT(*) FROM ' . $this->_syncMapTable
             . ' WHERE sync_devid = ? AND sync_user = ? AND sync_folderid = ?';
-
         try {
             return (bool)$this->_db->selectValue(
                 $sql, array($this->_deviceInfo->id, $this->_deviceInfo->user, $this->_collection['serverid']));
@@ -1214,8 +1230,8 @@ class Horde_ActiveSync_State_Sql extends Horde_ActiveSync_State_Base
      */
     protected function _getMailMapChanges(array $changes)
     {
-        $sql = 'SELECT message_uid, sync_read, sync_flagged, sync_deleted FROM '
-            . $this->_syncMailMapTable
+        $sql = 'SELECT message_uid, sync_read, sync_flagged, sync_deleted,'
+            . 'sync_changed FROM ' . $this->_syncMailMapTable
             . ' WHERE sync_folderid = ? AND sync_devid = ?'
             . ' AND sync_user = ? AND message_uid IN '
             . '(' . implode(',', array_fill(0, count($changes), '?')) . ')';
@@ -1240,15 +1256,20 @@ class Horde_ActiveSync_State_Sql extends Horde_ActiveSync_State_Base
         foreach ($rows as $row) {
             foreach ($changes as $change) {
                 if ($change['id'] == $row['message_uid']) {
-                    if ($change['type'] == Horde_ActiveSync::CHANGE_TYPE_FLAGS) {
+                    switch ($change['type']) {
+                    case Horde_ActiveSync::CHANGE_TYPE_FLAGS:
                         $results[$row['message_uid']][$change['type']] =
                             (!is_null($row['sync_read']) && $row['sync_read'] == $change['flags']['read']) ||
                             (!is_null($row['sync_flagged'] && $row['sync_flagged'] == $change['flags']['flagged']));
-                        continue 2;
-                    } elseif ($change['type'] == Horde_ActiveSync::CHANGE_TYPE_DELETE) {
+                        continue 3;
+                    case Horde_ActiveSync::CHANGE_TYPE_DELETE:
                         $results[$row['message_uid']][$change['type']] =
                             !is_null($row['sync_deleted']) && $row['sync_deleted'] == true;
-                        continue 2;
+                        continue 3;
+                    case Horde_ActiveSync::CHANGE_TYPE_CHANGE:
+                        $results[$row['message_uid']][$change['type']] =
+                            !is_null($row['sync_changed']) && $row['sync_changed'] == true;
+                        continue 3;
                     }
                 }
             }

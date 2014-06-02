@@ -559,12 +559,6 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
             }
         }
 
-        $identity_id = null;
-        if (($fromaddr = $headers->getValue('from'))) {
-            $identity = $injector->getInstance('IMP_Identity');
-            $identity_id = $identity->getMatchingIdentity($fromaddr);
-        }
-
         $alist = new Horde_Mail_Rfc822_List();
         $addr = array(
             'to' => clone $alist,
@@ -624,7 +618,7 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
             'addr' => $addr,
             'body' => $body,
             'format' => $format,
-            'identity' => $identity_id,
+            'identity' => $this->_getMatchingIdentity($headers, array('from')),
             'priority' => $injector->getInstance('IMP_Mime_Headers')->getPriority($headers),
             'readreceipt' => $readreceipt,
             'subject' => $headers->getValue('subject'),
@@ -2462,21 +2456,33 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
      * Get "tieto" identity information.
      *
      * @param Horde_Mime_Headers $h  The headers object for the message.
+     * @param array $only            Only use these headers.
      *
-     * @return mixed  See IMP_Prefs_Identity::getMatchingIdentity().
+     * @return integer  The matching identity. If no exact match, returns the
+     *                  default identity.
      */
-    protected function _getMatchingIdentity($h)
+    protected function _getMatchingIdentity($h, array $only = array())
     {
-        $msgAddresses = array();
+        global $injector;
 
-        /* Bug #9271: Check 'from' address first; if replying to a message
-         * originally sent by user, this should be the identity used for the
-         * reply also. */
-        foreach (array('from', 'to', 'cc', 'bcc') as $val) {
+        $identity = $injector->getInstance('IMP_Identity');
+        $msgAddresses = array();
+        if (empty($only)) {
+            /* Bug #9271: Check 'from' address first; if replying to a message
+             * originally sent by user, this should be the identity used for
+             * the reply also. */
+            $only = array('from', 'to', 'cc', 'bcc');
+        }
+
+        foreach ($only as $val) {
             $msgAddresses[] = $h->getValue($val);
         }
 
-        return $GLOBALS['injector']->getInstance('IMP_Identity')->getMatchingIdentity($msgAddresses);
+        $match = $identity->getMatchingIdentity($msgAddresses);
+
+        return is_null($match)
+            ? $identity->getDefault()
+            : $match;
     }
 
     /**
@@ -2614,6 +2620,31 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
     public function getCacheId()
     {
         return $this->_cacheid;
+    }
+
+    /**
+     * Generate HMAC hash used to validate data on a session expiration. Uses
+     * the unique compose cache ID of the expired message, the username, and
+     * the secret key of the server to generate a reproducible value that can
+     * be validated if session data doesn't exist.
+     *
+     * @param string $cacheid  The cache ID to use. If null, uses cache ID of
+     *                         the compose object.
+     * @param string $user     The user ID to use. If null, uses the current
+     *                         authenticated username.
+     *
+     * @return string  The HMAC hash string.
+     */
+    public function getHmac($cacheid = null, $user = null)
+    {
+        global $conf, $registry;
+
+        return hash_hmac(
+            (PHP_MINOR_VERSION >= 4) ? 'fnv132' : 'sha1',
+            (is_null($cacheid) ? $this->getCacheId() : $cacheid) . '|' .
+                (is_null($user) ? $registry->getAuth() : $user),
+            $conf['secret_key']
+        );
     }
 
     /**
@@ -3254,7 +3285,10 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
         global $conf, $injector;
 
         if (empty($conf['compose']['use_vfs']) ||
-            !isset($vars->composeCache)) {
+            !isset($vars->composeCache) ||
+            !isset($vars->composeHmac) ||
+            !isset($vars->user) ||
+            ($this->getHmac($vars->composeCache, $vars->user) != $vars->composeHmac)) {
             return;
         }
 

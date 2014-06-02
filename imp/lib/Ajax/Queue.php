@@ -132,7 +132,6 @@ class IMP_Ajax_Queue
      *   - add: (array) The list of flags that were added.
      *   - buids: (string) Indices of the messages that have changed (IMAP
      *            sequence string; mboxes are base64url encoded).
-     *   - deselect: (boolean) If true, deselect the uids.
      *   - remove: (array) The list of flags that were removed.
      *   - replace: (array) Replace the flag list with these flags.
      *
@@ -202,6 +201,7 @@ class IMP_Ajax_Queue
                 $compose->atclimit = 1;
             }
             $compose->cacheid = $this->_compose->getCacheId();
+            $compose->hmac = $this->_compose->getHmac();
 
             $ajax->addTask('compose', $compose);
             $this->_compose = null;
@@ -378,21 +378,9 @@ class IMP_Ajax_Queue
         $result = new stdClass;
         if (!empty($changed['add'])) {
             $result->add = array_map('strval', $changed['add']);
-            foreach ($changed['add'] as $val) {
-                if ($val->deselect(true)) {
-                    $result->deselect = true;
-                    break;
-                }
-            }
         }
         if (!empty($changed['remove'])) {
             $result->remove = array_map('strval', $changed['remove']);
-            foreach ($changed['remove'] as $val) {
-                if ($val->deselect(false)) {
-                    $result->deselect = true;
-                    break;
-                }
-            }
         }
 
         $result->buids = $indices->toArray();
@@ -565,13 +553,13 @@ class IMP_Ajax_Queue
         }
 
         if (($add = $eltdiff->add) &&
-            ($elts = array_values(array_filter(array_map(array($this, '_ftreeElt'), $add))))) {
+            ($elts = array_values(array_map(array($this, '_ftreeElt'), $add)))) {
             $out['a'] = $elts;
             $poll = $add;
         }
 
         if (($change = $eltdiff->change) &&
-            ($elts = array_values(array_filter(array_map(array($this, '_ftreeElt'), $change))))) {
+            ($elts = array_values(array_map(array($this, '_ftreeElt'), $change)))) {
             $out['c'] = $elts;
             $poll = array_merge($poll, $change);
         }
@@ -598,7 +586,7 @@ class IMP_Ajax_Queue
      *   - ch: (boolean) [children] Does the mailbox contain children?
      *         DEFAULT: no
      *   - cl: (string) [class] The CSS class.
-     *         DEFAULT: 'base'
+     *         DEFAULT: 'folderImg'
      *   - co: (boolean) [container] Is this mailbox a container element?
      *         DEFAULT: no
      *   - fs: (boolean) [boolean] Fixed element for sorting purposes.
@@ -710,7 +698,7 @@ class IMP_Ajax_Queue
         if ($icon->user_icon) {
             $ob->cl = 'customimg';
             $ob->i = strval($icon->icon);
-        } else {
+        } elseif (!in_array($icon->class, array('folderImg', 'folderopenImg'))) {
             $ob->cl = $icon->class;
         }
 

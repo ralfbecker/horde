@@ -54,11 +54,13 @@ if ($actionID = Horde_Util::getPost('actionID')) {
     case 'block':
         $device = $state->loadDeviceInfo($deviceID);
         $device->blocked = true;
+        $device->save(false);
         break;
 
     case 'unblock':
         $device = $state->loadDeviceInfo($deviceID);
         $device->blocked = false;
+        $device->save(false);
         break;
     }
 }
@@ -82,6 +84,10 @@ $devs = array();
 $js = array();
 foreach ($devices as $key => $device) {
     $dev = $state->loadDeviceInfo($device['device_id'], $device['device_user']);
+    $syncCache = new Horde_ActiveSync_SyncCache($state, $dev->id, $dev->user, $injector->getInstance('Horde_Log_Logger'));
+    $dev->hbinterval = $syncCache->hbinterval
+        ? $syncCache->hbinterval
+        : ($syncCache->wait ? $syncCache->wait * 60 : _("Unavailable"));
     $js[$dev->id] = array(
         'id' => $dev->id,
         'user' => $dev->user

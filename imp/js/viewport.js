@@ -225,7 +225,7 @@
  *
  * @author     Michael Slusarz <slusarz@horde.org>
  * @copyright  2005-2014 Horde LLC
- * @license    GPLv2 (http://www.horde.org/licenses/gpl)
+ * @license    GPL-2 (http://www.horde.org/licenses/gpl)
  */
 
 var ViewPort = Class.create({
@@ -1033,6 +1033,11 @@ var ViewPort = Class.create({
         return !!this.views[view];
     },
 
+    bufferCount: function()
+    {
+        return Object.keys(this.views).size();
+    },
+
     currentOffset: function()
     {
         return this.scroller.currentOffset();
@@ -1754,7 +1759,9 @@ ViewPort_Selection = Class.create({
     add: function(format, d)
     {
         var c = this._convert(format, d);
-        this.data = this.data.size() ? this.data.concat(c).uniq() : c;
+        this.data = this.data.size()
+            ? this.data.concat(c.reject(this.data.include.bind(this.data)))
+            : c;
     },
 
     remove: function(format, d)

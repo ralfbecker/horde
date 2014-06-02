@@ -481,6 +481,7 @@ class Horde_Icalendar
         $this->_attributes = $this->_components = array();
     }
 
+    public function toString() { return $this->exportvCalendar(); }
     /**
      * Export as vCalendar format.
      *
@@ -1130,8 +1131,15 @@ class Horde_Icalendar
             }
         }
 
+        $tzs = array();
         foreach ($this->_components as $component) {
-            $result .= $component->exportvCalendar();
+            if (!($component instanceof Horde_Icalendar_Vtimezone) ||
+                !isset($tzs[$component->getAttribute('TZID')])) {
+                $result .= $component->exportvCalendar();
+                if ($component instanceof Horde_Icalendar_Vtimezone) {
+                    $tzs[$component->getAttribute('TZID')] = true;
+                }
+            }
         }
 
         return $result . 'END:' . $base . $this->_newline;
@@ -1216,18 +1224,20 @@ class Horde_Icalendar
     }
 
     /**
-     * Grok the TZID and return an offset in seconds from UTC for this
+     * Groks the TZID and returns an offset in seconds from UTC for this
      * date and time.
      *
-     * @param $date TODO
-     * @param $time TODO
-     * @param $tzid TODO
+     * @param array $date   A date hash.
+     * @param array $time   A time hash.
+     * @param string $tzid  A timezone ID.
      *
-     * @return TODO
+     * @return integer  The offset from UTC in seconds for the provided
+     *                  timezone and date/time.
      */
     protected function _parseTZID($date, $time, $tzid)
     {
-        $vtimezone = $this->_container->findComponentByAttribute('vtimezone', 'TZID', $tzid);
+        $vtimezone = $this->_container
+            ->findComponentByAttribute('vtimezone', 'TZID', $tzid);
         if (!$vtimezone) {
             return false;
         }
@@ -1244,7 +1254,21 @@ class Horde_Icalendar
             return false;
         }
 
-        sort($change_times);
+        usort(
+            $change_times,
+            function($a, $b) {
+                if (!$a['end']) {
+                    if (!$b['end']) {
+                        return $a['time'] - $b['time'];
+                    }
+                    return 1;
+                }
+                if (!$b['end']) {
+                    return -1;
+                }
+                return $a['end'] - $b['end'];
+            }
+        );
 
         // Time is arbitrarily based on UTC for comparison.
         $t = @gmmktime($time['hour'], $time['minute'], $time['second'],

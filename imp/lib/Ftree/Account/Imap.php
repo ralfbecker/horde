@@ -57,13 +57,13 @@ class IMP_Ftree_Account_Imap extends IMP_Ftree_Account
                     foreach ($ns as $val) {
                         $type = null;
 
-                        switch ($val['type']) {
-                        case Horde_Imap_Client::NS_OTHER:
+                        switch ($val->type) {
+                        case $val::NS_OTHER:
                             $attr = IMP_Ftree::ELT_NAMESPACE_OTHER;
                             $type = self::OTHER_KEY;
                             break;
 
-                        case Horde_Imap_Client::NS_SHARED:
+                        case $val::NS_SHARED:
                             $attr = IMP_Ftree::ELT_NAMESPACE_SHARED;
                             $type = self::SHARED_KEY;
                             break;
@@ -83,8 +83,11 @@ class IMP_Ftree_Account_Imap extends IMP_Ftree_Account
                 $unsub = true;
             }
 
-            foreach (array_keys($ns) as $val) {
-                $searches[] = $val . '*';
+            foreach ($ns as $val) {
+                $last = $searches[] = $val . '*';
+                if ($last === '*') {
+                    break;
+                }
             }
         } else {
             $searches[] = $query;
@@ -108,24 +111,26 @@ class IMP_Ftree_Account_Imap extends IMP_Ftree_Account
             /* Break apart the name via the delimiter and go step by
              * step through the name to make sure all subfolders exist
              * in the tree. */
-            if (strlen($val['delimiter'])) {
-                /* Strip personal namespace. */
-                if (!empty($ns_info['name']) &&
-                    (strpos($mbox, $ns_info['name']) === 0)) {
-                    $parts = explode($val['delimiter'], substr($mbox, strlen($ns_info['name'])));
-                    $parts[0] = $ns_info['name'] . $parts[0];
+            if ($ns_info && strlen($ns_info->delimiter)) {
+                /* Strip personal namespace (if non-empty). */
+                if ($ns_info->type === $ns_info::NS_PERSONAL) {
+                    $stripped = $ns_info->stripNamespace($mbox);
+                    $parts = explode($ns_info->delimiter, $stripped);
+                    if ($stripped != $mbox) {
+                        $parts[0] = $ns_info->name . $parts[0];
+                    }
                 } else {
-                    $parts = explode($val['delimiter'], $mbox);
+                    $parts = explode($ns_info->delimiter, $mbox);
                 }
 
-                switch ($ns_info['type']) {
-                case Horde_Imap_Client::NS_OTHER:
+                switch ($ns_info->type) {
+                case $ns_info::NS_OTHER:
                     if ($prefs->getValue('tree_view')) {
                         $parent = self::OTHER_KEY;
                     }
                     break;
 
-                case Horde_Imap_Client::NS_SHARED:
+                case $ns_info::NS_SHARED:
                     if ($prefs->getValue('tree_view')) {
                         $parent = self::SHARED_KEY;
                     }

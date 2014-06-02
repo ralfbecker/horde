@@ -135,12 +135,12 @@ class IMP_Dynamic_Mailbox extends IMP_Dynamic_Base
 
         $this->js_conf += array_filter(array(
             // URLs
-            'URI_LISTINFO' => strval(IMP_Basic_Listinfo::url(array('full' => true))),
+            'URI_LISTINFO' => strval(IMP_Basic_Listinfo::url()->setRaw(true)),
             'URI_MESSAGE' => strval(IMP_Dynamic_Message::url()->setRaw(true)),
             'URI_PORTAL' => strval($registry->getServiceLink('portal')->setRaw(true)),
             'URI_PREFS_IMP' => strval($registry->getServiceLink('prefs', 'imp')->setRaw(true)),
-            'URI_SEARCH' => strval(IMP_Basic_Search::url(array('full' => true))),
-            'URI_THREAD' => strval(IMP_Basic_Thread::url(array('full' => true))),
+            'URI_SEARCH' => strval(IMP_Basic_Search::url()->setRaw(true)),
+            'URI_THREAD' => strval(IMP_Basic_Thread::url()->setRaw(true)),
 
             // IMAP Flags
             'FLAG_DELETED' => Horde_Imap_Client::FLAG_DELETED,
@@ -336,7 +336,7 @@ class IMP_Dynamic_Mailbox extends IMP_Dynamic_Base
         if (empty($imp_imap->config->innocent_params)) {
             unset($context['ctx_message']['innocent']);
         }
-        if (!$registry->hasInterface('mail/newEmailFilter')) {
+        if (!$registry->hasLink('mail/newEmailFilter')) {
             unset($context['ctx_message']['addfilter']);
         }
         if ($prefs->getValue('use_trash')) {
@@ -534,7 +534,7 @@ class IMP_Dynamic_Mailbox extends IMP_Dynamic_Base
             'message_0' => _("No messages"),
             'message_1' => _("1 message"),
             'message_2' => _("%d messages"),
-            'mboxsize' => _("Mailbox %s is %s."),
+            'mboxsize' => _("%s is: %s."),
             'moveto' => _("Move %s to %s"),
             'newflag' => _("Create New Flag..."),
             'newflag_name' => _("Flag Name:"),

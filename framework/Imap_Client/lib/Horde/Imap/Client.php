@@ -113,7 +113,7 @@ class Horde_Imap_Client
     /* @since 2.11.0 */
     const FETCH_DOWNGRADED = 16;
 
-    /* Namespace constants. */
+    /* Namespace constants. @deprecated */
     const NS_PERSONAL = 1;
     const NS_OTHER = 2;
     const NS_SHARED = 3;
@@ -176,7 +176,7 @@ class Horde_Imap_Client
      * @var array
      */
     static public $capability_deps = array(
-        // RFC 5162 [1]
+        // RFC 7162 [3.2]
         'QRESYNC' => array(
             // QRESYNC requires CONDSTORE, but the latter is implied and is
             // not required to be listed.

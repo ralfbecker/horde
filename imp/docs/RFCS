@@ -52,7 +52,7 @@ The following IMAP extensions/features are supported:
 :RFC 6154:          SPECIAL-USE/CREATE-SPECIAL-USE
 :RFC 6203:          SEARCH=FUZZY
 :RFC 6851:          MOVE
-:RFC XXXX:          CONDSTORE/QRESYNC
+:RFC 7162:          CONDSTORE/QRESYNC
 
 :draft-ietf-morg-inthread-01: THREAD=REFS
 :draft-daboo-imap-annotatemore-07: ANNOTATEMORE
@@ -94,6 +94,7 @@ SMTP
 The following SMTP extensions/features are supported
 
 :STD 10/RFC 1870: Message Size Declaration
+:RFC 2033:        Local Mail Transfer Protocol (LMTP)
 :RFC 2034:        Enhanced-Status-Codes
 :RFC 2195:        CRAM-MD5 (SASL Authentication)
 :RFC 2595/4616:   TLS & PLAIN (SASL Authentication)
@@ -130,6 +131,12 @@ MIME
 :RFC 3803: Content Duration MIME Header Definition
 :RFC 3834: Recommendations for Automatic Responses to Electronic Mail
 :RFC 5751: S/MIME Version 3.2 Message Specification
+
+
+Other
+=====
+
+:RFC 6186: Use of SRV Records for Locating Email Submission/Access Services
 
 
 Non-RFC Features

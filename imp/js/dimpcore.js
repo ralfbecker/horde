@@ -3,7 +3,7 @@
  *
  * @author     Michael Slusarz <slusarz@horde.org>
  * @copyright  2005-2014 Horde LLC
- * @license    GPLv2 (http://www.horde.org/licenses/gpl)
+ * @license    GPL-2 (http://www.horde.org/licenses/gpl)
  */
 
 /* DimpCore object. */
@@ -216,9 +216,8 @@ var DimpCore = {
     },
 
     // Abstract: define in any pages that need reloadMessage().
-    reloadMessage: function(params)
-    {
-    },
+    // One argument: params
+    reloadMessage: Prototype.emptyFunction,
 
     toggleCheck: function(elt, on)
     {
@@ -240,6 +239,13 @@ var DimpCore = {
         }
 
         elt.removeClassName(r).addClassName(a).show();
+    },
+
+    baseAvailable: function()
+    {
+        return (HordeCore.base &&
+                !Object.isUndefined(HordeCore.base.DimpBase) &&
+                !HordeCore.base.closed);
     },
 
     /* Mouse click handler. */
@@ -413,6 +419,13 @@ document.observe('ContextSensitive:click', DimpCore.contextOnClick.bindAsEventLi
 document.observe('ContextSensitive:show', DimpCore.contextOnShow.bindAsEventListener(DimpCore));
 document.observe('ContextSensitive:trigger', DimpCore.contextOnTrigger.bindAsEventListener(DimpCore));
 
+/* HTML IFRAME events. */
+document.observe('IMP_JS:htmliframe_click', function() {
+    if (this.DMenu) {
+        this.DMenu.close();
+    }
+}.bind(DimpCore));
+
 /* Dialog events. Since reloadMessage() can be extended, don't immediately
  * bind function call now. */
 document.observe('ImpPassphraseDialog:success', function() {
@@ -430,8 +443,12 @@ document.observe(Prototype.Browser.IE ? 'selectstart' : 'mousedown', function(e)
 
         if (document.activeElement) {
             var ae = $(document.activeElement);
-            if (ae.match('TEXTAREA') || ae.match('INPUT')) {
-                ae.blur();
+            try {
+                if (ae.match('TEXTAREA') || ae.match('INPUT')) {
+                    ae.blur();
+                }
+            } catch (ex) {
+                // Chrome 32: reports that ae can be an Object - ignore.
             }
         }
     }

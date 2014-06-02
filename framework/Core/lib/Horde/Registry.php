@@ -1017,24 +1017,60 @@ class Horde_Registry implements Horde_Shutdown_Task
      */
     public function hasMethod($method, $app = null)
     {
+        return $this->_doHasSearch($method, $app, 'methods');
+    }
+
+    /**
+     * Determine if a link has been registered with the registry.
+     *
+     * @since 2.12.0
+     *
+     * @param string $method  The full name of the link method to check for.
+     * @param string $app     Only check this application.
+     *
+     * @return mixed  The application implementing $method if we have it,
+     *                false if the link method doesn't exist.
+     */
+    public function hasLink($method, $app = null)
+    {
+        return $this->_doHasSearch($method, $app, 'links');
+    }
+
+    /**
+     * Do the has*() search.
+     *
+     * @see hasMethod
+     * @see hasLink
+     *
+     * @param string $func  The API function to call to get the list of
+     *                      elements to search. Either 'methods' or 'links'.
+     *
+     * @return mixed  The application implementing $method, false if it
+     *                doesn't exist;
+     */
+    protected function _doHasSearch($method, $app, $func)
+    {
         if (is_null($app)) {
-            list($interface, $call) = explode('/', $method, 2);
-            if (!empty($this->_interfaces[$method])) {
-                $app = $this->_interfaces[$method];
-            } elseif (!empty($this->_interfaces[$interface])) {
-                $app = $this->_interfaces[$interface];
-            } else {
+            if (($lookup = $this->_methodLookup($method)) === false) {
                 return false;
             }
+            list($app, $call) = $lookup;
         } else {
             $call = $method;
         }
 
-        $api_ob = $this->_loadApi($app);
+        if ($api_ob = $this->_loadApi($app)) {
+            switch ($func) {
+            case 'links':
+                $links = $api_ob->links();
+                return isset($links[$call]) ? $app : false;
 
-        return ($api_ob && in_array($call, $api_ob->methods()))
-            ? $app
-            : false;
+            case 'methods':
+                return in_array($call, $api_ob->methods()) ? $app : false;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1050,17 +1086,11 @@ class Horde_Registry implements Horde_Shutdown_Task
      */
     public function call($method, $args = array())
     {
-        list($interface, $call) = explode('/', $method, 2);
-
-        if (!empty($this->_interfaces[$method])) {
-            $app = $this->_interfaces[$method];
-        } elseif (!empty($this->_interfaces[$interface])) {
-            $app = $this->_interfaces[$interface];
-        } else {
+        if (($lookup = $this->_methodLookup($method)) === false) {
             throw new Horde_Exception('The method "' . $method . '" is not defined in the Horde Registry.');
         }
 
-        return $this->callByPackage($app, $call, $args);
+        return $this->callByPackage($lookup[0], $lookup[1], $args);
     }
 
     /**
@@ -1200,17 +1230,11 @@ class Horde_Registry implements Horde_Shutdown_Task
      */
     public function link($method, $args = array(), $extra = '')
     {
-        list($interface, $call) = explode('/', $method, 2);
-
-        if (!empty($this->_interfaces[$method])) {
-            $app = $this->_interfaces[$method];
-        } elseif (!empty($this->_interfaces[$interface])) {
-            $app = $this->_interfaces[$interface];
-        } else {
-            throw new Horde_Exception('The method "' . $method . '" is not defined in the Horde Registry.');
+        if (($lookup = $this->_methodLookup($method)) === false) {
+            throw new Horde_Exception('The link "' . $method . '" is not defined in the Horde Registry.');
         }
 
-        return $this->linkByPackage($app, $call, $args, $extra);
+        return $this->linkByPackage($lookup[0], $lookup[1], $args, $extra);
     }
 
     /**
@@ -1272,6 +1296,26 @@ class Horde_Registry implements Horde_Shutdown_Task
         $link = preg_replace('|\|.+\||U', '', $link);
 
         return $link;
+    }
+
+    /**
+     * Do a lookup of method name -> app call.
+     *
+     * @param string $method  The method name.
+     *
+     * @return mixed  An array containing the app and method call, or false
+     *                if not found.
+     */
+    protected function _methodLookup($method)
+    {
+        list($interface, $call) = explode('/', $method, 2);
+        if (!empty($this->_interfaces[$method])) {
+            return array($this->_interfaces[$method], $call);
+        } elseif (!empty($this->_interfaces[$interface])) {
+            return array($this->_interfaces[$interface], $call);
+        }
+
+        return false;
     }
 
     /**

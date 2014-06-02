@@ -3,17 +3,17 @@
  *
  * @author     Michael Slusarz <slusarz@horde.org>
  * @copyright  2005-2014 Horde LLC
- * @license    GPLv2 (http://www.horde.org/licenses/gpl)
+ * @license    GPL-2 (http://www.horde.org/licenses/gpl)
  */
 
 var DimpCompose = {
 
     // Variables defaulting to empty/false:
     //   atc_context, auto_save_interval, compose_cursor, disabled,
-    //   drafts_mbox, editor_wait, fwdattach, hash_hdrs, hash_msg,
-    //   hash_msgOrig, hash_sig, hash_sigOrig, is_popup, knl, last_identity,
+    //   drafts_mbox, fwdattach, hash_hdrs, hash_msg,
+    //   hash_msgOrig, hash_sig, hash_sigOrig, knl, last_identity,
     //   onload_show, old_action, old_identity, sc_submit,
-    //   skip_spellcheck, spellcheck, tasks, uploading, upload_limit
+    //   skip_spellcheck, spellcheck, tasks, upload_limit
 
     ajax_atc_id: 0,
     checkbox_context: $H({
@@ -46,7 +46,7 @@ var DimpCompose = {
     {
         if (window.confirm(DimpCore.text.compose_cancel)) {
             if (!DimpCore.conf.qreply &&
-                this.baseAvailable()) {
+                DimpCore.baseAvailable()) {
                 HordeCore.base.focus();
             }
 
@@ -60,7 +60,7 @@ var DimpCompose = {
 
     updateDraftsMailbox: function()
     {
-        if (this.baseAvailable() &&
+        if (DimpCore.baseAvailable() &&
             HordeCore.base.DimpBase.view == DimpCore.conf.drafts_mbox) {
             HordeCore.base.DimpBase.poll();
         }
@@ -70,10 +70,16 @@ var DimpCompose = {
     {
         if (DimpCore.conf.qreply) {
             this.closeQReply();
-        } else if (this.is_popup) {
-            HordeCore.closePopup();
+        } else if (HordeCore.base) {
+            // Want HordeCore.base directly here, since we are only checking
+            // whether window.close can be done, not the current status
+            // of the opening window.
+            window.close();
         } else {
-            HordeCore.redirect(DimpCore.conf.URI_MAILBOX);
+            // Sanity checking: if popup cannot be manually closed, output
+            // information message without allowing further actions on the
+            // page.
+            $$('body')[0].update(DimpCore.text.compose_close);
         }
     },
 
@@ -208,7 +214,7 @@ var DimpCompose = {
             this.skip_spellcheck = true;
         }
 
-        if (this.editor_wait) {
+        if (this.rte && this.rte.busy()) {
             return this.uniqueSubmit.bind(this, action).delay(0.1);
         }
 
@@ -232,7 +238,7 @@ var DimpCompose = {
         case 'saveDraft':
         case 'saveTemplate':
             // Don't send/save until uploading is completed.
-            if (this.uploading) {
+            if ($('upload_wait').visible()) {
                 (function() { if (this.disabled) { this.uniqueSubmit(action); } }).bind(this).delay(0.25);
                 return;
             }
@@ -248,13 +254,12 @@ var DimpCompose = {
         if (action == 'addAttachment') {
             // We need a submit action here because browser security models
             // won't let us access files on user's filesystem otherwise.
-            this.uploading = true;
             HordeCore.submit(c);
         } else {
             // Move HTML text to textarea field for submission.
             if (ImpComposeBase.editor_on) {
-                ImpComposeBase.rte.updateElement();
-                if (!Object.isUndefined(ImpComposeBase.rte_sig)) {
+                this.rte.updateElement();
+                if (ImpComposeBase.rte_sig) {
                     ImpComposeBase.rte_sig.updateElement();
                 }
             }
@@ -282,7 +287,7 @@ var DimpCompose = {
                 this.updateDraftsMailbox();
 
                 if (d.action == 'saveDraft') {
-                    if (!DimpCore.conf.qreply && this.baseAvailable()) {
+                    if (!DimpCore.conf.qreply && DimpCore.baseAvailable()) {
                         HordeCore.notify_handler = HordeCore.base.HordeCore.showNotifications.bind(HordeCore.base.HordeCore);
                     }
                     if (DimpCore.conf.close_draft) {
@@ -293,14 +298,14 @@ var DimpCompose = {
                 break;
 
             case 'saveTemplate':
-                if (this.baseAvailable() &&
+                if (DimpCore.baseAvailable() &&
                     HordeCore.base.DimpBase.view == DimpCore.conf.templates_mbox) {
                     HordeCore.base.DimpBase.poll();
                 }
                 return this.closeCompose();
 
             case 'sendMessage':
-                if (this.baseAvailable()) {
+                if (DimpCore.baseAvailable()) {
                     if (d.draft_delete) {
                         HordeCore.base.DimpBase.poll();
                     }
@@ -314,7 +319,7 @@ var DimpCompose = {
                 return this.closeCompose();
 
             case 'redirectMessage':
-                if (this.baseAvailable() && !DimpCore.conf.qreply) {
+                if (DimpCore.baseAvailable() && !DimpCore.conf.qreply) {
                     HordeCore.notify_handler = HordeCore.base.HordeCore.showNotifications.bind(HordeCore.base.HordeCore);
                 }
 
@@ -360,7 +365,7 @@ var DimpCompose = {
                 sc.disable(disable);
             }
             if (ImpComposeBase.editor_on) {
-                this.RTELoading(disable ? 'show' : 'hide', true);
+                this.RTELoading(disable, true);
             }
 
             $('compose').setStyle({ cursor: disable ? 'wait' : null });
@@ -382,11 +387,11 @@ var DimpCompose = {
             sc.resume();
         }
 
-        if (this.editor_wait) {
+        this.RTELoading(true);
+
+        if (this.rte && this.rte.busy()) {
             return this.toggleHtmlEditor.bind(this, noupdate).delay(0.1);
         }
-
-        this.RTELoading('show');
 
         if (active) {
             action = 'html2Text',
@@ -394,7 +399,7 @@ var DimpCompose = {
 
             params.set('body', {
                 changed: changed,
-                text: ImpComposeBase.rte.getData()
+                text: this.rte.getData()
             });
 
             if ($('signature') && (this.sigHash() != this.hash_sigOrig)) {
@@ -442,22 +447,26 @@ var DimpCompose = {
         }
     },
 
-    RTELoading: function(cmd, notxt)
+    RTELoading: function(show, notxt)
     {
         var o;
 
         if (!$('rteloading')) {
-            $(document.body).insert(new Element('DIV', { id: 'rteloading' }).hide()).insert(new Element('SPAN', { id: 'rteloadingtxt' }).hide().insert(DimpCore.text.loading));
+            $(document.body).insert(
+                new Element('DIV', { id: 'rteloading' }).hide()
+            ).insert(
+                new Element('SPAN', { id: 'rteloadingtxt' }).hide().insert(DimpCore.text.loading)
+            );
         }
 
-        if (cmd == 'hide') {
-            $('rteloading', 'rteloadingtxt').invoke('hide');
-        } else {
+        if (show) {
             $('rteloading').clonePosition('composeMessageParent').show();
             if (!notxt) {
                 o = $('rteloading').viewportOffset();
                 $('rteloadingtxt').setStyle({ top: (o.top + 15) + 'px', left: (o.left + 15) + 'px' }).show();
             }
+        } else {
+            $('rteloading', 'rteloadingtxt').invoke('hide');
         }
     },
 
@@ -466,7 +475,7 @@ var DimpCompose = {
         if (ImpComposeBase.editor_on) {
             this.setBodyText({ body: $F('composeMessage') });
             $('composeMessage').next().show();
-            this.RTELoading('hide');
+            this.RTELoading(false);
         }
         this.sc_submit = false;
     },
@@ -478,8 +487,8 @@ var DimpCompose = {
             : null;
 
         if (ImpComposeBase.editor_on) {
-            ImpComposeBase.rte.updateElement();
-            this.RTELoading('show', true);
+            this.rte.updateElement();
+            this.RTELoading(true, true);
             $('composeMessage').next().hide();
         }
     },
@@ -487,7 +496,7 @@ var DimpCompose = {
     _onSpellCheckError: function()
     {
         if (ImpComposeBase.editor_on) {
-            this.RTELoading('hide');
+            this.RTELoading(false);
         }
     },
 
@@ -517,14 +526,17 @@ var DimpCompose = {
 
         this.rteInit(opts.rte);
 
-        if (ImpComposeBase.rte_loaded && opts.rte) {
-            ImpComposeBase.rte.setData(r.text.body);
-        } else if (!ImpComposeBase.rte_loaded && !opts.rte) {
-            ta.setValue(r.text.body);
+        if (this.rte && opts.rte) {
+            if (this.rte.busy()) {
+                this.setMessageText.bind(this, opts, r).delay(0.1);
+                return;
+            }
+            this.rte.setData(r.text.body);
         } else {
-            this.setMessageText.bind(this, opts, r).delay(0.1);
-            return;
+            ta.setValue(r.text.body);
         }
+
+        this.RTELoading(false);
 
         ImpComposeBase.setSignature(opts.rte, r.text.sig ? r.text.sig : ImpComposeBase.identities[$F('identity')]);
 
@@ -541,32 +553,12 @@ var DimpCompose = {
     {
         var config;
 
-        if (rte && !ImpComposeBase.rte) {
-            if (Object.isUndefined(ImpComposeBase.rte_loaded)) {
-                CKEDITOR.on('instanceReady', function(evt) {
-                    new CKEDITOR.dom.document(
-                        evt.editor.getThemeSpace('contents').$.down('IFRAME').contentWindow.document)
-                    .on('keydown', function(evt) {
-                        this.keydownHandler(Event.extend(evt.data.$), true);
-                    }.bind(this));
-                }.bind(this));
-                CKEDITOR.on('instanceDestroyed', function(evt) {
-                    this.RTELoading('hide');
-                    ImpComposeBase.rte_loaded = false;
-                }.bind(this));
-            }
-
+        if (rte && !this.rte) {
             config = Object.clone(IMP.ckeditor_config);
             config.extraPlugins = 'pasteattachment';
-            ImpComposeBase.rte = CKEDITOR.replace('composeMessage', config);
+            this.rte = new IMP_Editor('composeMessage', config);
 
-            ImpComposeBase.rte.on('dataReady', function(evt) {
-                this.RTELoading('hide');
-                evt.editor.focus();
-                ImpComposeBase.rte_loaded = true;
-                this.resizeMsgArea();
-            }.bind(this));
-            ImpComposeBase.rte.on('getData', function(evt) {
+            this.rte.editor.on('getData', function(evt) {
                 var elt = new Element('SPAN').insert(evt.data.dataValue),
                     elts = elt.select('IMG[dropatc_id]');
                 if (elts.size()) {
@@ -574,10 +566,10 @@ var DimpCompose = {
                     elts.invoke('writeAttribute', 'src', null);
                     evt.data.dataValue = elt.innerHTML;
                 }
-            }.bind(this));
-        } else if (!rte && ImpComposeBase.rte) {
-            ImpComposeBase.rte.destroy(true);
-            delete ImpComposeBase.rte;
+            });
+        } else if (!rte && this.rte) {
+            this.rte.destroy();
+            delete this.rte;
         }
 
         ImpComposeBase.editor_on = rte;
@@ -666,7 +658,7 @@ var DimpCompose = {
 
     fillFormHash: function()
     {
-        if (ImpComposeBase.editor_on && !ImpComposeBase.rte_loaded) {
+        if (this.rte && this.rte.busy()) {
             this.fillFormHash.bind(this).delay(0.1);
             return;
         }
@@ -726,14 +718,14 @@ var DimpCompose = {
     msgHash: function()
     {
         return IMP_JS.fnv_1a(
-            ImpComposeBase.editor_on ? ImpComposeBase.rte.getData() : $F('composeMessage')
+            ImpComposeBase.editor_on ? this.rte.getData() : $F('composeMessage')
         );
     },
 
     sigHash: function()
     {
         return $('signature')
-            ? IMP_JS.fnv_1a( ImpComposeBase.rte_sig ? ImpComposeBase.rte_sig.getData() : $F('signature'))
+            ? IMP_JS.fnv_1a(ImpComposeBase.rte_sig ? ImpComposeBase.rte_sig.getData() : $F('signature'))
             : 0;
     },
 
@@ -754,11 +746,8 @@ var DimpCompose = {
 
     setBodyText: function(ob)
     {
-        if (ImpComposeBase.editor_on) {
-            this.editor_wait = true;
-            ImpComposeBase.rte.setData(ob.body, function() {
-                this.editor_wait = false;
-            }.bind(this));
+        if (this.rte) {
+            this.rte.setData(ob.body);
         } else {
             $('composeMessage').setValue(ob.body);
             ImpComposeBase.setCursorPosition('composeMessage', DimpCore.conf.compose_cursor);
@@ -771,7 +760,7 @@ var DimpCompose = {
             if (ob.opts &&
                 ob.opts.focus &&
                 (ob.opts.focus == 'composeMessage')) {
-                this.focusEditor();
+                this.rte.focus();
             }
         }
     },
@@ -792,15 +781,6 @@ var DimpCompose = {
             }, this);
         }
         $('to_loading_img').hide();
-    },
-
-    focusEditor: function()
-    {
-        if (ImpComposeBase.rte.focus) {
-            ImpComposeBase.rte.focus();
-        } else {
-            this.focusEditor.bind(this).delay(0.1);
-        }
     },
 
     // opts = (Object)
@@ -909,15 +889,17 @@ var DimpCompose = {
 
     addAttachmentEnd: function()
     {
-        this.uploading = false;
-        $('upload_wait').hide();
-        this.initAttachList();
+        var u = $('upload_wait');
+
+        if (u.visible()) {
+            u.hide();
+            this.initAttachList();
+        }
     },
 
     resizeMsgArea: function(e)
     {
         if (!document.loaded || $('dimpLoading').visible()) {
-            this.resizeMsgArea.bind(this).delay(0.1);
             return;
         }
 
@@ -947,25 +929,40 @@ var DimpCompose = {
             mah -= sp.getHeight();
         }
 
-        if (ImpComposeBase.rte_loaded) {
-            ImpComposeBase.rte.resize('99%', mah - 1, false);
+        if (this.rte) {
+            this.rte.resize('99%', mah - 1);
         }
 
         $('composeMessage').setStyle({ height: mah + 'px' });
 
         if ($('rteloading') && $('rteloading').visible()) {
-            this.RTELoading('hide');
+            this.RTELoading(true);
         }
     },
 
-    uploadAttachment: function()
+    uploadAttachmentWait: function(f)
     {
-        var u = $('upload');
-        this.uniqueSubmit('addAttachment');
-        u.up().hide();
-        $('upload_wait').update(DimpCore.text.uploading + ' (' +
-            ((u.files && u.files.length > 1) ? DimpCore.text.multiple_atc.sub('%d', u.files.length) : $F(u).escapeHTML()) +
-            ')').show();
+        var t;
+
+        $('upload').up().hide();
+
+        if (Object.isElement(f)) {
+            if (f.files) {
+                f = f.files;
+            } else {
+                f = null;
+                t = $F(f).escapeHTML();
+            }
+        }
+
+        if (f) {
+            t = (f.length > 1)
+                ? DimpCore.text.multiple_atc.sub('%d', f.length)
+                : f[0].name.escapeHTML();
+        }
+
+        $('upload_wait').update(DimpCore.text.uploading + ' (' + t + ')')
+            .show();
     },
 
     uploadAttachmentAjax: function(data, params, callback)
@@ -977,6 +974,8 @@ var DimpCompose = {
             json_return: 1
         });
         HordeCore.addRequestParams(params);
+
+        this.uploadAttachmentWait(data);
 
         $A($R(0, data.length - 1)).each(function(i) {
             var fd = new FormData();
@@ -993,7 +992,12 @@ var DimpCompose = {
                     postBody: fd,
                     requestHeaders: { "Content-type": null }
                 },
-                callback: callback
+                callback: function(r) {
+                    if (callback) {
+                        callback(r);
+                    }
+                    this.addAttachmentEnd();
+                }.bind(this)
             });
 
             out.set(this.ajax_atc_id, data[i]);
@@ -1042,14 +1046,6 @@ var DimpCompose = {
         }
 
         window.open(uri, 'contacts', 'toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes,width=800,height=350,left=100,top=100');
-    },
-
-    baseAvailable: function()
-    {
-        return (this.is_popup &&
-                HordeCore.base &&
-                !Object.isUndefined(HordeCore.base.DimpBase) &&
-                !HordeCore.base.closed);
     },
 
     /* Click observe handler. */
@@ -1256,7 +1252,8 @@ var DimpCompose = {
             break;
 
         case 'upload':
-            this.uploadAttachment();
+            this.uniqueSubmit('addAttachment');
+            this.uploadAttachmentWait($('upload'));
             break;
         }
     },
@@ -1329,6 +1326,9 @@ var DimpCompose = {
 
         if (t['imp:compose']) {
             this.getCacheElt().setValue(t['imp:compose'].cacheid);
+            if ($('composeCache')) {
+                $('composeHmac').setValue(t['imp:compose'].hmac);
+            }
             this.upload_limit = t['imp:compose'].atclimit;
         }
 
@@ -1336,7 +1336,7 @@ var DimpCompose = {
             t['imp:compose-atc'].each(this.addAttach.bind(this));
         }
 
-        if (this.baseAvailable()) {
+        if (DimpCore.baseAvailable()) {
             if (t['imp:flag']) {
                 HordeCore.base.DimpBase.flagCallback(t['imp:flag']);
             }
@@ -1353,8 +1353,6 @@ var DimpCompose = {
 
     onDomLoad: function()
     {
-        this.is_popup = !Object.isUndefined(HordeCore.base);
-
         /* Initialize redirect elements. */
         if (DimpCore.conf.redirect) {
             $('redirect').observe('submit', Event.stop);
@@ -1395,13 +1393,10 @@ var DimpCompose = {
 
         if ($H(DimpCore.context.ctx_atc).size()) {
             $('atcdrop').observe('DragHandler:drop', function(e) {
-                if (e.memo.dataTransfer) {
-                    this.uploadAttachmentAjax(e.memo.dataTransfer.files);
-                }
+                this.uploadAttachmentAjax(e.memo);
             }.bindAsEventListener(this));
             DragHandler.dropelt = $('atcdrop');
             DragHandler.droptarget = $('atcdiv');
-            DragHandler.droptargetsize = $('atcdiv').up();
             DragHandler.hoverclass = 'atcdrop_over';
             DimpCore.addPopdown($('upload'), 'atc', {
                 no_offset: true
@@ -1476,13 +1471,8 @@ var DimpCompose = {
             break;
         }
 
-        if (this.uploading) {
-            this.addAttachmentEnd();
-        }
-
-        if ($('rteloading') && $('rteloading').visible()) {
-            this.RTELoading('hide');
-        }
+        this.addAttachmentEnd();
+        this.RTELoading(false);
     }
 
 };
@@ -1517,3 +1507,21 @@ document.observe('HordeCore:runTasks', function(e) {
 
 /* AJAX related events. */
 document.observe('HordeCore:ajaxFailure', DimpCompose.onAjaxFailure.bindAsEventListener(DimpCompose));
+
+/* IMP Editor events. */
+document.observe('IMP_Editor:ready', function(e) {
+    if (e.memo.name == 'composeMessage') {
+        new CKEDITOR.dom.document(
+            e.memo.getThemeSpace('contents').$.down('IFRAME').contentWindow.document)
+        .on('keydown', function(evt) {
+            this.keydownHandler(Event.extend(evt.data.$), true);
+        }.bind(this));
+    }
+}.bindAsEventListener(DimpCompose));
+document.observe('IMP_Editor:dataReady', function(e) {
+    if (e.memo.name == 'composeMessage') {
+        this.RTELoading(false);
+        e.memo.focus();
+        this.resizeMsgArea();
+    }
+}.bindAsEventListener(DimpCompose));

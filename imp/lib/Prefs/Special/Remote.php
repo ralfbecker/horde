@@ -36,9 +36,14 @@ class IMP_Prefs_Special_Remote implements Horde_Core_Prefs_Ui_Special
 
         $ui->nobuttons = true;
 
+        $page_output->addScriptFile('external/base64.js');
         $page_output->addScriptFile('remoteprefs.js');
         $page_output->addInlineJsVars(array(
-            'ImpRemotePrefs.confirm_delete' => _("Are you sure you want to delete this account?")
+            'ImpRemotePrefs.confirm_delete' => _("Are you sure you want to delete this account?"),
+            'ImpRemotePrefs.empty_email' => _("The e-mail field cannot be empty."),
+            'ImpRemotePrefs.empty_password' => _("The password field cannot be empty."),
+            'ImpRemotePrefs.next' => _("Next"),
+            'ImpRemotePrefs.wait' => _("Please wait...")
         ));
 
         $view = new Horde_View(array(
@@ -80,48 +85,59 @@ class IMP_Prefs_Special_Remote implements Horde_Core_Prefs_Ui_Special
                 if ($ui->vars->remote_port) {
                     $ob->port = $ui->vars->remote_port;
                 }
-
-                switch ($ui->vars->remote_secure) {
-                case 'auto':
-                    /* Check for non-SSL connection. */
-                    $ob->secure = false;
-                    if ($stream = @stream_socket_client($ob->hostspec . ':' . $ob->port)) {
-                        stream_set_timeout($stream, 2);
-                        if (fread($stream, 1024)) {
-                            $ob->secure = true;
-                        }
-                        fclose($stream);
-                    }
-                    break;
-
-                case 'no':
-                    $ob->secure = false;
-                    break;
-
-                case 'yes':
-                    /* Check for non-SSL connection. */
-                    $ob->secure = 'ssl';
-                    if ($stream = @stream_socket_client($ob->hostspec . ':' . $ob->port)) {
-                        stream_set_timeout($stream, 2);
-                        if (fread($stream, 1024)) {
-                            $ob->secure = 'tls';
-                        }
-                        fclose($stream);
-                    }
-                    break;
-                }
-
                 if ($ui->vars->get('remote_type') == 'pop3') {
                     $ob->type = $ob::POP3;
                 }
 
+                if (isset($ui->vars->remote_secure_autoconfig)) {
+                    switch ($ui->vars->remote_secure_autoconfig) {
+                    case 'starttls':
+                        $ob->secure = 'tls';
+                        break;
+
+                    case 'tls':
+                        $ob->secure = 'ssl';
+                        break;
+
+                    default:
+                        $ob->secure = true;
+                        break;
+                    }
+                } else {
+                    switch ($ui->vars->remote_secure) {
+                    case 'auto':
+                        $ob->secure = true;
+                        break;
+
+                    case 'yes':
+                        switch ($ob->type) {
+                        case $ob::IMAP:
+                            $tmp = new Horde_Mail_Autoconfig_Server_Imap();
+                            break;
+
+                        case $ob::POP3:
+                            $tmp = new Horde_Mail_Autoconfig_Server_Pop3();
+                            break;
+                        }
+
+                        $tmp->host = $ob->hostspec;
+                        $tmp->port = $ob->port;
+                        $tmp->tls = 'tls';
+
+                        $ob->secure = $tmp->valid()
+                            ? 'ssl'
+                            : 'tls';
+                        break;
+                    }
+                }
+
                 $remote[strval($ob)] = $ob;
 
-                $notification->push(sprintf(_("Account \"%s\" added."), $ui->vars->remote_server), 'horde.success');
+                $notification->push(sprintf(_("Account \"%s\" added."), $ob->label), 'horde.success');
 
                 $injector->getInstance('IMP_Ftree')->insert($ob);
             } catch (IMP_Exception $e) {
-                $notification->push($e->getMessage(), 'horde.error');
+                $notification->push($e, 'horde.error');
             }
             break;
 

@@ -788,6 +788,7 @@ class IMP_Basic_Compose extends IMP_Basic_Base
                 'compose_formToken' => $session->getNonce(),
                 'compose_requestToken' => $session->getToken(),
                 'composeCache' => $composeCacheID,
+                'composeHmac' => $imp_compose->getHmac(),
                 'oldrtemode' => $rtemode,
                 'rtemode' => $rtemode,
                 'user' => $registry->getAuth()
@@ -1057,6 +1058,7 @@ class IMP_Basic_Compose extends IMP_Basic_Base
 
         $page_output->addScriptPackage('IMP_Script_Package_ComposeBase');
         $page_output->addScriptFile('compose.js');
+        $page_output->addScriptFile('editor.js');
         $page_output->addScriptFile('imp.js');
         $page_output->addInlineJsVars($js_vars);
         if (!$redirect) {

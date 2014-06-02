@@ -48,3 +48,18 @@ BC BREAKING (i.e., Horde 6).
 
 - Change the readable names of the WBXML tags to reflect what they are called
   in the MS-AS* documents, and not what Z-Push's developers decided to call them.
+
+- Look at extracting something like Request_Parser and Request_Handler classes
+  to separate the reading of the request from the handling of it. The parser
+  should return some standard request object that can be passed to the handler
+  that contains the pertinent information.
+
+- Maintain the serverid -> backendid map in a single place and stop storing
+  backend ids (i.e., IMAP folder names) in collection/state/folder cache etc...
+
+- Possibly move the syncCache and state into the device object so we have a
+  single object to pass around that has access to all.
+
+- Extract a basic Horde_ActiveSync_Storage class? At the very least we need to
+  rename the current Horde_ActiveSync_State_* classes to Horde_ActiveSync_Storage
+  since they now deal with more that device state.

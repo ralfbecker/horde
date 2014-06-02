@@ -22,18 +22,19 @@
   <email>chuck@horde.org</email>
   <active>no</active>
  </lead>
- <date>2014-05-05</date>
+ <date>2014-05-21</date>
  <version>
-  <release>4.2.0alpha2</release>
+  <release>4.2.0beta2</release>
   <api>4.2.0</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
  <notes>
-* [jan] Use the event&apos;s or calendar&apos;s owner identity when sending notifications (Bug #13158).
+* [jan] Add synchronization of attendees via CalDAV (Request #13027).
+* [mjr] Fix moving an event from one calendar to another while resources are disabled (Bug #13201, Carlos Timóteo &lt;ctimoteo@sapo.pt&gt;)
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -1029,7 +1030,7 @@
    <package>
     <name>nag</name>
     <channel>pear.horde.org</channel>
-    <min>4.2.0</min>
+    <min>4.2.0alpha1</min>
     <max>5.0.0alpha1</max>
     <exclude>5.0.0alpha1</exclude>
    </package>
@@ -1057,7 +1058,7 @@
    <package>
     <name>Horde_OpenXchange</name>
     <channel>pear.horde.org</channel>
-    <min>1.0.0alpha1</min>
+    <min>1.0.0</min>
     <max>2.0.0alpha1</max>
     <exclude>2.0.0alpha1</exclude>
    </package>
@@ -2323,10 +2324,38 @@
    <stability>
     <release>alpha</release>
     <api>alpha</api></stability>
-   <date>2014-05-05</date>
+   <date>2014-05-07</date>
    <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
    <notes>
+* [jan] Fix dependency on Nag (Bug #13166).
 * [jan] Use the event&apos;s or calendar&apos;s owner identity when sending notifications (Bug #13158).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>4.2.0beta1</release>
+    <api>4.2.0</api></version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api></stability>
+   <date>2014-05-21</date>
+   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
+   <notes>
+* [mjr] Do not include resources with no email address when synching to EAS clients.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>4.2.0beta2</release>
+    <api>4.2.0</api></version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api></stability>
+   <date>2014-05-21</date>
+   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
+   <notes>
+* [jan] Add synchronization of attendees via CalDAV (Request #13027).
+* [mjr] Fix moving an event from one calendar to another while resources are disabled (Bug #13201, Carlos Timóteo &lt;ctimoteo@sapo.pt&gt;)
    </notes>
   </release>
  </changelog>
