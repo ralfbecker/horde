@@ -28,9 +28,9 @@
   <email>chuck@horde.org</email>
   <active>no</active>
  </lead>
- <date>2014-05-21</date>
+ <date>2014-06-04</date>
  <version>
-  <release>5.2.0beta2</release>
+  <release>5.3.0</release>
   <api>5.2.0</api>
  </version>
  <stability>
@@ -39,7 +39,7 @@
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl">LGPL-2</license>
  <notes>
-* [mms] Cleaner indication on login page that an authenticated user is logging into specific application rather than Horde in general.
+* 
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -1645,7 +1645,7 @@
    <package>
     <name>Horde_Core</name>
     <channel>pear.horde.org</channel>
-    <min>2.12.0alpha1</min>
+    <min>2.12.0beta4</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
    </package>
@@ -3889,10 +3889,37 @@
    <stability>
     <release>beta</release>
     <api>beta</api></stability>
-   <date>2014-05-21</date>
+   <date>2014-06-04</date>
    <license uri="http://www.horde.org/licenses/lgpl">LGPL-2</license>
    <notes>
 * [mms] Cleaner indication on login page that an authenticated user is logging into specific application rather than Horde in general.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>5.2.0beta3</release>
+    <api>5.2.0</api></version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api></stability>
+   <date>2014-06-04</date>
+   <license uri="http://www.horde.org/licenses/lgpl">LGPL-2</license>
+   <notes>
+* [jan] Add configuration for searching user DNs in LDAP groups (Bug #12128).
+* [jan] Don&apos;t try to write to read-only group backends when removing user data (skhorde@smail.inf.fh-bonn-rhein-sieg.de, Bug #13248).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>5.3.0</release>
+    <api>5.2.0</api></version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api></stability>
+   <date>2014-06-04</date>
+   <license uri="http://www.horde.org/licenses/lgpl">LGPL-2</license>
+   <notes>
+* 
    </notes>
   </release>
  </changelog>

@@ -66,7 +66,7 @@ class IMP_Application extends Horde_Registry_Application
 
     /**
      */
-    public $version = 'H5 (6.2.0-git)';
+    public $version = 'H5 (6.3.0-git)';
 
     /**
      * Server key used in logged out session.
@@ -138,19 +138,10 @@ class IMP_Application extends Horde_Registry_Application
      */
     protected function _init()
     {
-        global $prefs, $registry;
+        global $registry;
 
-        // Set default message character set.
-        if ($registry->getAuth()) {
-            if ($def_charset = $prefs->getValue('default_msg_charset')) {
-                Horde_Mime_Part::$defaultCharset = $def_charset;
-                Horde_Mime_Headers::$defaultCharset = $def_charset;
-            }
-
-            // Always use Windows-1252 in place of ISO-8859-1 for MIME
-            // decoding.
-            Horde_Mime::$decodeWindows1252 = true;
-        }
+        // Always use Windows-1252 in place of ISO-8859-1 for MIME decoding.
+        Horde_Mime::$decodeWindows1252 = true;
 
         if (($registry->initialApp == 'imp') &&
             !empty($this->initParams['impmode']) &&

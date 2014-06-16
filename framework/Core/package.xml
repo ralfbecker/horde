@@ -28,9 +28,9 @@
   <email>mrubinsk@horde.org</email>
   <active>yes</active>
  </developer>
- <date>2014-05-24</date>
+ <date>2014-06-10</date>
  <version>
-  <release>2.12.0beta2</release>
+  <release>2.12.0beta4</release>
   <api>2.12.0</api>
  </version>
  <stability>
@@ -39,8 +39,10 @@
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
  <notes>
-* [mjr] Fix copying forwarded messages to Sent mail folder when using EAS.
-* [mjr] Fix generating From address when sending email via ActiveSync when personal part must be quoted (Bug# 13208).
+* [mjr] Fix updating attendee response status when receeived via ActiveSync.
+* [jan] Add &lt;configldapuser&gt; configuration item.
+* [jan] Add base DN to LDAP configuration for searching user DNs.
+* [jan] Allow to specify port for PostgreSQL socket connections (Request #13250).
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -3404,11 +3406,41 @@
    <stability>
     <release>beta</release>
     <api>beta</api></stability>
-   <date>2014-05-24</date>
+   <date>2014-06-04</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
 * [mjr] Fix copying forwarded messages to Sent mail folder when using EAS.
 * [mjr] Fix generating From address when sending email via ActiveSync when personal part must be quoted (Bug# 13208).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.12.0beta3</release>
+    <api>2.12.0</api></version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api></stability>
+   <date>2014-06-10</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mjr] Fix incorrect processing of autocompleted data when using prettyautocompleter (Bug #13256).
+* [mms] Allow any HordeCore AJAX response object to return JSON-HTML output, instead of pure JSON.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.12.0beta4</release>
+    <api>2.12.0</api></version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api></stability>
+   <date>2014-06-10</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mjr] Fix updating attendee response status when receeived via ActiveSync.
+* [jan] Add &lt;configldapuser&gt; configuration item.
+* [jan] Add base DN to LDAP configuration for searching user DNs.
+* [jan] Allow to specify port for PostgreSQL socket connections (Request #13250).
    </notes>
   </release>
  </changelog>

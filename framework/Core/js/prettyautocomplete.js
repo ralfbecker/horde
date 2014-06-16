@@ -5,10 +5,27 @@
  * @author     Michael J Rubinsky <mrubinsk@horde.org>
  * @copyright  2008-2014 Horde LLC
  * @license    LGPL-2.1 (http://www.horde.org/licenses/lgpl21)
+ *
+ * @todo H6 Extract common code between this class and IMP's version. Use custom
+ * events instead of passing handlers.
  */
 
 var PrettyAutocompleter = Class.create({
 
+    // Autocompleter
+    aac: null,
+
+    // Delete image element.
+    dimg: null,
+
+    enabled: false,
+
+    // For BC. Remove in H6.
+    selectedItems: [],
+
+    // required params:
+    //   deleteImg
+    //   uri
     initialize: function(element, params)
     {
         this.p = Object.extend({
@@ -17,32 +34,27 @@ var PrettyAutocompleter = Class.create({
             boxClass: 'hordeACBox',
             // <ul> CSS class
             listClass: 'hordeACList',
+            listClassItem: 'hordeACListItem',
             // CSS class for real input field
             growingInputClass: 'hordeACTrigger',
-            // Dom id for <li> that holds the input field.
-            triggerContainer: 'hordeACTriggerContainer',
-            // Min pixel width of input field
-            minTriggerWidth: 100,
+            removeClass: 'hordeACItemRemove',
             // Allow for a function that filters the display value
             // This function should *always* return escaped HTML
             displayFilter: function(t) { return t.escapeHTML(); },
-            filterCallback: this._filterChoices.bind(this),
+            filterCallback: this.filterChoices.bind(this),
             onAdd: Prototype.K,
             onRemove: Prototype.K,
-            requireSelection: false
+            requireSelection: false,
+            existing: []
         }, params || {});
 
-        // Array to hold the currently selected items to ease with removing
-        // them, assuring no duplicates etc..
-        this.selectedItems = [];
-
         // The original input element is transformed into the hidden input
-        // field that hold the text values (p.items), while p.trigger is
+        // field that hold the text values (this.elm), while p.trigger is
         // the borderless input field located in p.box
-        this.p.items = element;
+        this.elm = element;
         this.p.trigger = element + 'real';
         this.initialized = false;
-        this._enabled = true;
+        this.enabled = true;
     },
 
     /**
@@ -58,43 +70,39 @@ var PrettyAutocompleter = Class.create({
         // Build the DOM structure
         this.buildStructure();
 
-        // Remember the bound method to unregister later.
-        this._boundProcessValue = this._processValue.bind(this);
-        var trigger = $(this.p.trigger);
-        trigger.observe('keydown', this._onKeyDown.bindAsEventListener(this));
-        trigger.observe('blur', this._boundProcessValue);
-
-        // Make sure the p.items element is hidden
+        // Make sure the original input box element is hidden
         if (!this.p.debug) {
-            $(this.p.items).hide();
+            $(this.elm).hide();
         }
 
-        // Set the updateElement callback
-        this.p.onSelect = this._updateElement.bind(this);
+        // Set the updateElement callback to pass to the Autocompleter.
+        this.p.onSelect = this.updateElement.bind(this);
 
         // Look for clicks on the box to simulate clicking in an input box
-        $(this.p.box).observe('click', function() { trigger.focus(); });
-        trigger.observe('blur', this._resize.bind(this));
-        trigger.observe('keydown', this._resize.bind(this));
-        trigger.observe('keypress', this._resize.bind(this));
-        trigger.observe('keyup', this._resize.bind(this));
+        this.box.observe('click', this.clickHandler.bindAsEventListener(this));
+        this.box.observe('dblclick', this.dblclickHandler.bindAsEventListener(this));
+
+        // Remember the bound method to unregister later.
+        this.boundProcessValue = this.blur.bind(this);
+        this.input.observe('blur', this.boundProcessValue);
+        this.input.observe('keydown', this.resize.bind(this));
+        this.input.observe('keypress', this.resize.bind(this));
+        this.input.observe('keyup', this.resize.bind(this));
+        this.input.observe('keydown', this.keyDownHandler.bindAsEventListener(this));
 
         // Create the underlaying Autocompleter
         this.p.uri += '&input=' + this.p.trigger;
 
-        this.p.onShow = this._knvShow.bind(this);
-        this.p.onHide = this._knvHide.bind(this);
+        this.p.onShow = this.knlShow.bind(this);
+        this.p.onHide = this.knlHide.bind(this);
 
         // Make sure the knl is contained in the overlay
         this.p.domParent = this.p.box;
-        new Ajax.Autocompleter(this.p.trigger, this.p.uri, this.p);
-
+        this.aac = new Ajax.Autocompleter(this.p.trigger, this.p.uri, this.p);
         this.initialized = true;
 
         // Prepopulate the items and the container elements?
-        if (typeof this.p.existing != 'undefined') {
-            this.reset(this.p.existing);
-        }
+        this.reset(this.p.existing);
     },
 
     /**
@@ -105,75 +113,50 @@ var PrettyAutocompleter = Class.create({
         if (!this.initialized) {
             this.init();
         }
-
-        // TODO: Resize the trigger field to fill the current line?
-        // Clear any existing values
-        if (this.selectedItems.length) {
-            $(this.p.box).select('li.' + this.p.listClass + 'Item').each(function(item) {
-                this.removeItemNode(item);
-            }.bind(this));
-        }
-
-        // Clear the hidden items field
-        $(this.p.items).value = '';
+        this.currentEntries().each(function(elt) {
+            this.removeItemNode(elt);
+        }.bind(this));
+        this.updateInput('');
 
         // Add any initial values
-        if (typeof existing != 'undefined' && existing.length) {
+        existing = existing || [];
+        if (existing.length) {
             for (var i = 0, l = existing.length; i < l; i++) {
                 this.addNewItemNode(existing[i]);
             }
         }
-        this._enabled = true;
+        this.enabled = true;
     },
 
     buildStructure: function()
     {
         // Build the outter box
-        var box = new Element('div', { id: this.p.box, className: this.p.boxClass }).setStyle({ position: 'relative' }),
+        this.box = new Element('div', {
+            id: this.p.box,
+            className: this.p.boxClass
+        }).setStyle({ position: 'relative' });
 
-        // The list - where the choosen items are placed as <li> nodes
-            list = new Element('ul', { className: this.p.listClass }),
+        this.input = new Element('input', {
+            className: this.p.growingInputClass,
+            id: this.p.trigger,
+            name: this.p.trigger,
+            autocomplete: 'off'
+        });
 
-        // The input element and the <li> wraper
-            inputListItem = new Element('li', { id: this.p.triggerContainer }),
-            growingInput = new Element('input', {
-                className: this.p.growingInputClass,
-                id: this.p.trigger,
-                name: this.p.trigger,
-                autocomplete: 'off' });
-
-        // Create a hidden span node to help calculate the needed size
-        // of the input field.
-        this.sizer = new Element('span').setStyle({ cssFloat: 'left', display: 'inline-block', position: 'absolute', left: '-1000px' });
-
-        inputListItem.update(growingInput);
-        list.update(inputListItem);
-        box.update(list);
-        box.insert(this.sizer);
+        this.box.insert(
+            // The list - where the choosen items are placed as <li> nodes
+            new Element('ul', { className: this.p.listClass }).insert(
+                new Element('li').update(this.input)
+            )
+        );
 
         // Replace the single input element with the new structure and
         // move the old element into the structure while making sure it's
         // hidden. (Use the long form to play nice with Opera)
-        box.insert(Element.replace($(this.p.items), box));
+        this.box.insert(Element.replace($(this.elm), this.box));
     },
 
-    shutdown: function()
-    {
-        this._processValue();
-    },
-
-    _onKeyDown: function(e)
-    {
-        // Check for a comma or enter
-        if ((e.keyCode == 188 || e.keyCode == Event.KEY_RETURN) && !this.p.requireSelection) {
-            this._processValue();
-            e.stop();
-        } else if (e.keyCode == 188) {
-            e.stop();
-        }
-    },
-
-    _processValue: function()
+    processValue: function()
     {
         var value = $F(this.p.trigger).replace(/^,/, '').strip();
         if (value.length) {
@@ -183,16 +166,15 @@ var PrettyAutocompleter = Class.create({
         }
     },
 
-    _resize: function()
+    resize: function()
     {
-        this.sizer.update($(this.p.trigger).value);
-        newSize = Math.min(this.sizer.getWidth(), $(this.p.box).getWidth());
-        newSize = Math.max(newSize, this.p.minTriggerWidth);
-        $(this.p.trigger).setStyle({ width: newSize + 'px' });
+        this.input.setStyle({
+            width: Math.max(80, $F(this.input).length * 9) + 'px'
+        });
     },
 
     // Used as the updateElement callback.
-    _updateElement: function(item)
+    updateElement: function(item)
     {
         if (this.addNewItemNode(item)) {
             this.p.onAdd(item);
@@ -206,96 +188,186 @@ var PrettyAutocompleter = Class.create({
      */
     addNewItemNode: function(value)
     {
-        var displayValue, newItem, x;
+        var displayValue;
 
-        // Don't add if it's already present.
-        for (x = 0, len = this.selectedItems.length; x < len; x++) {
-            if (this.selectedItems[x].rawValue == value) {
-                $(this.p.trigger).value = '';
-                return false;
-            }
+        if (value.empty() || !this.filterChoices([ value ]).size()) {
+            return false;
         }
 
         displayValue = this.p.displayFilter(value);
-        newItem = new Element('li', { className: this.p.listClass + 'Item' }).update(displayValue);
-        x = new Element('img', { className: 'hordeACItemRemove', src: this.p.deleteIcon });
-        x.observe('click', this._removeItemHandler.bindAsEventListener(this));
-        newItem.insert(x);
-        $(this.p.triggerContainer).insert({ before: newItem });
-        $(this.p.trigger).value = '';
 
-        // Add to hidden input field.
-        if ($(this.p.items).value) {
-            $(this.p.items).value = $(this.p.items).value + ', ' + value;
-        } else {
-            $(this.p.items).value = value;
-        }
-
-        // ...and keep the selectedItems array up to date.
-        this.selectedItems.push({ rawValue: value, displayValue: displayValue });
+        this.input.up('li').insert({
+            before: new Element('li', { className: this.p.listClassItem })
+                .update(displayValue)
+                .insert(this.deleteImg().clone(true).show())
+                .store('raw', value)
+        });
+        this.updateInput('');
+        this.updateHiddenInput();
+        // Remove in H6.
+        this.updateSelectedItems();
 
         return true;
     },
 
-    removeItemNode: function(item)
+    updateSelectedItems: function()
     {
-        var x, value = item.collectTextNodesIgnoreClass('informal');
-        for (x = 0, len = this.selectedItems.length; x < len; x++) {
-            if (this.selectedItems[x].displayValue.unescapeHTML() == value) {
-               this.selectedItems.splice(x, 1);
-               break;
-            }
-        }
-        item.remove();
+        this.selecteItems = [];
+        this.currentValues().each(function(item) {
+            this.selectedItems.push( { rawValue: item });
+        }.bind(this));
+    },
+
+    removeItemNode: function(elt)
+    {
+        var value = elt.remove().retrieve('raw');
+        this.updateHiddenInput();
         this.p.onRemove(value);
+        this.updateSelectedItems();
+    },
+
+    deleteImg: function()
+    {
+        if (!this.dimg) {
+            this.dimg = new Element('img', {
+                className: this.p.removeClass,
+                src: this.p.deleteIcon
+            }).hide();
+            this.box.insert(this.dimg);
+        }
+
+        return this.dimg;
+    },
+
+    updateInput: function(input)
+    {
+        var raw;
+
+        if (Object.isElement(input)) {
+            raw = input.retrieve('raw');
+            this.removeItemNode(input);
+        } else {
+            raw = input;
+        }
+        this.input.setValue(raw);
+        this.resize();
+    },
+
+    updateHiddenInput: function()
+    {
+        $(this.elm).setValue(this.currentValues().join(', '));
+    },
+
+    currentEntries: function()
+    {
+        return this.input.up('ul').select('li.' + this.p.listClassItem);
+    },
+
+    currentValues: function()
+    {
+        return this.currentEntries().invoke('retrieve', 'raw');
+    },
+
+    filterChoices: function(c)
+    {
+        var cv = this.currentValues();
+
+        return c.select(function(v) {
+            return !cv.include(v);
+        });
     },
 
     disable: function()
     {
-      if (!this._enabled || !this.initialized) {
+      if (!this.enabled || !this.initialized) {
           return;
       }
 
-      this._enabled = false;
-      $(this.p.box).select('.hordeACItemRemove').invoke('toggle');
-      $(this.p.trigger).disable();
+      this.enabled = false;
+      this.box.select('.hordeACItemRemove').invoke('toggle');
+      this.input.disable();
     },
 
     enable: function()
     {
-        if (this._enabled) {
+        if (this.enabled) {
             return;
         }
-        this._enabled = true;
-        $(this.p.box).select('.hordeACItemRemove').invoke('toggle');
-        $(this.p.trigger).enable();
+        this.enabled = true;
+        this.box.select('.hordeACItemRemove').invoke('toggle');
+        this.input.enable();
     },
 
-    _removeItemHandler: function(e)
+    honorReturn: function()
     {
-        var realValues = [], x, len;
-        this.removeItemNode(e.element().up());
-        for (x = 0, len = this.selectedItems.length; x < len; x++) {
-            realValues.push(this.selectedItems[x].rawValue);
+        return (this.aac.knl && !this.aac.knl.getCurrentEntry()) ||
+               !this.aac.knl;
+    },
+
+    clickHandler: function(e)
+    {
+        var elt = e.element();
+        if (elt.hasClassName(this.p.removeClass)) {
+            this.removeItemNode(elt.up('li'));
         }
-        $(this.p.items).value = realValues.join(',');
+        this.input.focus();
     },
 
-    _filterChoices: function(c)
+    dblclickHandler: function(e)
     {
-        this.selectedItems.each(function(item) {
-            c = c.without(item.rawValue);
-        });
-        return c;
+        var elt = e.findElement('li');
+        if (elt) {
+            this.addNewItemNode($F(this.input));
+            this.updateInput(elt);
+        } else {
+            this.input.focus();
+        }
+        e.stop();
     },
 
-    _knvShow: function(l)
+    keyDownHandler: function(e)
     {
-        $(this.p.trigger).stopObserving('blur', this._boundProcessValue);
+        var tmp;
+
+        switch (e.which || e.keyCode || e.charCode) {
+        case Event.KEY_DELETE:
+        case Event.KEY_BACKSPACE:
+            if (!$F(this.input).length &&
+                (tmp = this.currentEntries().last())) {
+                this.updateInput(tmp);
+                e.stop();
+                return;
+            }
+        }
+
+        // Check for a comma or enter
+        if ((e.keyCode == 188 || (this.honorReturn() && e.keyCode == Event.KEY_RETURN)) && !this.p.requireSelection) {
+            this.processValue();
+            e.stop();
+        } else if (e.keyCode == 188) {
+            e.stop();
+        }
     },
 
-    _knvHide: function(l)
+    blur: function()
     {
-        $(this.p.trigger).observe('blur', this._boundProcessValue);
+        this.processValue();
+        this.resize();
+    },
+
+    knlShow: function(l)
+    {
+        this.input.stopObserving('blur', this.boundProcessValue);
+    },
+
+    knlHide: function(l)
+    {
+        this.input.observe('blur', this.boundProcessValue);
+    },
+
+    shutdown: function()
+    {
+        this.processValue();
     }
+
 });

@@ -61,7 +61,6 @@ extends Horde_Core_Ajax_Application_Handler
      *
      * Variables used:
      *   - mbox: (string) The name of the new mailbox.
-     *   - noexpand: (integer) Submailbox is not yet expanded.
      *   - parent: (string) The parent mailbox (base64url encoded).
      *
      * @return boolean  True on success, false on failure.
@@ -83,9 +82,6 @@ extends Horde_Core_Ajax_Application_Handler
             $GLOBALS['notification']->push(sprintf(_("Mailbox \"%s\" already exists."), $new_mbox->display), 'horde.warning');
         } elseif ($new_mbox->create()) {
             $result = true;
-            if (isset($this->vars->parent) && $this->vars->noexpand) {
-                $this->_base->queue->setMailboxOpt('noexpand', 1);
-            }
         }
 
         return $result;
@@ -295,6 +291,11 @@ extends Horde_Core_Ajax_Application_Handler
         if ($this->vars->initial) {
             $session->close();
             $ftree->eltdiff->clear();
+
+            /* @todo: Correctly handle unsubscribed mailboxes in ftree. */
+            if ($ftree->unsubscribed_loaded && !$this->vars->reload) {
+                $ftree->init();
+            }
         }
 
         if ($this->vars->reload) {
@@ -315,11 +316,8 @@ extends Horde_Core_Ajax_Application_Handler
             $this->_base->queue->setMailboxOpt('all', 1);
             $iterator->append($filter);
             if ($this->vars->expall) {
-                // @todo: Move to Mboxtoggle:expandAll action
-                $old_track = $ftree->eltdiff->track;
-                $ftree->eltdiff->track = false;
-                $ftree->expandAll();
-                $ftree->eltdiff->track = $old_track;
+                $this->vars->action = 'expand';
+                $this->_base->callAction('toggleMailboxes');
             }
         } elseif ($this->vars->initial || $this->vars->reload) {
             $special = new ArrayIterator();
@@ -443,7 +441,7 @@ extends Horde_Core_Ajax_Application_Handler
         $this->_base->callAction('viewPort');
 
         $this->vars->initial = 1;
-        $this->vars->mboxes = json_encode(array($this->vars->mbox));
+        $this->vars->mboxes = json_encode(array($this->vars->mailbox));
         $this->listMailboxes();
 
         $this->_base->queue->flagConfig(Horde_Registry::VIEW_DYNAMIC);
@@ -755,6 +753,7 @@ extends Horde_Core_Ajax_Application_Handler
      * Variables used:
      *   - atc_indices: (string) [JSON array] Attachment IDs to delete.
      *   - imp_compose: (string) The IMP_Compose cache identifier.
+     *   - quiet: (boolean) If true, don't output notifications.
      *
      * @return array  The list of attchment IDs that were deleted.
      */
@@ -768,7 +767,9 @@ extends Horde_Core_Ajax_Application_Handler
             $imp_compose = $injector->getInstance('IMP_Factory_Compose')->create($this->vars->imp_compose);
             foreach (json_decode($this->vars->atc_indices) as $val) {
                 if (isset($imp_compose[$val])) {
-                    $notification->push(sprintf(_("Deleted attachment \"%s\"."), Horde_Mime::decode($imp_compose[$val]->getPart()->getName(true))), 'horde.success');
+                    if (empty($this->vars->quiet)) {
+                        $notification->push(sprintf(_("Deleted attachment \"%s\"."), Horde_Mime::decode($imp_compose[$val]->getPart()->getName(true))), 'horde.success');
+                    }
                     unset($imp_compose[$val]);
                     $result[] = $val;
                     $this->_base->queue->compose($imp_compose);
@@ -776,7 +777,7 @@ extends Horde_Core_Ajax_Application_Handler
             }
         }
 
-        if (empty($result)) {
+        if (empty($result) && empty($this->vars->quiet)) {
             $notification->push(_("At least one attachment could not be deleted."), 'horde.error');
         }
 
@@ -889,7 +890,7 @@ extends Horde_Core_Ajax_Application_Handler
 
         try {
             $this->_base->indices = new IMP_Indices_Mailbox(
-                $this->_base->mailbox,
+                $this->_base->indices->mailbox,
                 $injector->getInstance('IMP_Message')->stripPart($this->_base->indices, $this->vars->id)
             );
         } catch (IMP_Exception $e) {

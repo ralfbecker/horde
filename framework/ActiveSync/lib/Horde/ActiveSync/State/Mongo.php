@@ -811,15 +811,31 @@ class Horde_ActiveSync_State_Mongo extends Horde_ActiveSync_State_Base implement
     {
         $query = array(self::MONGO_ID => $devId);
         $new_data = array(self::DEVICE_RWSTATUS => $status);
-        if ($status == Horde_ActiveSync::RWSTATUS_PENDING) {
-            $new_data[self::DEVICE_USERS_POLICYKEY] = 0;
-        }
         $update = array('$set' => $new_data);
         try {
             $this->_db->selectCollection(self::COLLECTION_DEVICE)->update($query, $update);
         } catch (Exception $e) {
             $this->_logger->err($e->getMessage());
             throw new Horde_ActiveSync_Exception($e);
+        }
+
+        if ($status == Horde_ActiveSync::RWSTATUS_PENDING) {
+            $new_data[self::DEVICE_USERS_POLICYKEY] = 0;
+            $cursor = $this->_db->selectCollection(self::COLLECTION_DEVICE)->find($query, array('users'));
+            try {
+                foreach ($cursor as $row) {
+                    foreach ($row['users'] as $user) {
+                        $this->_db->selectCollection(self::COLLECTION_DEVICE)->update(
+                            array(self::DEVICE_USERS_USER => $user[self::DEVICE_USER]),
+                            array('$set' => array('users.$.device_policykey' => 0)),
+                            array('multiple' => true)
+                        );
+                    }
+                }
+            } catch (Exception $e) {
+                $this->_logger->err($e->getMessage());
+                throw new Horde_ActiveSync_Exception($e);
+            }
         }
     }
 
@@ -1401,12 +1417,10 @@ class Horde_ActiveSync_State_Mongo extends Horde_ActiveSync_State_Base implement
             self::SYNC_USER => $this->_deviceInfo->user,
             self::MESSAGE_UID => array('$in' => $ids)
         );
-        Horde::debug($query);
         $rows = $this->_db->selectCollection(self::COLLECTION_MAILMAP)->find(
             $query,
             array(self::MESSAGE_UID, self::SYNC_READ, self::SYNC_FLAGGED, self::SYNC_DELETED, self::SYNC_CHANGED)
         );
-Horde::debug($rows);
         $results = array();
         foreach ($rows as $row) {
             foreach ($changes as $change) {

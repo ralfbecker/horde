@@ -1257,10 +1257,13 @@ KronolithCore = {
      */
     deleteCalendarLegend: function(type, id)
     {
-        $('kronolith-legend').select('span').find(function(span) {
+        var legend = $('kronolith-legend').select('span').find(function(span) {
             return span.retrieve('calendarclass') == type &&
                 span.retrieve('calendar') == id;
-        }).remove();
+        });
+        if (legend) {
+            legend.remove();
+        }
     },
 
     /**
@@ -2164,7 +2167,7 @@ KronolithCore = {
     {
         var calendar = event.calendar.split('|'),
             span = new Element('span'),
-            time;
+            time, end;
         opts = Object.extend({ time: false }, opts || {});
 
         div.update();
@@ -2175,7 +2178,13 @@ KronolithCore = {
             time = new Element('span', { className: 'kronolith-time' })
                 .insert(event.start.toString(Kronolith.conf.time_format));
             if (!event.start.equals(event.end)) {
-                time.insert('-' + event.end.toString(Kronolith.conf.time_format));
+                end = event.end.clone();
+                if (end.getHours() == 23 &&
+                    end.getMinutes() == 59 &&
+                    end.getSeconds() == 59) {
+                    end.add(1).second();
+                }
+                time.insert('-' + end.toString(Kronolith.conf.time_format));
             }
             div.insert(time).insert(' ');
         }
@@ -4502,6 +4511,7 @@ KronolithCore = {
                 break;
             case 'kronolithEventSaveAsNew':
                 if (!elt.disabled) {
+                    $('kronolithEventSendUpdates').setValue(1);
                     this.saveEvent(true);
                 }
                 e.stop();
@@ -6133,9 +6143,7 @@ KronolithCore = {
     /**
      * Removes an attendee row from the free/busy table.
      *
-     * @param object attendee  An attendee object with the properties:
-     *                         - e: email address
-     *                         - l: the display name of the attendee
+     * @param string attendee  The display name of the attendee.
      */
     removeAttendee: function(attendee)
     {
@@ -6146,8 +6154,8 @@ KronolithCore = {
 
     checkOrganizerAsAttendee: function()
     {
-        if (HordeImple.AutoCompleter.kronolithEventAttendees.selectedItems.length == 1 &&
-            HordeImple.AutoCompleter.kronolithEventAttendees.selectedItems.first().rawValue != Kronolith.conf.email) {
+        var values = HordeImple.AutoCompleter.kronolithEventAttendees.currentValues();
+        if (values.length == 1 && values.first() != Kronolith.conf.email) {
             // Invite the organizer of this event to the new event.
             HordeImple.AutoCompleter.kronolithEventAttendees.addNewItemNode(Kronolith.conf.email);
             this.addAttendee(Kronolith.conf.email);
@@ -6218,7 +6226,7 @@ KronolithCore = {
             var from = new Date(), to = new Date(), left;
             from.setTime(busy.key * 1000);
             to.setTime(busy.value * 1000);
-            if (from.isAfter(end) || to.isBefore(start)) {
+            if (!end.isAfter(from) || to.isBefore(start)) {
                 return;
             }
             if (from.isBefore(start)) {
@@ -6258,7 +6266,7 @@ KronolithCore = {
     attendeeStartDateHandler: function(start)
     {
         this.attendees.each(function(attendee) {
-            this.insertFreeBusy(attendee.e, start);
+            this.insertFreeBusy(attendee.l, start);
         }, this);
     },
 

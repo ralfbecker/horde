@@ -79,7 +79,7 @@ class Horde_Imap_Client_RemoteImapServerTest extends Horde_Test_Case
         $this->imap->getComparator();
 
         // Tack on namespace information to mailbox names.
-        $namespaces = $this->imap->getNamespaces();
+        $namespaces = iterator_to_array($this->imap->getNamespaces(array(), array('ob_return' => true)));
         $ns_prefix = strval(reset($namespaces));
         $test_mbox = $ns_prefix . $this->test_mbox;
         $test_mbox_utf8 = $ns_prefix . $this->test_mbox_utf8;
@@ -118,9 +118,9 @@ class Horde_Imap_Client_RemoteImapServerTest extends Horde_Test_Case
         // Listing subscribed mailboxes (flat format).
         $this->imap->listMailboxes('*', Horde_Imap_Client::MBOX_SUBSCRIBED, array('flat' => true));
 
-        // Listing unsubscribed mailboxes in base level (with attribute and
-        // delimiter information).
-        $this->imap->listMailboxes('%', Horde_Imap_Client::MBOX_UNSUBSCRIBED, array('attributes' => true, 'delimiter' => true));
+        // Listing unsubscribed mailboxes in base level (with attribute
+        // information).
+        $this->imap->listMailboxes('%', Horde_Imap_Client::MBOX_UNSUBSCRIBED, array('attributes' => true));
 
         // Re-create mailboxes for tests.
         $this->imap->createMailbox($test_mbox);

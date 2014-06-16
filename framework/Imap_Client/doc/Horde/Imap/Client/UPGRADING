@@ -11,6 +11,28 @@
 This lists the API changes between releases of the package.
 
 
+Upgrading to 2.23.0
+===================
+
+  - Horde_Imap_Client_Base
+
+    - listMailboxes()
+
+      Added the Horde_Imap_Client::MBOX_ALL_SUBSCRIBED $mode option.
+      Removed the 'delimiter' option (delimiter information is always
+      returned now).
+
+
+Upgrading to 2.22.0
+===================
+
+  - Horde_Imap_Client_Exception
+
+    - messagePrintf()
+
+      This method has been added.
+
+
 Upgrading to 2.21.0
 ===================
 

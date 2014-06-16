@@ -349,9 +349,13 @@ class IMP_Mailbox
                 return $this->label;
             }
 
-            return (($pos = strrpos($this->_mbox, $this->namespace_delimiter)) === false)
-                ? strval($this)
-                : substr($this->_mbox, $pos + 1);
+            $mbox = $this->remote_mbox
+                ? $this->label
+                : $this->_mbox;
+
+            return (($pos = strrpos($mbox, $this->namespace_delimiter)) === false)
+                ? strval($mbox)
+                : substr($mbox, $pos + 1);
 
         case 'cacheid':
         case 'cacheid_date':
@@ -1547,31 +1551,33 @@ class IMP_Mailbox
             return $out;
         }
 
-        /* Substitute any translated prefix text. */
-        $sub = array(
-            'INBOX' => _("Inbox")
-        );
-
         /* Bug #9971: Special mailboxes can be empty IMP_Mailbox objects -
          * catch this with the strlen check below. */
         foreach ($this->getSpecialMailboxes() as $key => $val) {
             switch ($key) {
             case self::SPECIAL_COMPOSETEMPLATES:
-                $sub[strval($val)] = _("Templates");
+                if (strval($val) == $this->_mbox) {
+                    $out = _("Templates");
+                }
                 break;
 
             case self::SPECIAL_DRAFTS:
-                $sub[strval($val)] = _("Drafts");
+                if (strval($val) == $this->_mbox) {
+                    $out = _("Drafts");
+                }
                 break;
 
             case self::SPECIAL_SENT:
                 if (count($val) == 1) {
-                    $sub[strval(reset($val))] = _("Sent");
+                    if (strval(reset($val)) == $this->_mbox) {
+                        $out = _("Sent");
+                    }
                 } else {
                     $sent = self::getPref(self::MBOX_SENT);
                     foreach ($val as $mbox) {
-                        if ($mbox == $sent) {
-                            $sub[strval($mbox)] = _("Sent");
+                        if (($mbox == $sent) &&
+                            (strval($mbox) == $this->_mbox)) {
+                            $out = _("Sent");
                             break;
                         }
                     }
@@ -1579,25 +1585,25 @@ class IMP_Mailbox
                 break;
 
             case self::SPECIAL_SPAM:
-                $sub[strval($val)] = _("Spam");
+                if (strval($val) == $this->_mbox) {
+                    $out = _("Spam");
+                }
                 break;
 
             case self::SPECIAL_TRASH:
-                $sub[strval($val)] = _("Trash");
+                if (strval($val) == $this->_mbox) {
+                    $out = _("Trash");
+                }
                 break;
             }
         }
 
-        foreach ($sub as $key => $val) {
-            if (strlen($key) &&
-                (($key != 'INBOX') || ($this->_mbox == $out)) &&
-                strpos($this->_mbox, $key) === 0) {
-                $len = strlen($key);
-                if ((strlen($this->_mbox) == $len) || ($this->_mbox[$len] == (is_null($ns_info) ? '' : $ns_info->delimiter))) {
-                    $out = substr_replace($this->_mbox, $val, 0, $len);
-                    break;
-                }
-            }
+        if ($this->inbox) {
+            $out = _("Inbox");
+        } elseif (($this->_mbox == $out) &&
+            !is_null($ns_info) &&
+            (strpos($out, 'INBOX' . $ns_info->delimiter) === 0)) {
+            $out = substr_replace($out, _("Inbox"), 0, 5);
         }
 
         $cache->setDisplay($this->_mbox, $out);

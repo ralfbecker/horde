@@ -10,10 +10,10 @@
   <email>slusarz@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-05-26</date>
+ <date>2014-06-07</date>
  <version>
-  <release>2.21.0</release>
-  <api>2.21.0</api>
+  <release>2.23.0</release>
+  <api>2.23.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -21,10 +21,9 @@
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
  <notes>
-* [mms] Fix working with mailboxes containing entirely integers (Bug #13157).
-* [mms] Horde_Imap_Client_Base#getNamespaces() can now return a Horde_Imap_Client_Namespace_List object instead of an array.
-* [mms] Use the new command length limitations defined in RFC 7162.
-* [mms] A noop() call before authentication will now correctly throw an exception on a connection issue (Bug #13205).
+* [mms] Delimiter information is now always returned from Horde_Imap_Client_Base#listMailboxes().
+* [mms] Fix broken MBOX_UNSUBSCRIBED behavior on IMAP servers that support LIST-EXTENDED.
+* [mms] Added the MBOX_ALL_SUBSCRIBED mode to Horde_Imap_Client_Base#listMailboxes().
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -2437,13 +2436,42 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-05-26</date>
+   <date>2014-06-04</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
 * [mms] Fix working with mailboxes containing entirely integers (Bug #13157).
 * [mms] Horde_Imap_Client_Base#getNamespaces() can now return a Horde_Imap_Client_Namespace_List object instead of an array.
 * [mms] Use the new command length limitations defined in RFC 7162.
 * [mms] A noop() call before authentication will now correctly throw an exception on a connection issue (Bug #13205).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.22.0</release>
+    <api>2.22.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-06-07</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mms] Workaround PHP DateTime regression in 5.4.29 &amp; 5.5.13.
+* [mms] Fix translating error messages if they contain printf placeholders.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.23.0</release>
+    <api>2.23.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-06-06</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mms] Delimiter information is now always returned from Horde_Imap_Client_Base#listMailboxes().
+* [mms] Fix broken MBOX_UNSUBSCRIBED behavior on IMAP servers that support LIST-EXTENDED.
+* [mms] Added the MBOX_ALL_SUBSCRIBED mode to Horde_Imap_Client_Base#listMailboxes().
    </notes>
   </release>
  </changelog>

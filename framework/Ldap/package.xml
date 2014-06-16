@@ -17,10 +17,10 @@
   <email>jan@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-05-21</date>
+ <date>2014-06-11</date>
  <version>
-  <release>2.0.6</release>
-  <api>1.1.0</api>
+  <release>2.2.0</release>
+  <api>1.2.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,7 +28,8 @@
  </stability>
  <license uri="http://opensource.org/licenses/lgpl-3.0.html">LGPL-3.0</license>
  <notes>
-* 
+* [jan] Fix compatibility with PHP 5.3 (Bug #11888).
+* [jan] Allow to specify base DN for searching user DNs.
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -427,10 +428,37 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-05-21</date>
+   <date>2014-06-03</date>
    <license uri="http://opensource.org/licenses/lgpl-3.0.html">LGPL-3.0</license>
    <notes>
-* 
+* [jan] SECURITY: Stricter parameter check in bind() to detect empty passwords.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.1.0</release>
+    <api>1.1.1</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-06-10</date>
+   <license uri="http://opensource.org/licenses/lgpl-3.0.html">LGPL-3.0</license>
+   <notes>
+* [jan] Support multi-value RDNs in Horde_Ldap::quoteDN() (Request #11888).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.2.0</release>
+    <api>1.2.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-06-11</date>
+   <license uri="http://opensource.org/licenses/lgpl-3.0.html">LGPL-3.0</license>
+   <notes>
+* [jan] Fix compatibility with PHP 5.3 (Bug #11888).
+* [jan] Allow to specify base DN for searching user DNs.
    </notes>
   </release>
  </changelog>

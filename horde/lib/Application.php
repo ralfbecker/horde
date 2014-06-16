@@ -24,7 +24,7 @@ class Horde_Application extends Horde_Registry_Application
 {
     /**
      */
-    public $version = '5.2.0-git';
+    public $version = '5.3.0-git';
 
     /**
      */
@@ -152,14 +152,16 @@ class Horde_Application extends Horde_Registry_Application
 
         /* Remove user from all groups */
         $groups = $GLOBALS['injector']->getInstance('Horde_Group');
-        try {
-            $allGroups = $groups->listGroups($user);
-            foreach (array_keys($allGroups) as $id) {
-                $groups->removeUser($id, $user);
+        if (!$groups->readOnly()) {
+            try {
+                $allGroups = $groups->listGroups($user);
+                foreach (array_keys($allGroups) as $id) {
+                    $groups->removeUser($id, $user);
+                }
+            } catch (Horde_Group_Exception $e) {
+                Horde::log($e, 'NOTICE');
+                $error = true;
             }
-        } catch (Horde_Group_Exception $e) {
-            Horde::log($e, 'NOTICE');
-            $error = true;
         }
 
         /* Remove the user from all application permissions */

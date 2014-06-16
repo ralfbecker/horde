@@ -175,7 +175,7 @@ implements ArrayAccess, Countable, IteratorAggregate, Serializable
         $ob = $this->_accounts[self::BASE_ELT] = $access_folders
             ? new IMP_Ftree_Account_Imap()
             : new IMP_Ftree_Account_Inboxonly();
-        array_map(array($this, '_insertElt'), $ob->getList($mask));
+        array_map(array($this, '_insertElt'), $ob->getList(null, $mask));
 
         if ($access_folders) {
             /* Add remote servers. */
@@ -219,7 +219,7 @@ implements ArrayAccess, Countable, IteratorAggregate, Serializable
                 $val = $this->_normalize($val);
             }
 
-            array_map(array($this, '_insertElt'), $account->getList($val));
+            array_map(array($this, '_insertElt'), $account->getList(array($val)));
         }
     }
 
@@ -349,6 +349,7 @@ implements ArrayAccess, Countable, IteratorAggregate, Serializable
                         $this->delete($p_elt);
                     } else {
                         $p_elt->open = false;
+                        $this->eltdiff->change($p_elt);
                     }
                 }
             }
@@ -459,7 +460,7 @@ implements ArrayAccess, Countable, IteratorAggregate, Serializable
         $old_track = $this->eltdiff->track;
         $this->eltdiff->track = false;
         foreach ($this->_accounts as $val) {
-            array_map(array($this, '_insertElt'), $val->getList($val::UNSUB));
+            array_map(array($this, '_insertElt'), $val->getList(null, $val::UNSUB));
         }
         $this->eltdiff->track = $old_track;
     }
@@ -598,7 +599,6 @@ implements ArrayAccess, Countable, IteratorAggregate, Serializable
             } else {
                 unset($this->expanded[$elt]);
             }
-            $this->eltdiff->change($elt);
             break;
 
         case 'polled':
@@ -768,12 +768,12 @@ implements ArrayAccess, Countable, IteratorAggregate, Serializable
     {
         $name = $this->_normalize($elt['v']);
 
-        $container = false;
+        $change = false;
         if (isset($this->_elts[$name])) {
-            if ($this->getAttribute('container', $name) === false) {
+            if ($elt['a'] && self::ELT_NOSELECT) {
                 return;
             }
-            $container = true;
+            $change = true;
         }
 
         $p_elt = $this[isset($elt['p']) ? $elt['p'] : self::BASE_ELT];
@@ -787,7 +787,7 @@ implements ArrayAccess, Countable, IteratorAggregate, Serializable
         $this->_parent[$parent][] = $name;
         $this->_elts[$name] = $elt['a'];
 
-        if ($container) {
+        if ($change) {
             $this->eltdiff->change($name);
         } else {
             $this->eltdiff->add($name);

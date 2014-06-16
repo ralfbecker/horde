@@ -730,10 +730,12 @@ class Horde_Imap_Client_Socket extends Horde_Imap_Client_Base
             break;
 
         default:
-            throw new Horde_Imap_Client_Exception(
-                sprintf(Horde_Imap_Client_Translation::r("Unknown authentication method: %s"), $method),
+            $e = new Horde_Imap_Client_Exception(
+                Horde_Imap_Client_Translation::r("Unknown authentication method: %s"),
                 Horde_Imap_Client_Exception::SERVER_CONNECT
             );
+            $e->messagePrintf(array($method));
+            throw $e;
         }
 
         if ($authenticate_cmd) {
@@ -1078,10 +1080,11 @@ class Horde_Imap_Client_Socket extends Horde_Imap_Client_Base
                 $this->_changeSelected(null);
                 $this->_mode = 0;
                 if (!$e->getCode()) {
-                    throw new Horde_Imap_Client_Exception(
-                        sprintf(Horde_Imap_Client_Translation::r("Could not open mailbox \"%s\"."), $mailbox),
+                    $e = new Horde_Imap_Client_Exception(
+                        Horde_Imap_Client_Translation::r("Could not open mailbox \"%s\"."),
                         Horde_Imap_Client_Exception::MAILBOX_NOOPEN
                     );
+                    $e->messagePrintf(array($mailbox));
                 }
             }
             throw $e;
@@ -1182,17 +1185,11 @@ class Horde_Imap_Client_Socket extends Horde_Imap_Client_Base
         // RFC 5258 [3.1]: Use LSUB for MBOX_SUBSCRIBED if no other server
         // return options are specified.
         if (($mode == Horde_Imap_Client::MBOX_SUBSCRIBED) &&
-            empty($options['attributes']) &&
-            empty($options['children']) &&
-            empty($options['recursivematch']) &&
-            empty($options['remote']) &&
-            empty($options['special_use']) &&
-            empty($options['status'])) {
+            !array_intersect(array_keys($options), array('attributes', 'children', 'recursivematch', 'remote', 'special_use', 'status'))) {
             return $this->_getMailboxList(
                 $pattern,
                 Horde_Imap_Client::MBOX_SUBSCRIBED,
                 array(
-                    'delimiter' => !empty($options['delimiter']),
                     'flat' => !empty($options['flat']),
                     'no_listext' => true
                 )
@@ -1204,7 +1201,11 @@ class Horde_Imap_Client_Socket extends Horde_Imap_Client_Base
         // ensure we receive the correct information.
         if (($mode != Horde_Imap_Client::MBOX_ALL) &&
             !$this->queryCapability('LIST-EXTENDED')) {
-            $subscribed = $this->_getMailboxList($pattern, Horde_Imap_Client::MBOX_SUBSCRIBED, array('flat' => true));
+            $subscribed = $this->_getMailboxList(
+                $pattern,
+                Horde_Imap_Client::MBOX_SUBSCRIBED,
+                array('flat' => true)
+            );
 
             // If mode is subscribed, and 'flat' option is true, we can
             // return now.
@@ -1235,18 +1236,15 @@ class Horde_Imap_Client_Socket extends Horde_Imap_Client_Base
     protected function _getMailboxList($pattern, $mode, $options,
                                        $subscribed = null)
     {
-        $check = (($mode != Horde_Imap_Client::MBOX_ALL) && !is_null($subscribed));
-
         // Setup entry for use in _parseList().
         $pipeline = $this->_pipeline();
         $pipeline->data['mailboxlist'] = array(
-            'check' => $check,
             'ext' => false,
-            'options' => $options,
-            'subexist' => ($mode == Horde_Imap_Client::MBOX_SUBSCRIBED_EXISTS),
+            'mode' => $mode,
+            'opts' => $options,
             /* Can't use array_merge here because it will destroy any mailbox
              * name (key) that is "numeric". */
-            'subscribed' => ($check ? (array_flip(array_map('strval', $subscribed)) + array('INBOX' => true)) : null)
+            'sub' => (is_null($subscribed) ? null : array_flip(array_map('strval', $subscribed)) + array('INBOX' => true))
         );
         $pipeline->data['listresponse'] = array();
 
@@ -1261,11 +1259,18 @@ class Horde_Imap_Client_Socket extends Horde_Imap_Client_Base
             $select_opts = new Horde_Imap_Client_Data_Format_List();
             $subscribed = false;
 
-            if (($mode == Horde_Imap_Client::MBOX_SUBSCRIBED) ||
-                ($mode == Horde_Imap_Client::MBOX_SUBSCRIBED_EXISTS)) {
+            switch ($mode) {
+            case Horde_Imap_Client::MBOX_ALL_SUBSCRIBED:
+            case Horde_Imap_Client::MBOX_UNSUBSCRIBED:
+                $return_opts->add('SUBSCRIBED');
+                break;
+
+            case Horde_Imap_Client::MBOX_SUBSCRIBED:
+            case Horde_Imap_Client::MBOX_SUBSCRIBED_EXISTS:
                 $select_opts->add('SUBSCRIBED');
                 $return_opts->add('SUBSCRIBED');
                 $subscribed = true;
+                break;
             }
 
             if (!empty($options['remote'])) {
@@ -1403,54 +1408,73 @@ class Horde_Imap_Client_Socket extends Horde_Imap_Client_Base
     )
     {
         $data->next();
-        $attr = $data->flushIterator();
+        $attr = null;
+        $attr_raw = $data->flushIterator();
         $delimiter = $data->next();
         $mbox = Horde_Imap_Client_Mailbox::get($data->next(), true);
         $ml = $pipeline->data['mailboxlist'];
 
-        if ($ml['check'] &&
-            $ml['subexist'] &&
-            // Subscribed list is in UTF-8.
-            !isset($ml['subscribed'][strval($mbox)])) {
-            return;
-        } elseif ((!$ml['check'] && $ml['subexist']) ||
-                   (empty($ml['options']['flat']) &&
-                    !empty($ml['options']['attributes']))) {
-            $attr = array_flip(array_map('strtolower', $attr));
-            if ($ml['subexist'] &&
-                !$ml['check'] &&
-                isset($attr['\\nonexistent'])) {
+        switch ($ml['mode']) {
+        case Horde_Imap_Client::MBOX_ALL_SUBSCRIBED:
+        case Horde_Imap_Client::MBOX_SUBSCRIBED_EXISTS:
+        case Horde_Imap_Client::MBOX_UNSUBSCRIBED:
+            $attr = array_flip(array_map('strtolower', $attr_raw));
+
+            if (!is_null($ml['sub']) &&
+                /* Subscribed list is in UTF-8. */
+                isset($ml['sub'][strval($mbox)])) {
+                $attr['\\subscribed'] = 1;
+            }
+            break;
+        }
+
+        switch ($ml['mode']) {
+        case Horde_Imap_Client::MBOX_SUBSCRIBED_EXISTS:
+            if (isset($attr['\\nonexistent']) ||
+                !isset($attr['\\subscribed'])) {
                 return;
             }
+            break;
+
+        case Horde_Imap_Client::MBOX_UNSUBSCRIBED:
+            if (isset($attr['\\subscribed'])) {
+                return;
+            }
+            break;
         }
 
-        if (empty($ml['options']['flat'])) {
-            $tmp = array(
-                'mailbox' => $mbox
-            );
-
-            if (!empty($ml['options']['attributes'])) {
-                /* RFC 5258 [3.4]: inferred attributes. */
-                if ($ml['ext']) {
-                    if (isset($attr['\\noinferiors'])) {
-                        $attr['\\hasnochildren'] = 1;
-                    }
-                    if (isset($attr['\\nonexistent'])) {
-                        $attr['\\noselect'] = 1;
-                    }
-                }
-                $tmp['attributes'] = array_keys($attr);
-            }
-            if (!empty($ml['options']['delimiter'])) {
-                $tmp['delimiter'] = $delimiter;
-            }
-            if ($data->next() !== false) {
-                $tmp['extended'] = $data->flushIterator();
-            }
-            $pipeline->data['listresponse'][strval($mbox)] = $tmp;
-        } else {
+        if (!empty($ml['opts']['flat'])) {
             $pipeline->data['listresponse'][] = $mbox;
+            return;
         }
+
+        $tmp = array(
+            'delimiter' => $delimiter,
+            'mailbox' => $mbox
+        );
+
+        if ($attr || !empty($ml['opts']['attributes'])) {
+            if (is_null($attr)) {
+                $attr = array_flip(array_map('strtolower', $attr_raw));
+            }
+
+            /* RFC 5258 [3.4]: inferred attributes. */
+            if ($ml['ext']) {
+                if (isset($attr['\\noinferiors'])) {
+                    $attr['\\hasnochildren'] = 1;
+                }
+                if (isset($attr['\\nonexistent'])) {
+                    $attr['\\noselect'] = 1;
+                }
+            }
+            $tmp['attributes'] = array_keys($attr);
+        }
+
+        if ($data->next() !== false) {
+            $tmp['extended'] = $data->flushIterator();
+        }
+
+        $pipeline->data['listresponse'][strval($mbox)] = $tmp;
     }
 
     /**
@@ -3747,10 +3771,12 @@ class Horde_Imap_Client_Socket extends Horde_Imap_Client_Base
             return array(substr($name, 8), 'value.priv');
         }
 
-        throw new Horde_Imap_Client_Exception(
-            sprintf(Horde_Imap_Client_Translation::r("Invalid METADATA entry: \"%s\"."), $name),
+        $e = new Horde_Imap_Client_Exception(
+            Horde_Imap_Client_Translation::r("Invalid METADATA entry: \"%s\"."),
             Horde_Imap_Client_Exception::METADATA_INVALID
         );
+        $e->messagePrintf(array($name));
+        throw $e;
     }
 
     /**
@@ -3833,10 +3859,12 @@ class Horde_Imap_Client_Socket extends Horde_Imap_Client_Base
                 break;
 
             default:
-                throw new Horde_Imap_Client_Exception(
-                    sprintf(Horde_Imap_Client_Translation::r("Invalid METADATA value type \"%s\"."), $type),
+                $e = new Horde_Imap_Client_Exception(
+                    Horde_Imap_Client_Translation::r("Invalid METADATA value type \"%s\"."),
                     Horde_Imap_Client_Exception::METADATA_INVALID
                 );
+                $e->messagePrintf(array($type));
+                throw $e;
             }
         }
     }
@@ -4502,12 +4530,14 @@ class Horde_Imap_Client_Socket extends Horde_Imap_Client_Base
             switch ($ob->status) {
             case Horde_Imap_Client_Interaction_Server::BAD:
             case Horde_Imap_Client_Interaction_Server::NO:
-                throw new Horde_Imap_Client_Exception_ServerResponse(
-                    sprintf(Horde_Imap_Client_Translation::r("The mail server was unable to parse the contents of the mail message: %s"), strval($ob->token)),
+                $e = new Horde_Imap_Client_Exception_ServerResponse(
+                    Horde_Imap_Client_Translation::r("The mail server was unable to parse the contents of the mail message: %s"),
                     Horde_Imap_Client_Exception::PARSEERROR,
                     $ob,
                     $pipeline
                 );
+                $e->messagePrintf(strval($ob->token));
+                throw $e;
             }
             break;
 

@@ -398,10 +398,12 @@ class Horde_Imap_Client_Socket_Pop3 extends Horde_Imap_Client_Base
             break;
 
         default:
-            throw new Horde_Imap_Client_Exception(
-                sprintf(Horde_Imap_Client_Translation::r("Unknown authentication method: %s"), $method),
+            $e = new Horde_Imap_Client_Exception(
+                Horde_Imap_Client_Translation::r("Unknown authentication method: %s"),
                 Horde_Imap_Client_Exception::SERVER_CONNECT
             );
+            $e->messagePrintf(array($method));
+            throw $e;
         }
     }
 
@@ -499,18 +501,13 @@ class Horde_Imap_Client_Socket_Pop3 extends Horde_Imap_Client_Base
      */
     protected function _listMailboxes($pattern, $mode, $options)
     {
-        $tmp = array(
-            'mailbox' => Horde_Imap_Client_Mailbox::get('INBOX')
+        return array(
+            'INBOX' => array(
+                'attributes' => array(),
+                'delimiter' => '',
+                'mailbox' => Horde_Imap_Client_Mailbox::get('INBOX')
+            )
         );
-
-        if (!empty($options['attributes'])) {
-            $tmp['attributes'] = array();
-        }
-        if (!empty($options['delimiter'])) {
-            $tmp['delimiter'] = '';
-        }
-
-        return array('INBOX' => $tmp);
     }
 
     /**
