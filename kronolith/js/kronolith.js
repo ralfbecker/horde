@@ -3769,7 +3769,13 @@ KronolithCore = {
             delete data.calendar;
         }
         if (r.saved) {
-            if ($F('kronolithCalendarinternalImport')) {
+            if ($F('kronolithCalendarinternalImport') ||
+                $F('kronolithCalendarinternalImportUrl')) {
+                $('kronolithCalendarinternalImportAction').setValue(
+                    $F('kronolithCalendarinternalImport')
+                        ? Kronolith.conf.import_file
+                        : Kronolith.conf.import_url
+                );
                 HordeCore.notify(Kronolith.text.import_warning, 'horde.message');
                 this.loading++;
                 $('kronolithLoading').show();
@@ -4803,8 +4809,8 @@ KronolithCore = {
 
             case 'kronolithViewYear':
                 var tmp = orig;
-                if (tmp.tagName != 'td' && tmp.tagName != 'th') {
-                    tmp.up('td');
+                if (tmp.tagName.toLowerCase() != 'td' && tmp.tagName.toLowerCase() != 'th') {
+                    tmp = tmp.up('td');
                 }
                 if (tmp) {
                     if (tmp.retrieve('weekdate') &&
