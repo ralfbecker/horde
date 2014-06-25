@@ -34,21 +34,21 @@ class Components_Release_Notes
      *
      * @var array
      */
-    private $notes = array();
+    protected $_notes = array();
 
     /**
      * The component that should be released
      *
      * @var Components_Component
      */
-    private $_component;
+    protected $_component;
 
     /**
      * The task output.
      *
      * @var Components_Output
      */
-    private $_output;
+    protected $_output;
 
     /**
      * Constructor.
@@ -70,14 +70,8 @@ class Components_Release_Notes
     public function setComponent(Components_Component $component)
     {
         $this->_component = $component;
-        if ($notes = $component->getReleaseNotesPath()) {
-            include $notes;
-            if (isset($this->notes['fm']['changes']) &&
-                strlen($this->notes['fm']['changes']) > 600) {
-                $this->_output->warn(
-                    'freecode release notes are longer than 600 characters!'
-                );
-            }
+        if ($file = $component->getReleaseNotesPath()) {
+            $this->_notes = include $file;
         }
     }
 
@@ -90,9 +84,9 @@ class Components_Release_Notes
      */
     public function getBranch()
     {
-        if (!empty($this->notes['fm']['branch'])
-            && $this->notes['name'] != 'Horde') {
-            return strtr($this->notes['fm']['branch'], array('Horde ' => 'H'));
+        if (!empty($this->_notes['branch'])
+            && $this->_notes['name'] != 'Horde') {
+            return strtr($this->_notes['branch'], array('Horde ' => 'H'));
         } else {
             return '';
         }
@@ -105,8 +99,8 @@ class Components_Release_Notes
      */
     public function getName()
     {
-        if (isset($this->notes['name'])) {
-            return $this->notes['name'];
+        if (isset($this->_notes['name'])) {
+            return $this->_notes['name'];
         } else {
             return $this->_component->getName();
         }
@@ -120,27 +114,19 @@ class Components_Release_Notes
      */
     public function getList()
     {
-        if (isset($this->notes['list'])) {
-            return $this->notes['list'];
+        if (isset($this->_notes['list'])) {
+            return $this->_notes['list'];
         }
     }
 
     /**
-     * Return the list of release foci.
+     * Returns whether the release is a security release.
      *
-     * @return array The main topics of the release.
+     * @return boolean  A security release?
      */
-    public function getFocusList()
+    public function getSecurity()
     {
-        if (isset($this->notes['fm']['focus'])) {
-            if (is_array($this->notes['fm']['focus'])) {
-                return $this->notes['fm']['focus'];
-            } else {
-                return array($this->notes['fm']['focus']);
-            }
-        } else {
-            return array();
-        }
+        return !empty($this->_notes['security']);
     }
 
     /**
@@ -150,34 +136,8 @@ class Components_Release_Notes
      */
     public function getAnnouncement()
     {
-        if (isset($this->notes['ml']['changes'])) {
-            return $this->notes['ml']['changes'];
-        }
-        return '';
-    }
-
-    /**
-     * Return the freecode project name.
-     *
-     * @return string The project name.
-     */
-    public function getFmProject()
-    {
-        if (isset($this->notes['fm']['project'])) {
-            return $this->notes['fm']['project'];
-        }
-        return '';
-    }
-
-    /**
-     * Return the freecode change log.
-     *
-     * @return string The change log.
-     */
-    public function getFmChanges()
-    {
-        if (isset($this->notes['fm']['changes'])) {
-            return $this->notes['fm']['changes'];
+        if (isset($this->_notes['changes'])) {
+            return $this->_notes['changes'];
         }
         return '';
     }
@@ -189,16 +149,6 @@ class Components_Release_Notes
      */
     public function hasNotes()
     {
-        return !empty($this->notes['ml']);
-    }
-
-    /**
-     * Does the current component come with freecode information?
-     *
-     * @return boolean True if freecode information is available.
-     */
-    public function hasFreecode()
-    {
-        return !empty($this->notes['fm']);
+        return !empty($this->_notes['changes']);
     }
 }

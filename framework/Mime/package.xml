@@ -17,9 +17,9 @@
   <email>slusarz@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-05-25</date>
+ <date>2014-06-22</date>
  <version>
-  <release>2.4.2</release>
+  <release>2.4.3</release>
   <api>2.4.0</api>
  </version>
  <stability>
@@ -1372,7 +1372,20 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-05-25</date>
+   <date>2014-06-22</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mjr] Fix returning raw data of sent email.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.4.3</release>
+    <api>2.4.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-06-22</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
 * 
