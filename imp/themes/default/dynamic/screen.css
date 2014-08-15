@@ -45,7 +45,6 @@ input {
 }
 #msglistHeaderHoriz {
     border-bottom: 0;
-    margin-bottom: -1px;
 }
 
 #msglistHeaderVert {
@@ -350,7 +349,7 @@ div.vpRowVert div.msgSubject {
     display: inline-block;
     float: none;
     height: 16px;
-    margin-top: -2px;
+    margin-top: -3px;
     width: 16px;
 }
 
@@ -496,6 +495,10 @@ div.vpRowVert div.msgSubject {
     overflow-x: hidden;
     overflow-y: auto;
     padding-bottom: 5px;
+}
+
+div.msgfullread span.messagePrintShow {
+    display: none;
 }
 
 /* Message Composition. */
@@ -712,19 +715,34 @@ div.vpRowVert div.msgSubject {
     color: red;
 }
 
+#attach_list li.attach_upload {
+    width: 500px;
+}
+#attach_list span.attach_upload_text {
+    display: inline-block;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -o-text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#attach_list span.attach_upload_text_progress {
+    max-width: 290px;
+    margin-right: 10px;
+}
+#attach_list span.attach_upload_progress {
+    background-image: url("../graphics/progress.png");
+    border-radius: 10px;
+    height: 8px;
+    margin-top: 4px;
+    position: absolute;
+    width: 200px;
+}
+
 #upload_limit {
     color: darkred;
     display: inline-block;
     margin-top: 4px;
-}
-#upload_wait {
-    display: inline-block;
-    font-weight: bold;
-    overflow: hidden;
-    padding-top: 4px;
-    text-overflow: ellipsis;
-    -o-text-overflow: ellipsis;
-    width: 500px;
 }
 
 span.attachmentImg {
@@ -797,6 +815,10 @@ span.attachmentImg {
 /* Redbox styles. */
 #RB_window {
     max-width: 50%;
+}
+#RB_window input[type="text"], #RB_window select {
+    display: block;
+    margin: 2px 0;
 }
 .RB_Form {
     width: 20em;
@@ -1066,17 +1088,16 @@ span.readonlyImg {
     background-image: url("../graphics/forwarded.png");
 }
 
-/* Dialog */
-#dimpbase_confirm select {
-    display: block;
-    margin: 2px 0;
-}
-
 @media print {
     /* Hide UI elements when printing message in popup window. */
     div.msgfullread div.dimpOptions,
-    div.msgfullread div.mimePartInfo a.iconImg {
+    div.msgfullread div.mimePartInfo a.iconImg,
+    div.msgfullread span.messagePrintNoShow {
         display: none;
+    }
+
+    div.msgfullread span.messagePrintShow {
+        display: inline;
     }
 
     div.msgfullread div.messageBody{

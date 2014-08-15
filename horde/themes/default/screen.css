@@ -1136,26 +1136,6 @@ ul.sound-list {
     float: right;
 }
 
-/* Activesync styles. */
-.activesyncHdr1 {
-    width: 30%;
-}
-.activesyncHdr2 {
-    width: 22%;
-}
-.activesyncHdr3 {
-    width: 6%;
-}
-.activesyncHdr4 {
-    width: 10%;
-}
-.activesyncHdr5 {
-    width: 12%;
-}
-.activesyncHdr6 {
-    width: 10%;
-}
-
 /* Toggle quote styles. */
 .toggleQuoteHide, .toggleQuoteShow {
     cursor: pointer;
@@ -1209,6 +1189,9 @@ ul.sound-list {
     padding: 5px 10px 0 10px;
     color: #000;
     white-space: nowrap;
+}
+.KeyNavList ul li.noselect {
+    color: #888;
 }
 .KeyNavList ul li.selected {
     background: #c2ccd0;

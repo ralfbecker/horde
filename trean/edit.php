@@ -15,7 +15,7 @@ Horde_Registry::appInit('trean');
 $bookmark_id = Horde_Util::getFormData('bookmark');
 try {
     $bookmark = $trean_gateway->getBookmark($bookmark_id);
-} catch (Trean_Exception $e) {
+} catch (Horde_Exception_NotFound $e) {
     $notification->push(sprintf(_("Bookmark not found: %s."), $e->getMessage()), 'horde.message');
     Horde::url('browse.php', true)->redirect();
 }
@@ -25,7 +25,7 @@ if ($GLOBALS['conf']['content_index']['enabled']) {
     $topbar->search = true;
     $topbar->searchAction = Horde::url('search.php');
 }
-
+natcasesort($bookmark->tags);
 $injector->getInstance('Horde_Core_Factory_Imple')
     ->create('Trean_Ajax_Imple_TagAutoCompleter', array(
         'id' => 'treanBookmarkTags',

@@ -24,67 +24,73 @@
  * @subpackage UnitTests
  */
 class Horde_Imap_Client_Data_Format_NumberTest
-extends PHPUnit_Framework_TestCase
+extends Horde_Imap_Client_Data_Format_TestBase
 {
-    private $ob;
-    private $ob2;
-    private $ob3;
-
-    public function setUp()
+    protected function getTestObs()
     {
-        $this->ob = new Horde_Imap_Client_Data_Format_Number(1);
-        $this->ob2 = new Horde_Imap_Client_Data_Format_Number('1');
-        /* Invalid number. */
-        $this->ob3 = new Horde_Imap_Client_Data_Format_Number('Foo');
-    }
-
-    public function testStringRepresentation()
-    {
-        $this->assertEquals(
-            '1',
-            strval($this->ob)
-        );
-
-        $this->assertEquals(
-            '1',
-            strval($this->ob2)
-        );
-
-        $this->assertEquals(
-            '0',
-            strval($this->ob3)
+        return array(
+            new Horde_Imap_Client_Data_Format_Number(1),
+            new Horde_Imap_Client_Data_Format_Number('1'),
+            /* Invalid number. */
+            new Horde_Imap_Client_Data_Format_Number('Foo')
         );
     }
 
-    public function testEscape()
+    /**
+     * @dataProvider stringRepresentationProvider
+     */
+    public function testStringRepresentation($ob, $expected)
     {
         $this->assertEquals(
-            '1',
-            $this->ob->escape()
-        );
-
-        $this->assertEquals(
-            '1',
-            $this->ob2->escape()
-        );
-
-        $this->assertEquals(
-            '0',
-            $this->ob3->escape()
+            $expected,
+            strval($ob)
         );
     }
 
-    public function testVerify()
+    public function stringRepresentationProvider()
     {
-        // Don't throw Exception
-        $this->ob->verify();
-        $this->ob2->verify();
+        return $this->createProviderArray(array(
+            '1',
+            '1',
+            '0'
+        ));
+    }
 
-        // Expected exception
+    /**
+     * @dataProvider stringRepresentationProvider
+     */
+    public function testEscape($ob, $expected)
+    {
+        $this->assertEquals(
+            $expected,
+            $ob->escape()
+        );
+    }
+
+    /**
+     * @dataProvider verifyProvider
+     */
+    public function testVerify($ob, $expected)
+    {
         try {
-            $this->ob3->verify();
-            $this->fail();
-        } catch (Horde_Imap_Client_Data_Format_Exception $e) {}
+            $ob->verify();
+            if ($expected) {
+                $this->fail();
+            }
+        } catch (Horde_Imap_Client_Data_Format_Exception $e) {
+            if (!$expected) {
+                $this->fail();
+            }
+        }
+    }
+
+    public function verifyProvider()
+    {
+        return $this->createProviderArray(array(
+            false,
+            false,
+            true
+        ));
     }
 
 }

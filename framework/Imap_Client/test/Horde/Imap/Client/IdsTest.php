@@ -154,27 +154,25 @@ class Horde_Imap_Client_IdsTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    public function testSpecialIdValueStringRepresentations()
+    /**
+     * @dataProvider specialIdValueStringRepresentationsProvider
+     */
+    public function testSpecialIdValueStringRepresentations($in, $expected)
     {
-        $ids = new Horde_Imap_Client_Ids(Horde_Imap_Client_Ids::ALL);
+        $ids = new Horde_Imap_Client_Ids($in);
 
         $this->assertEquals(
-            '1:*',
+            $expected,
             $ids->tostring
         );
+    }
 
-        $ids = new Horde_Imap_Client_Ids(Horde_Imap_Client_Ids::SEARCH_RES);
-
-        $this->assertEquals(
-            '$',
-            $ids->tostring
-        );
-
-        $ids = new Horde_Imap_Client_Ids(Horde_Imap_Client_Ids::LARGEST);
-
-        $this->assertEquals(
-            '*',
-            $ids->tostring
+    public function specialIdValueStringRepresentationsProvider()
+    {
+        return array(
+            array(Horde_Imap_Client_Ids::ALL, '1:*'),
+            array(Horde_Imap_Client_Ids::SEARCH_RES, '$'),
+            array(Horde_Imap_Client_Ids::LARGEST, '*')
         );
     }
 
@@ -192,40 +190,6 @@ class Horde_Imap_Client_IdsTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             20,
             count($ids)
-        );
-    }
-
-    public function testPop3SequenceStringGenerate()
-    {
-        $this->assertEquals(
-            'ABCDEFGHIJ ABCDE',
-            strval(new Horde_Imap_Client_Ids_Pop3(array('ABCDEFGHIJ', 'ABCDE')))
-        );
-
-        $this->assertEquals(
-            'ABCDEFGHIJ',
-            strval(new Horde_Imap_Client_Ids_Pop3('ABCDEFGHIJ'))
-        );
-    }
-
-    public function testPop3SequenceStringParse()
-    {
-        $ids = new Horde_Imap_Client_Ids_Pop3('ABCDEFGHIJ ABCDE');
-        $this->assertEquals(
-            array('ABCDEFGHIJ', 'ABCDE'),
-            $ids->ids
-        );
-
-        $ids = new Horde_Imap_Client_Ids_Pop3('ABCDEFGHIJ ABC ABCDE');
-        $this->assertEquals(
-            array('ABCDEFGHIJ', 'ABC', 'ABCDE'),
-            $ids->ids
-        );
-
-        $ids = new Horde_Imap_Client_Ids_Pop3('10:12');
-        $this->assertEquals(
-            array('10:12'),
-            $ids->ids
         );
     }
 
@@ -311,39 +275,29 @@ class Horde_Imap_Client_IdsTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    public function testMinAndMax()
+    /**
+     * @dataProvider minAndMaxProvider
+     */
+    public function testMinAndMax($in, $min, $max)
     {
-        $ids = new Horde_Imap_Client_Ids(array(1));
+        $ids = new Horde_Imap_Client_Ids($in);
 
         $this->assertEquals(
-            1,
+            $min,
             $ids->min
         );
         $this->assertEquals(
-            1,
+            $max,
             $ids->max
         );
+    }
 
-        $ids2 = new Horde_Imap_Client_Ids(array(1, 2));
-
-        $this->assertEquals(
-            1,
-            $ids2->min
-        );
-        $this->assertEquals(
-            2,
-            $ids2->max
-        );
-
-        $ids3 = new Horde_Imap_Client_Ids(array(1, 5, 3));
-
-        $this->assertEquals(
-            1,
-            $ids3->min
-        );
-        $this->assertEquals(
-            5,
-            $ids3->max
+    public function minAndMaxProvider()
+    {
+        return array(
+            array(array(1), 1, 1),
+            array(array(1, 2), 1, 2),
+            array(array(1, 5, 3), 1, 5)
         );
     }
 

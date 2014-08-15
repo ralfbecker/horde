@@ -103,13 +103,16 @@ class Horde_Imap_Client_Search_Query implements Serializable
     /**
      * Builds an IMAP4rev1 compliant search string.
      *
-     * @param array $exts  The list of extensions supported by the server.
-     *                     This determines whether certain criteria can be
-     *                     used, and determines whether workarounds are used
-     *                     for other criteria. In the format returned by
-     *                     Horde_Imap_Client_Base::capability(). If this value
-     *                     is null, all extensions are assumed to be
-     *                     available.
+     * @todo  Change default of $exts to null.
+     *
+     * @param Horde_Imap_Client_Base $exts  The server object this query will
+     *                                      be run on (@since 2.24.0), a
+     *                                      Hore_Imap_Client_Data_Capability
+     *                                      object (@since 2.24.0), or the
+     *                                      list of extensions present
+     *                                      on the server (@deprecated).
+     *                                      If null, all extensions are
+     *                                      assumed to be available.
      *
      * @return array  An array with these elements:
      *   - charset: (string) The charset of the search string. If null, no
@@ -123,15 +126,40 @@ class Horde_Imap_Client_Search_Query implements Serializable
      */
     public function build($exts = array())
     {
+        /* @todo: BC */
+        if (is_array($exts)) {
+            $tmp = new Horde_Imap_Client_Data_Capability_Imap();
+            foreach ($exts as $key => $val) {
+                $tmp->add($key, is_array($val) ? $val : null);
+            }
+            $exts = $tmp;
+        } elseif (!is_null($exts)) {
+            if ($exts instanceof Horde_Imap_Client_Base) {
+                $exts = $exts->capability;
+            } elseif (!($exts instanceof Horde_Imap_Client_Data_Capability)) {
+                throw new InvalidArgumentException('Incorrect $exts parameter');
+            }
+        }
+
         $temp = array(
             'cmds' => new Horde_Imap_Client_Data_Format_List(),
             'exts' => $exts,
             'exts_used' => array()
         );
         $cmds = &$temp['cmds'];
-        $charset = null;
+        $charset = $charset_cname = null;
         $exts_used = &$temp['exts_used'];
         $ptr = &$this->_search;
+
+        $charset_get = function($c) use (&$charset, &$charset_cname)
+        {
+            $charset = is_null($c)
+                ? 'US-ASCII'
+                : strval($c);
+            $charset_cname = ($charset === 'US-ASCII')
+                ? 'Horde_Imap_Client_Data_Format_Astring'
+                : 'Horde_Imap_Client_Data_Format_Astring_Nonascii';
+        };
 
         if (isset($ptr['new'])) {
             $this->_addFuzzy(!empty($ptr['newfuzzy']), $temp);
@@ -192,10 +220,11 @@ class Horde_Imap_Client_Search_Query implements Serializable
                         new Horde_Imap_Client_Data_Format_Astring($val['header'])
                     ));
                 }
-                $cmds->add(new Horde_Imap_Client_Data_Format_Astring(isset($val['text']) ? $val['text'] : ''));
-                $charset = is_null($this->_charset)
-                    ? 'US-ASCII'
-                    : $this->_charset;
+
+                $charset_get($this->_charset);
+                $cmds->add(
+                    new $charset_cname(isset($val['text']) ? $val['text'] : '')
+                );
             }
         }
 
@@ -206,15 +235,12 @@ class Horde_Imap_Client_Search_Query implements Serializable
                 if (!empty($val['not'])) {
                     $cmds->add('NOT');
                 }
+
+                $charset_get($this->_charset);
                 $cmds->add(array(
                     $val['type'],
-                    new Horde_Imap_Client_Data_Format_Astring($val['text'])
+                    new $charset_cname($val['text'])
                 ));
-                if (is_null($charset)) {
-                    $charset = is_null($this->_charset)
-                        ? 'US-ASCII'
-                        : $this->_charset;
-                }
             }
         }
 
@@ -261,7 +287,7 @@ class Horde_Imap_Client_Search_Query implements Serializable
         }
 
         if (!empty($ptr['within'])) {
-            if (is_null($exts) || isset($exts['WITHIN'])) {
+            if (is_null($exts) || $exts->query('WITHIN')) {
                 $exts_used[] = 'WITHIN';
             }
 
@@ -271,7 +297,7 @@ class Horde_Imap_Client_Search_Query implements Serializable
                     $cmds->add('NOT');
                 }
 
-                if (is_null($exts) || isset($exts['WITHIN'])) {
+                if (is_null($exts) || $exts->query('WITHIN')) {
                     $cmds->add(array(
                         $key,
                         new Horde_Imap_Client_Data_Format_Number($val['interval'])
@@ -288,7 +314,7 @@ class Horde_Imap_Client_Search_Query implements Serializable
         }
 
         if (!empty($ptr['modseq'])) {
-            if (!is_null($exts) && !isset($exts['CONDSTORE'])) {
+            if (!is_null($exts) && !$exts->query('CONDSTORE')) {
                 throw new Horde_Imap_Client_Exception_NoSupportExtension('CONDSTORE');
             }
 
@@ -310,7 +336,7 @@ class Horde_Imap_Client_Search_Query implements Serializable
         }
 
         if (isset($ptr['prevsearch'])) {
-            if (!is_null($exts) && !isset($exts['SEARCHRES'])) {
+            if (!is_null($exts) && !$exts->query('SEARCHRES')) {
                 throw new Horde_Imap_Client_Exception_NoSupportExtension('SEARCHRES');
             }
 
@@ -384,8 +410,7 @@ class Horde_Imap_Client_Search_Query implements Serializable
     protected function _addFuzzy($add, &$temp)
     {
         if ($add) {
-            if (!isset($temp['exts']['SEARCH']) ||
-                !in_array('FUZZY', $temp['exts']['SEARCH'])) {
+            if (!$temp['exts']->query('SEARCH', 'FUZZY')) {
                 throw new Horde_Imap_Client_Exception_NoSupportExtension('SEARCH=FUZZY');
             }
             $temp['cmds']->add('FUZZY');

@@ -1,16 +1,24 @@
 <?php
 /**
- * Implement temporary data storage for the Horde_Data package.
- *
  * Copyright 2012-2014 Horde LLC (http://www.horde.org/)
  *
  * See the enclosed file COPYING for license information (LGPL). If you
  * did not receive this file, see http://www.horde.org/licenses/lgpl21.
  *
- * @author   Michael Slusarz <slusarz@horde.org>
- * @category Horde
- * @license  http://www.horde.org/licenses/lgpl21 LGPL 2.1
- * @package  Core
+ * @category  Horde
+ * @copyright 2012-2014 Horde LLC
+ * @license   http://www.horde.org/licenses/lgpl21 LGPL 2.1
+ * @package   Core
+ */
+
+/**
+ * Implement temporary data storage for the Horde_Data package.
+ *
+ * @author    Michael Slusarz <slusarz@horde.org>
+ * @category  Horde
+ * @copyright 2012-2014 Horde LLC
+ * @license   http://www.horde.org/licenses/lgpl21 LGPL 2.1
+ * @package   Core
  */
 class Horde_Core_Data_Storage implements Horde_Data_Storage
 {
@@ -18,22 +26,50 @@ class Horde_Core_Data_Storage implements Horde_Data_Storage
     const PREFIX = 'data_import';
 
     /**
+     * The HashTable object.
+     *
+     * @var Horde_Core_HashTable_PersistentSession
+     */
+    private $_ht;
+
+    /**
+     * Constructor.
+     */
+    public function __construct()
+    {
+        $this->_ht = new Horde_Core_HashTable_PersistentSession();
+    }
+
+    /* Horde_Data_Storage methods. */
+
+    /**
      */
     public function get($key)
     {
-        return $GLOBALS['session']->get('horde', self::PREFIX . '/' . $key);
+        global $injector;
+
+        try {
+            return $injector->getInstance('Horde_Pack')->unpack(
+                $this->_ht->get($this->_hkey($key))
+            );
+        } catch (Exception $e) {
+            return null;
+        }
     }
 
     /**
      */
     public function set($key, $value = null)
     {
-        $key = self::PREFIX . '/' . $key;
+        global $injector;
 
         if (is_null($value)) {
-            $GLOBALS['session']->remove('horde', $key);
+            $this->_ht->delete($this->_hkey($key));
         } else {
-            $GLOBALS['session']->set('horde', $key, $value);
+            $this->_ht->set(
+                $this->_hkey($key),
+                $injector->getInstance('Horde_Pack')->pack($value)
+            );
         }
     }
 
@@ -41,14 +77,30 @@ class Horde_Core_Data_Storage implements Horde_Data_Storage
      */
     public function exists($key)
     {
-        return $GLOBALS['session']->exists('horde', self::PREFIX . '/' . $key);
+        return $this->_ht->exists($this->_hkey($key));
     }
 
     /**
      */
     public function clear()
     {
-        return $GLOBALS['session']->remove('horde', self::PREFIX . '/');
+        $this->_ht->clear();
+    }
+
+    /* Internal methods. */
+
+    /**
+     * Return the hash key to use.
+     *
+     * @return string  Hash key.
+     */
+    private function _hkey($key)
+    {
+        return implode(':', array(
+            self::PREFIX,
+            $GLOBALS['registry']->getAuth(),
+            $key
+        ));
     }
 
 }

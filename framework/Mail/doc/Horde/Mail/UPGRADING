@@ -11,6 +11,24 @@
 This lists the API changes between releases of the package.
 
 
+Upgrading to 2.5
+================
+
+  - Horde_Mail_Mbox_Parse
+
+    Added object to parse mbox format mailbox data.
+
+
+Upgrading to 2.4
+================
+
+  - Horde_Mail_Rfc822_Object
+
+    - writeAddress()
+
+      Added the 'noquote' option.
+
+
 Upgrading to 2.3
 ================
 

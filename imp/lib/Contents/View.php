@@ -220,8 +220,8 @@ class IMP_Contents_View
 
         $part = reset($render);
 
-        /* Directly render part if this is not an HTML part. */
-        if (stripos($part['type'], 'text/html') !== 0) {
+        /* Directly render part if this is not an HTML part or it is empty. */
+        if (stripos($part['type'], 'text/html') !== 0 || !strlen($part['data'])) {
             return $part;
         }
 
@@ -237,8 +237,8 @@ class IMP_Contents_View
             if ($hdr_val = $headerob->getValue($key)) {
                 /* Format date string. */
                 if ($key == 'date') {
-                    $registry->setTimeZone();
-                    $hdr_val = $imp_ui_mbox->getDate($hdr_val, $imp_ui_mbox::DATE_FORCE | $imp_ui_mbox::DATE_FULL);
+                    $date_ob = new IMP_Message_Date($hdr_val);
+                    $hdr_val = $date_ob->format($date_ob::DATE_FORCE);
                 }
 
                 $headers[] = array(
@@ -252,7 +252,7 @@ class IMP_Contents_View
             $user_identity = $injector->getInstance('IMP_Identity');
             $headers[] = array(
                 'header' => _("Printed By"),
-                'value' => $user_identity->getFullname() ? $user_identity->getFullname() : $registry->getAuth()
+                'value' => $user_identity->getFullname() ?: $registry->getAuth()
             );
         }
 

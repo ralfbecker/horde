@@ -56,7 +56,9 @@
     <file name="turba-convert-sql-shares-to-sqlng" role="script">
      <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
     </file>
-    <file name="turba-import-openxchange" role="script" />
+    <file name="turba-import-openxchange" role="script">
+     <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
+    </file>
     <file name="turba-import-squirrelmail-file-abook" role="script">
      <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
     </file>
@@ -785,7 +787,7 @@
    <package>
     <name>Horde_Util</name>
     <channel>pear.horde.org</channel>
-    <min>2.0.0</min>
+    <min>2.5.0</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
    </package>
@@ -1795,9 +1797,11 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-03-10</date>
+   <date>2014-07-07</date>
    <license uri="http://www.horde.org/licenses/asl">ASL</license>
    <notes>
+* [mjr] Fix pagination of search results (Bug #13047).
+* [mjr] Don&apos;t output empty properties for CardDAV requests (Bug #12782).
 * [jan] Update Korean translation (Deokgon Kim &lt;dgkim@dgkim.net&gt;).
 * [jan] Fix portal serach block response when no contacts have been found (dulinux &lt;lfbm.andamentos@gmail.com&gt;, Bug #13044).
    </notes>
@@ -1841,20 +1845,67 @@
   </release>
   <release>
    <version>
-    <release>4.2.0beta2</release>
+    <release>4.2.0RC1</release>
     <api>4.0.0</api></version>
    <stability>
     <release>beta</release>
     <api>stable</api></stability>
-   <date>2014-06-04</date>
+   <date>2014-06-17</date>
    <license uri="http://www.horde.org/licenses/apache">ASL</license>
    <notes>
-* 
+* [mjr] Fix regression with exporting photos in vCard when we are ignoring empty values.
+* [jan] Update Polish translation (Maciej Uhlig &lt;maciej.uhlig@us.edu.pl&gt;).
+* [jan] Update Japanese translation (Hiromi Kimura &lt;hiromi@tac.tsukuba.ac.jp&gt;).
    </notes>
   </release>
   <release>
    <version>
-    <release>4.3.0</release>
+    <release>4.2.0RC2</release>
+    <api>4.0.0</api></version>
+   <stability>
+    <release>beta</release>
+    <api>stable</api></stability>
+   <date>2014-07-01</date>
+   <license uri="http://www.horde.org/licenses/apache">ASL</license>
+   <notes>
+* [mjr] Fix another regression with exporting photos in vCard when we are ignoring empty values.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>4.2.0</release>
+    <api>4.0.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-08</date>
+   <license uri="http://www.horde.org/licenses/apache">ASL</license>
+   <notes>
+* [jan] Fix fatal error if importing CSV data with date fields.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>4.2.1</release>
+    <api>4.0.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-08</date>
+   <license uri="http://www.horde.org/licenses/apache">ASL</license>
+   <notes>
+* [jan] Display correct address books in WebDAV folders.
+* [jan] Fix displayed CardDAV URLs for shared address books (Bug #12380).
+* [mms] Only include e-mail addresses that match the search string in the return from the search() API call (Request #12480).
+* [mjr] Fix exporting tags via vCard and ActiveSync (Bug #13393).
+* [mjr] Add EAS client created shares to the sync_books preference (Bug #13359).
+* [mjr] Add missing API support for searchTags API (Bug #13362).
+* [mjr] Fix issue that caused contacts to be tagged with a broken username.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>4.2.2</release>
     <api>4.0.0</api></version>
    <stability>
     <release>beta</release>
@@ -1862,7 +1913,8 @@
    <date>2014-06-04</date>
    <license uri="http://www.horde.org/licenses/apache">ASL</license>
    <notes>
-* [jan] Support multi-value RDNs in LDAP DN attributes (horde@iotti.biz, Request #11889).
+* [mms] Make case-insensitive API e-mail search work on non-ASCII data (Request #12480).
+* [jan] Fix listing group members that contain colons in their IDs.
    </notes>
   </release>
  </changelog>

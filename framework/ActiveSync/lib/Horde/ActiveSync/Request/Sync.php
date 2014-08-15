@@ -1087,9 +1087,13 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
     public function _parseSyncOptions(&$collection)
     {
         $options = array();
+        $haveElement = false;
+
+        // These can be sent in any order.
         while(1) {
             if ($this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_FILTERTYPE)) {
                 $options['filtertype'] = $this->_decoder->getElementContent();
+                $haveElement = true;
                 if (!$this->_decoder->getElementEndTag()) {
                     $this->_statusCode = self::STATUS_PROTERROR;
                     $this->_handleError($collection);
@@ -1098,8 +1102,8 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
             }
 
             // EAS > 12.1 the Collection Class can be part of OPTIONS.
-            if ($this->_device->version > Horde_ActiveSync::VERSION_TWELVEONE &&
-                $this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_FOLDERTYPE)) {
+            if ($this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_FOLDERTYPE)) {
+                $haveElement = true;
                 $options['class'] = $this->_decoder->getElementContent();
                 if (!$this->_decoder->getElementEndTag()) {
                     $this->_statusCode = self::STATUS_PROTERROR;
@@ -1113,6 +1117,7 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
             }
 
             if ($this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_CONFLICT)) {
+                $haveElement = true;
                 $options['conflict'] = $this->_decoder->getElementContent();
                 if (!$this->_decoder->getElementEndTag()) {
                     $this->_statusCode = self::STATUS_PROTERROR;
@@ -1122,10 +1127,12 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
             }
 
             if ($this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_MIMESUPPORT)) {
+                $haveElement = true;
                 $this->_mimeSupport($options);
             }
 
             if ($this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_MIMETRUNCATION)) {
+                $haveElement = true;
                 $options['mimetruncation'] = $this->_decoder->getElementContent();
                 if (!$this->_decoder->getElementEndTag()) {
                     $this->_statusCode = self::STATUS_PROTERROR;
@@ -1135,6 +1142,7 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
             }
 
             if ($this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_TRUNCATION)) {
+                $haveElement = true;
                 $options['truncation'] = $this->_decoder->getElementContent();
                 if (!$this->_decoder->getElementEndTag()) {
                     $this->_statusCode = self::STATUS_PROTERROR;
@@ -1143,7 +1151,10 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
                 }
             }
 
+            // @todo This seems to no longer be supported by the specs? Probably
+            // a leftover from EAS 1 or 2.0. Remove in H6.
             if ($this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_RTFTRUNCATION)) {
+                $haveElement = true;
                 $options['rtftruncation'] = $this->_decoder->getElementContent();
                 if (!$this->_decoder->getElementEndTag()) {
                     $this->_statusCode = self::STATUS_PROTERROR;
@@ -1153,6 +1164,7 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
             }
 
             if ($this->_decoder->getElementStartTag(Horde_ActiveSync::SYNC_MAXITEMS)) {
+                $haveElement = true;
                 $options['maxitems'] = $this->_decoder->getElementContent();
                 if (!$this->_decoder->getElementEndTag()) {
                     $this->_statusCode = self::STATUS_PROTERROR;
@@ -1164,9 +1176,11 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
             // EAS 14.1
             if ($this->_device->version >= Horde_ActiveSync::VERSION_FOURTEENONE) {
                 if ($this->_decoder->getElementStartTag(Horde_ActiveSync::RM_SUPPORT)) {
+                    $haveElement = true;
                     $this->_rightsManagement($options);
                 }
                 if ($this->_decoder->getElementStartTag(Horde_ActiveSync::AIRSYNCBASE_BODYPARTPREFERENCE)) {
+                    $haveElement = true;
                     $this->_bodyPartPrefs($options);
                 }
             }
@@ -1175,6 +1189,26 @@ class Horde_ActiveSync_Request_Sync extends Horde_ActiveSync_Request_SyncBase
             if ($e[Horde_ActiveSync_Wbxml::EN_TYPE] == Horde_ActiveSync_Wbxml::EN_TYPE_ENDTAG) {
                 $this->_decoder->getElementEndTag();
                 break;
+            } elseif (!$haveElement) {
+                $depth = 0;
+                while (1) {
+                    $e = $this->_decoder->getElement();
+                    if ($e === false) {
+                        $this->_logger->err(sprintf('[%s] Unexpected end of stream.', $this->_procid));
+                        $this->_statusCode = self::STATUS_PROTERROR;
+                        $this->_handleError($collection);
+                        exit;
+                    } elseif ($e[Horde_ActiveSync_Wbxml::EN_TYPE] == Horde_ActiveSync_Wbxml::EN_TYPE_STARTTAG) {
+                        $depth = $this->_decoder->isEmptyElement($e) ?
+                            $depth :
+                            $depth + 1;
+                    } elseif ($e[Horde_ActiveSync_Wbxml::EN_TYPE] == Horde_ActiveSync_Wbxml::EN_TYPE_ENDTAG) {
+                        $depth--;
+                    }
+                    if ($depth == 0) {
+                        break;
+                    }
+                }
             }
         }
 

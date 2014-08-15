@@ -125,8 +125,12 @@ class IMP_Ajax_Queue
      *
      * For compose cacheid data (key: 'compose'), an object with these
      * properties:
-     *   - atclimit: (integer) If set, no further attachments are allowed.
+     *   - atclimit: (integer) If set, the number of further attachments
+     *               that are allowed.
+     *   - atcmax: (integer) The maximum size (in bytes) of an attachment.
      *   - cacheid: (string) Current cache ID of the compose message.
+     *   - hmac: (string) HMAC string used to validate draft in case of
+     *           session timeout.
      *
      * For flag data (key: 'flag'), an array of objects with these properties:
      *   - add: (array) The list of flags that were added.
@@ -150,8 +154,8 @@ class IMP_Ajax_Queue
      *
      * For mailbox data (key: 'mailbox'), an array with these keys:
      *   - a: (array) Mailboxes that were added (base64url encoded).
-     *   - all: (integer) TODO
-     *   - base: (string) TODO
+     *   - all: (integer) If true, all mailboxes should be shown.
+     *   - base: (string) Base mailbox (base64url encoded).
      *   - c: (array) Mailboxes that were changed (base64url encoded).
      *   - d: (array) Mailboxes that were deleted (base64url encoded).
      *   - expand: (integer) Expand subfolders on load.
@@ -196,9 +200,10 @@ class IMP_Ajax_Queue
         /* Add compose information. */
         if (!is_null($this->_compose)) {
             $compose = new stdClass;
-            if (!$this->_compose->additionalAttachmentsAllowed()) {
-                $compose->atclimit = 1;
+            if (($addl = $this->_compose->additionalAttachmentsAllowed()) !== true) {
+                $compose->atclimit = $addl;
             }
+            $compose->atcmax = $this->_compose->maxAttachmentSize();
             $compose->cacheid = $this->_compose->getCacheId();
             $compose->hmac = $this->_compose->getHmac();
 
@@ -581,7 +586,6 @@ class IMP_Ajax_Queue
      *
      * @return mixed  The element object, or null if the element is not
      *                active. Object contains the following properties:
-     * <pre>
      *   - ch: (boolean) [children] Does the mailbox contain children?
      *         DEFAULT: no
      *   - cl: (string) [class] The CSS class.
@@ -616,7 +620,6 @@ class IMP_Ajax_Queue
      *   - v: (integer) [virtual] Virtual folder? 0 = not vfolder, 1 = system
      *        vfolder, 2 = user vfolder
      *        DEFAULT: 0
-     *  </pre>
      */
     protected function _ftreeElt($id)
     {

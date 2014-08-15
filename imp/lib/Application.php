@@ -97,6 +97,7 @@ class IMP_Application extends Horde_Registry_Application
         /* Add IMP-specific factories. */
         $factories = array(
             'IMP_AuthImap' => 'IMP_Factory_AuthImap',
+            'IMP_Contacts' => 'IMP_Factory_Contacts',
             'IMP_Crypt_Pgp' => 'IMP_Factory_Pgp',
             'IMP_Crypt_Smime' => 'IMP_Factory_Smime',
             'IMP_Flags' => 'IMP_Factory_Flags',
@@ -483,8 +484,6 @@ class IMP_Application extends Horde_Registry_Application
     {
         global $injector;
 
-        $out = array();
-
         $backends = array(
             'Horde_Imap_Client_Cache_Backend_Mongo' => function() use ($injector) {
                 $backend = $injector
@@ -500,15 +499,15 @@ class IMP_Application extends Horde_Registry_Application
                 return $injector->getInstance('IMP_Sentmail');
             },
         );
+        $out = array();
 
         foreach ($backends as $key => $func) {
             try {
                 $val = $func();
                 if ($val instanceof $key) {
-                    $drivers[] = $val;
+                    $out[] = $val;
                 }
-            } catch (Horde_Exception $e) {
-            }
+            } catch (Horde_Exception $e) {}
         }
 
         return $out;

@@ -2041,21 +2041,23 @@ class Horde_Registry implements Horde_Shutdown_Task
     {
         global $session;
 
-        /* Do logout tasks. */
+        /* Do application logout tasks. */
+        /* @todo: Replace with exclusively registered logout tasks. */
         foreach ($this->getAuthApps() as $app) {
             try {
                 $this->callAppMethod($app, 'logout');
             } catch (Horde_Exception $e) {}
         }
 
+        /* Do registered logout tasks. */
+        $logout = new Horde_Registry_Logout();
+        $logout->run();
+
         $session->remove('horde', 'auth');
         $session->remove('horde', 'auth_app/');
 
         $this->_cache['auth'] = null;
         $this->_cache['existing'] = $this->_cache['isauth'] = array();
-
-        /* Remove the user's cached preferences if they are present. */
-        $GLOBALS['injector']->getInstance('Horde_Core_Factory_Prefs')->clearCache();
 
         if ($destroy) {
             $session->destroy();
@@ -2497,14 +2499,14 @@ class Horde_Registry implements Horde_Shutdown_Task
         }
         $session->set('horde', 'auth/timestamp', time());
         $session->set('horde', 'auth/userId', $this->convertUsername(trim($authId), true));
+
         $this->_cache['auth'] = null;
-        $this->_cache['existing'] = array();
+        $this->_cache['existing'] = $this->_cache['isauth'] = array();
 
         $this->setAuthCredential($credentials, null, $app);
 
         /* Reload preferences for the new user. */
         unset($GLOBALS['prefs']);
-        $injector->getInstance('Horde_Core_Factory_Prefs')->clearCache();
         $this->loadPrefs($this->getApp());
 
         $this->setLanguageEnvironment(isset($options['language']) ? $this->preferredLang($options['language']) : null, $app);

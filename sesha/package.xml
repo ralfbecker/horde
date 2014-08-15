@@ -28,12 +28,15 @@
  </stability>
  <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
  <notes>
+* [jan] Fix several notices and warnings (skhorde@smail.inf.fh-bonn-rhein-sieg.de).
 * [jan] Don&apos;t use LIKE search on inventory ID field (Bug #12976).
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
    <dir name="bin">
-    <file name="sesha-add-stock" role="script" />
+    <file name="sesha-add-stock" role="script">
+     <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
+    </file>
    </dir> <!-- /bin -->
    <dir name="config">
     <file name="conf.xml" role="horde" />
@@ -417,6 +420,7 @@
    <date>2013-01-10</date>
    <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
    <notes>
+* [jan] Fix several notices and warnings (skhorde@smail.inf.fh-bonn-rhein-sieg.de).
 * [jan] Don&apos;t use LIKE search on inventory ID field (Bug #12976).
    </notes>
   </release>

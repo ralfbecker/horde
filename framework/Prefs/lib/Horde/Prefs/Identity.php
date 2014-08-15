@@ -5,21 +5,23 @@
  * See the enclosed file COPYING for license information (LGPL). If you
  * did not receive this file, see http://www.horde.org/licenses/lgpl21.
  *
- * @author   Jan Schneider <jan@horde.org>
- * @category Horde
- * @license  http://www.horde.org/licenses/lgpl21 LGPL 2.1
- * @package  Prefs
+ * @category  Horde
+ * @copyright 2001-2014 Horde LLC
+ * @license   http://www.horde.org/licenses/lgpl21 LGPL 2.1
+ * @package   Prefs
  */
 
 /**
  * This class provides an interface to all identities a user might have.
  *
- * @author   Jan Schneider <jan@horde.org>
- * @category Horde
- * @license  http://www.horde.org/licenses/lgpl21 LGPL 2.1
- * @package  Prefs
+ * @author    Jan Schneider <jan@horde.org>
+ * @category  Horde
+ * @copyright 2001-2014 Horde LLC
+ * @license   http://www.horde.org/licenses/lgpl21 LGPL 2.1
+ * @package   Prefs
  */
 class Horde_Prefs_Identity
+implements ArrayAccess, Countable, IteratorAggregate
 {
     /**
      * Array containing all the user's identities.
@@ -154,7 +156,7 @@ class Horde_Prefs_Identity
      */
     public function get($identity = null)
     {
-        if (is_null($identity) || !isset($this->_identities[$identity])) {
+        if (is_null($identity)) {
             $identity = $this->_default;
         }
 
@@ -173,14 +175,17 @@ class Horde_Prefs_Identity
     public function delete($identity)
     {
         $deleted = array_splice($this->_identities, $identity, 1);
-        foreach (array_keys($this->_identities) as $id) {
-            if ($this->setDefault($id)) {
-                break;
-            }
-        }
-        $this->save();
 
-        return $deleted;
+        if (!empty($deleted)) {
+            foreach (array_keys($this->_identities) as $id) {
+                if ($this->setDefault($id)) {
+                    break;
+                }
+            }
+            $this->save();
+        }
+
+        return reset($deleted);
     }
 
     /**
@@ -300,13 +305,13 @@ class Horde_Prefs_Identity
      *
      * @return boolean  True if the $value was found in $key.
      */
-    public function hasValue($key, $valueA)
+    public function hasValue($key, $value)
     {
         $list = $this->getAll($key);
 
         foreach ($list as $valueB) {
             if (!empty($valueB) &&
-                strpos(Horde_String::lower($valueA), Horde_String::lower($valueB)) !== false) {
+                strpos(Horde_String::lower($value), Horde_String::lower($valueB)) !== false) {
                 return true;
             }
         }
@@ -404,4 +409,60 @@ class Horde_Prefs_Identity
 
         return $ob;
     }
+
+    /* ArrayAccess methods. */
+
+    /**
+     * @since 2.7.0
+     */
+    public function offsetExists($offset)
+    {
+        return isset($this->_identities[$offset]);
+    }
+
+    /**
+     * @since 2.7.0
+     */
+    public function offsetGet($offset)
+    {
+        return $this->get($offset);
+    }
+
+    /**
+     * @since 2.7.0
+     */
+    public function offsetSet($offset, $value)
+    {
+        // $value is ignored.
+        $this->set($offset);
+    }
+
+    /**
+     * @since 2.7.0
+     */
+    public function offsetUnset($offset)
+    {
+        $this->delete($offset);
+    }
+
+    /* Countable method. */
+
+    /**
+     * @since 2.7.0
+     */
+    public function count()
+    {
+        return count($this->_identities);
+    }
+
+    /* IteratorAggregate method. */
+
+    /**
+     * @since 2.7.0
+     */
+    public function getIterator()
+    {
+        return new ArrayIterator($this->_identities);
+    }
+
 }

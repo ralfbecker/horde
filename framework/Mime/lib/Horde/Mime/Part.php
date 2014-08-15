@@ -1428,6 +1428,8 @@ class Horde_Mime_Part implements ArrayAccess, Countable, Serializable
     /**
      * Determine the size of this MIME part and its child members.
      *
+     * @todo Remove $approx parameter.
+     *
      * @param boolean $approx  If true, determines an approximate size for
      *                         parts consisting of base64 encoded data.
      *
@@ -1453,12 +1455,12 @@ class Horde_Mime_Part implements ArrayAccess, Countable, Serializable
             $bytes = ftell($this->_contents);
         } else {
             $bytes = $this->_bytes;
-        }
 
-        /* Base64 transfer encoding is approx. 33% larger than original
-         * data size (RFC 2045 [6.8]). */
-        if ($approx && ($this->_transferEncoding == 'base64')) {
-            $bytes *= 0.75;
+            /* Base64 transfer encoding is approx. 33% larger than original
+             * data size (RFC 2045 [6.8]). */
+            if ($approx && ($this->_transferEncoding == 'base64')) {
+                $bytes *= 0.75;
+            }
         }
 
         return intval($bytes);
@@ -1467,6 +1469,7 @@ class Horde_Mime_Part implements ArrayAccess, Countable, Serializable
     /**
      * Explicitly set the size (in bytes) of this part. This value will only
      * be returned (via getBytes()) if there are no contents currently set.
+     *
      * This function is useful for setting the size of the part when the
      * contents of the part are not fully loaded (i.e. creating a
      * Horde_Mime_Part object from IMAP header information without loading the
@@ -1476,11 +1479,17 @@ class Horde_Mime_Part implements ArrayAccess, Countable, Serializable
      */
     public function setBytes($bytes)
     {
-        $this->setDispositionParameter('size', $bytes);
+        /* Consider 'size' disposition parameter to be the canonical size.
+         * Only set bytes if that value doesn't exist. */
+        if (!$this->getDispositionParameter('size')) {
+            $this->setDispositionParameter('size', $bytes);
+        }
     }
 
     /**
      * Output the size of this MIME part in KB.
+     *
+     * @todo Remove $approx parameter.
      *
      * @param boolean $approx  If true, determines an approximate size for
      *                         parts consisting of base64 encoded data.
@@ -1817,8 +1826,8 @@ class Horde_Mime_Part implements ArrayAccess, Countable, Serializable
             $data = array($data);
         }
 
+        $append_filter = array();
         if (!empty($options['filter'])) {
-            $append_filter = array();
             foreach ($options['filter'] as $key => $val) {
                 $append_filter[] = stream_filter_append($fp, $key, STREAM_FILTER_WRITE, $val);
             }
@@ -1850,10 +1859,8 @@ class Horde_Mime_Part implements ArrayAccess, Countable, Serializable
             $error = $e;
         }
 
-        if (!empty($options['filter'])) {
-            foreach ($append_filter as $val) {
-                stream_filter_remove($val);
-            }
+        foreach ($append_filter as $val) {
+            stream_filter_remove($val);
         }
 
         if (!empty($options['error'])) {

@@ -308,6 +308,7 @@ class Horde_ActiveSync_Message_Appointment extends Horde_ActiveSync_Message_Base
      *   - allday: (boolean) If true, this is an allday event.
      *
      * @throws InvalidArgumentException
+     * @deprecated Set individual properties manually from calling code.
      */
     public function setDatetime(array $datetime = array())
     {
@@ -514,6 +515,8 @@ class Horde_ActiveSync_Message_Appointment extends Horde_ActiveSync_Message_Base
             break;
         case Horde_Date_Recurrence::RECUR_YEARLY_DATE:
             $r->type = Horde_ActiveSync_Message_Recurrence::TYPE_YEARLY;
+            $r->monthofyear = $recurrence->start->month;
+            $r->dayofmonth = $recurrence->start->mday;
             break;
         case Horde_Date_Recurrence::RECUR_YEARLY_WEEKDAY:
             $r->type = Horde_ActiveSync_Message_Recurrence::TYPE_YEARLYNTH;

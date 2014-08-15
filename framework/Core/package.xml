@@ -28,20 +28,23 @@
   <email>mrubinsk@horde.org</email>
   <active>yes</active>
  </developer>
- <date>2014-06-21</date>
+ <date>2014-08-04</date>
  <version>
-  <release>2.12.0RC2</release>
-  <api>2.12.0</api>
+  <release>2.13.1</release>
+  <api>2.13.0</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
  <notes>
-* [mjr] Improvements to vcard mime handler to allow for ajax updating (Bug #13101).
-* [jan] Fix delay when fading the same dialog more than once.
-* [jan] Catch exceptions from NoSQL backends when building indices.
+* [mjr] Support ITEMOPERATIONS_EMPTYFOLDER requests via ActiveSync.
+* [mjr] Fetch correct data for EAS ItemSettings requests.
+* [jan] Catch exception from application in portal block (Bug #13427).
+* [jan] Fix returning session start time from session handler (Bug #13428).
+* [mjr] Add support for synchronizing user-defined IMAP flags as EAS Email categories.
+* [mjr] Fix BC break when detecting the ActiveSync state driver.
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -491,6 +494,8 @@
        <file name="Ldap.php" role="php" />
       </dir> <!-- /lib/Horde/Core/Group -->
       <dir name="HashTable">
+       <file name="PersistentSession.php" role="php" />
+       <file name="Vfs.php" role="php" />
        <file name="Wrapper.php" role="php" />
       </dir> <!-- /lib/Horde/Core/HashTable -->
       <dir name="Imsp">
@@ -556,6 +561,7 @@
       </dir> <!-- /lib/Horde/Core/Prefs -->
       <dir name="Script">
        <dir name="Package">
+        <file name="Autocomplete.php" role="php" />
         <file name="Datejs.php" role="php" />
         <file name="Dialog.php" role="php" />
         <file name="Keynavlist.php" role="php" />
@@ -642,11 +648,15 @@
       <dir name="Hordeconfig">
        <file name="Merged.php" role="php" />
       </dir> <!-- /lib/Horde/Registry/Hordeconfig -->
+      <dir name="Logout">
+       <file name="Task.php" role="php" />
+      </dir> <!-- /lib/Horde/Registry/Logout -->
       <file name="Api.php" role="php" />
       <file name="Application.php" role="php" />
       <file name="Caller.php" role="php" />
       <file name="Hordeconfig.php" role="php" />
       <file name="Loadconfig.php" role="php" />
+      <file name="Logout.php" role="php" />
       <file name="Nlsconfig.php" role="php" />
       <file name="Registryconfig.php" role="php" />
      </dir> <!-- /lib/Horde/Registry -->
@@ -1150,6 +1160,13 @@
     <exclude>3.0.0alpha1</exclude>
    </package>
    <package>
+    <name>Horde_Pack</name>
+    <channel>pear.horde.org</channel>
+    <min>1.0.0</min>
+    <max>2.0.0alpha1</max>
+    <exclude>2.0.0alpha1</exclude>
+   </package>
+   <package>
     <name>Horde_Perms</name>
     <channel>pear.horde.org</channel>
     <min>2.0.0</min>
@@ -1259,7 +1276,7 @@
    <package>
     <name>Horde_ActiveSync</name>
     <channel>pear.horde.org</channel>
-    <min>2.14.0</min>
+    <min>2.18.0</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
    </package>
@@ -1448,7 +1465,7 @@
    <package>
     <name>Horde_Vfs</name>
     <channel>pear.horde.org</channel>
-    <min>2.0.0</min>
+    <min>2.2.0</min>
     <max>3.0.0alpha1</max>
     <exclude>3.0.0alpha1</exclude>
    </package>
@@ -1868,6 +1885,8 @@
    <install as="Horde/Core/Factory/View.php" name="lib/Horde/Core/Factory/View.php" />
    <install as="Horde/Core/Factory/Weather.php" name="lib/Horde/Core/Factory/Weather.php" />
    <install as="Horde/Core/Group/Ldap.php" name="lib/Horde/Core/Group/Ldap.php" />
+   <install as="Horde/Core/HashTable/PersistentSession.php" name="lib/Horde/Core/HashTable/PersistentSession.php" />
+   <install as="Horde/Core/HashTable/Vfs.php" name="lib/Horde/Core/HashTable/Vfs.php" />
    <install as="Horde/Core/HashTable/Wrapper.php" name="lib/Horde/Core/HashTable/Wrapper.php" />
    <install as="Horde/Core/Imsp/Utils.php" name="lib/Horde/Core/Imsp/Utils.php" />
    <install as="Horde/Core/Log/Logger.php" name="lib/Horde/Core/Log/Logger.php" />
@@ -1894,6 +1913,7 @@
    <install as="Horde/Core/Prefs/Storage/Upgrade.php" name="lib/Horde/Core/Prefs/Storage/Upgrade.php" />
    <install as="Horde/Core/Prefs/Ui/Special.php" name="lib/Horde/Core/Prefs/Ui/Special.php" />
    <install as="Horde/Core/Prefs/Ui/Widgets.php" name="lib/Horde/Core/Prefs/Ui/Widgets.php" />
+   <install as="Horde/Core/Script/Package/Autocomplete.php" name="lib/Horde/Core/Script/Package/Autocomplete.php" />
    <install as="Horde/Core/Script/Package/Datejs.php" name="lib/Horde/Core/Script/Package/Datejs.php" />
    <install as="Horde/Core/Script/Package/Dialog.php" name="lib/Horde/Core/Script/Package/Dialog.php" />
    <install as="Horde/Core/Script/Package/Keynavlist.php" name="lib/Horde/Core/Script/Package/Keynavlist.php" />
@@ -1935,9 +1955,11 @@
    <install as="Horde/Registry/Caller.php" name="lib/Horde/Registry/Caller.php" />
    <install as="Horde/Registry/Hordeconfig.php" name="lib/Horde/Registry/Hordeconfig.php" />
    <install as="Horde/Registry/Loadconfig.php" name="lib/Horde/Registry/Loadconfig.php" />
+   <install as="Horde/Registry/Logout.php" name="lib/Horde/Registry/Logout.php" />
    <install as="Horde/Registry/Nlsconfig.php" name="lib/Horde/Registry/Nlsconfig.php" />
    <install as="Horde/Registry/Registryconfig.php" name="lib/Horde/Registry/Registryconfig.php" />
    <install as="Horde/Registry/Hordeconfig/Merged.php" name="lib/Horde/Registry/Hordeconfig/Merged.php" />
+   <install as="Horde/Registry/Logout/Task.php" name="lib/Horde/Registry/Logout/Task.php" />
    <install as="Horde/Script/Cache.php" name="lib/Horde/Script/Cache.php" />
    <install as="Horde/Script/Compress.php" name="lib/Horde/Script/Compress.php" />
    <install as="Horde/Script/File.php" name="lib/Horde/Script/File.php" />
@@ -3327,6 +3349,19 @@
   </release>
   <release>
    <version>
+    <release>2.11.2</release>
+    <api>2.11.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-01</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [jan] SECURITY: Fix broken encryption of session data if regenerating session IDs.
+   </notes>
+  </release>
+  <release>
+   <version>
     <release>2.12.0alpha1</release>
     <api>2.12.0</api></version>
    <stability>
@@ -3449,12 +3484,131 @@
    <stability>
     <release>beta</release>
     <api>beta</api></stability>
-   <date>2014-06-21</date>
+   <date>2014-07-01</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
+* [mjr] Fix issue sending email via EAS when the imap client throws an error when synchronizing the maillog (Bug #13276).
 * [mjr] Improvements to vcard mime handler to allow for ajax updating (Bug #13101).
 * [jan] Fix delay when fading the same dialog more than once.
 * [jan] Catch exceptions from NoSQL backends when building indices.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.12.1</release>
+    <api>2.12.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-08</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [jan] Fix botched 2.12.0 release.
+* [mjr] Fix closing smartmobile dialog pages (Bug #13316).
+* [mjr] Fix issue that could cause multiple tabs to be shown as active when tab_name could be a mix of integers or strings.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.12.2</release>
+    <api>2.12.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-08</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mms] Add configuration to allow for SMTP authentication if the current Horde access does not have an authenticated user.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.12.3</release>
+    <api>2.12.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-08</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mms] Add missing Horde_Pack required dependency.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.12.4</release>
+    <api>2.12.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-08</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mms] Fix clearing authentication-related registry caches when initializing a session in certain instances (Bug #13329).
+* [mms] Sanity checking in case smartmobile URL contains anchor that doesn&apos;t exist on the page.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.12.5</release>
+    <api>2.12.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-11</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mjr] Fix broken CHANGEFOLDER functionality for ActiveSync NOTES collections (Bug #13334).
+* [mms] Better error handling when trying to load config files from the conf.d subdirectory.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.12.6</release>
+    <api>2.12.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-12</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mjr] Fix regression in sending email via ActiveSync when no properly configured identity exists (Bug #13346).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.13.0</release>
+    <api>2.13.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-08-04</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mms] Add Horde_Core_Script_Package_Autocomplete.
+* [mms] Fix broken parse_url() behavior for PHP &lt; 5.3.6.
+* [mms] Horde_Data now stores temporary data using Horde_Vfs to ensure data persists and that it doesn&apos;t overload session storage (Request #11335).
+* [mms] Add method to allow any code to register tasks to run on logout.
+* [mjr] Ensure EAS client created collections are requested to be added to the application&apos;s sync preference (Bug #13359).
+* [mjr] Fix fatal error when executing a FOLDERDELETE command on certain collections.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.13.1</release>
+    <api>2.13.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-08-04</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mjr] Support ITEMOPERATIONS_EMPTYFOLDER requests via ActiveSync.
+* [mjr] Fetch correct data for EAS ItemSettings requests.
+* [jan] Catch exception from application in portal block (Bug #13427).
+* [jan] Fix returning session start time from session handler (Bug #13428).
+* [mjr] Add support for synchronizing user-defined IMAP flags as EAS Email categories.
+* [mjr] Fix BC break when detecting the ActiveSync state driver.
    </notes>
   </release>
  </changelog>

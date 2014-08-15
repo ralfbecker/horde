@@ -10,10 +10,10 @@
   <email>mrubinsk@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-06-25</date>
+ <date>2014-08-11</date>
  <version>
-  <release>2.16.8</release>
-  <api>2.16.0</api>
+  <release>2.18.0</release>
+  <api>2.18.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -21,7 +21,8 @@
  </stability>
  <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
  <notes>
-* 
+* [mjr] Add Horde_ActiveSync_Imap_Adapter::emptyMailbox().
+* [mjr] Fix sending ItemSettings responses for EAS 14.1.
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -2245,10 +2246,81 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-06-25</date>
+   <date>2014-06-30</date>
    <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
    <notes>
-* 
+* [mjr] Fix issue related to clients with enabled SMS sync causing broken email deletion behavior.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.16.9</release>
+    <api>2.16.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-01</date>
+   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
+   <notes>
+* [mjr] Force multiplex contact collections for Outlook 2013.
+* [mjr] Fix issue sending email when the imap client throws an error when synchronizing the maillog (Bug #13276).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.16.10</release>
+    <api>2.16.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-10</date>
+   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
+   <notes>
+* [mjr] Prevent error caused by attempting to update a non-existent state (Bug #13338).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.16.11</release>
+    <api>2.16.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-12</date>
+   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
+   <notes>
+* [mjr] Prevent another issue that could cause an error when attempting to update a non-existent state (Bug #13338).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.17.0</release>
+    <api>2.17.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-08-11</date>
+   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
+   <notes>
+* [mjr] Add unofficial WindowsLive codepage extensions.
+* [mjr] Fix yearly recurrences appearing on incorrect day in certain cases.
+* [mjr] Add support for synchronizing user-defined IMAP flags as EAS Email categories.
+* [mjr] Prevent infinite loops due to broken clients sending invalid OPTIONS data (Bug #13405).
+* [mjr] Prevent fatal WBXML parsing error due to broken BlackBerry clients (Bug #13351).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.18.0</release>
+    <api>2.18.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-08-11</date>
+   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
+   <notes>
+* [mjr] Add Horde_ActiveSync_Imap_Adapter::emptyMailbox().
+* [mjr] Fix sending ItemSettings responses for EAS 14.1.
    </notes>
   </release>
  </changelog>

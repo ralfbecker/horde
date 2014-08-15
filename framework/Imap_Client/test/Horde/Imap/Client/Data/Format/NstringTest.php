@@ -24,121 +24,85 @@
  * @subpackage UnitTests
  */
 class Horde_Imap_Client_Data_Format_NstringTest
-extends PHPUnit_Framework_TestCase
+extends Horde_Imap_Client_Data_Format_String_TestBase
 {
-    private $ob;
-    private $ob2;
-    private $ob3;
-    private $ob4;
+    protected $cname = 'Horde_Imap_Client_Data_Format_Nstring';
 
-    public function setUp()
+    protected function getTestObs()
     {
-        $this->ob = new Horde_Imap_Client_Data_Format_Nstring('Foo');
-        $this->ob2 = new Horde_Imap_Client_Data_Format_Nstring('Foo(');
-        /* This is an invalid atom, but valid nstring. */
-        $this->ob3 = new Horde_Imap_Client_Data_Format_Nstring('Foo]');
-        $this->ob4 = new Horde_Imap_Client_Data_Format_Nstring();
+        return array(
+            new $this->cname('Foo'),
+            new $this->cname('Foo('),
+            /* This is an invalid atom, but valid nstring. */
+            new $this->cname('Foo]'),
+            new $this->cname()
+        );
     }
 
-    public function testStringRepresentation()
+    public function stringRepresentationProvider()
     {
-        $this->assertEquals(
+        return $this->createProviderArray(array(
             'Foo',
-            strval($this->ob)
-        );
-
-        $this->assertEquals(
             'Foo(',
-            strval($this->ob2)
-        );
-
-        $this->assertEquals(
             'Foo]',
-            strval($this->ob3)
-        );
-
-        $this->assertEquals(
-            '',
-            strval($this->ob4)
-        );
+            ''
+        ));
     }
 
-    public function testEscape()
+    public function escapeProvider()
     {
-        $this->assertEquals(
+        return $this->createProviderArray(array(
             '"Foo"',
-            $this->ob->escape()
-        );
-
-        $this->assertEquals(
             '"Foo("',
-            $this->ob2->escape()
-        );
-
-        $this->assertEquals(
             '"Foo]"',
-            $this->ob3->escape()
-        );
-
-        $this->assertEquals(
-            'NIL',
-            $this->ob4->escape()
-        );
+            'NIL'
+        ));
     }
 
-    public function testVerify()
+    public function verifyProvider()
     {
-        // Don't throw Exception
-        $this->ob->verify();
-        $this->ob2->verify();
-        $this->ob3->verify();
-        $this->ob4->verify();
+        return $this->createProviderArray(array(
+            true,
+            true,
+            true,
+            true
+        ));
     }
 
-    public function testBinary()
+    public function binaryProvider()
     {
-        $this->assertFalse($this->ob->binary());
-        $this->assertFalse($this->ob2->binary());
-        $this->assertFalse($this->ob3->binary());
-        $this->assertFalse($this->ob4->binary());
+        return $this->createProviderArray(array(
+            false,
+            false,
+            false,
+            false
+        ));
     }
 
-    public function testLiteral()
+    public function literalProvider()
     {
-        $this->assertFalse($this->ob->literal());
-        $this->assertFalse($this->ob2->literal());
-        $this->assertFalse($this->ob3->literal());
-        $this->assertFalse($this->ob4->literal());
+        return $this->binaryProvider();
     }
 
-    public function testQuoted()
+    public function quotedProvider()
     {
-        $this->assertTrue($this->ob->quoted());
-        $this->assertTrue($this->ob2->quoted());
-        $this->assertTrue($this->ob3->quoted());
-        $this->assertFalse($this->ob4->quoted());
+        return $this->createProviderArray(array(
+            true,
+            true,
+            true,
+            false
+        ));
     }
 
-    public function testEscapeStream()
+    public function escapeStreamProvider()
     {
-        $this->assertEquals(
-            '"Foo"',
-            stream_get_contents($this->ob->escapeStream(), -1, 0)
-        );
+        return $this->escapeProvider();
+    }
 
-        $this->assertEquals(
-            '"Foo("',
-            stream_get_contents($this->ob2->escapeStream(), -1, 0)
-        );
-
-        $this->assertEquals(
-            '"Foo]"',
-            stream_get_contents($this->ob3->escapeStream(), -1, 0)
-        );
-
-        $this->assertEquals(
-            'NIL',
-            stream_get_contents($this->ob4->escapeStream(), -1, 0)
+    public function nonasciiInputProvider()
+    {
+        return array(
+            array(false)
         );
     }
 

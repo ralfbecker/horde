@@ -38,7 +38,9 @@
  <contents>
   <dir baseinstalldir="/" name="/">
    <dir name="bin">
-    <file name="ingo-admin-upgrade" role="script" />
+    <file name="ingo-admin-upgrade" role="script">
+     <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
+    </file>
     <file name="ingo-convert-prefs-to-sql" role="script">
      <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
     </file>
@@ -1379,7 +1381,7 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-03-10</date>
+   <date>2014-07-07</date>
    <license uri="http://www.horde.org/licenses/apache">ASL</license>
    <notes>
 * [mms] Fix blacklist/whitelist matching with IMAP backend (Bug #13031).
@@ -1439,12 +1441,40 @@
   </release>
   <release>
    <version>
-    <release>3.2.0beta3</release>
+    <release>3.2.0RC1</release>
+    <api>3.2.0</api></version>
+   <stability>
+     <release>beta</release>
+     <api>beta</api></stability>
+   <date>2014-06-17</date>
+   <license uri="http://www.horde.org/licenses/apache">ASL</license>
+   <notes>
+* [jan] Update Polish translation (Maciej Uhlig &lt;maciej.uhlig@us.edu.pl&gt;).
+* [jan] Update Japanese translation (Hiromi Kimura &lt;hiromi@tac.tsukuba.ac.jp&gt;).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>3.2.0RC2</release>
     <api>3.2.0</api></version>
    <stability>
     <release>beta</release>
     <api>beta</api></stability>
-   <date>2014-06-04</date>
+   <date>2014-07-01</date>
+   <license uri="http://www.horde.org/licenses/apache">ASL</license>
+   <notes>
+* [mms] Fix mailbox selection on Spam page (Bug #13298).
+* [mms] Fix regression in deactivating scripts (Bug #13297).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>3.2.0</release>
+    <api>3.2.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-08</date>
    <license uri="http://www.horde.org/licenses/apache">ASL</license>
    <notes>
 * 
@@ -1452,15 +1482,18 @@
   </release>
   <release>
    <version>
-    <release>3.3.0</release>
+    <release>3.2.1</release>
     <api>3.2.0</api></version>
    <stability>
-    <release>beta</release>
-    <api>beta</api></stability>
-   <date>2014-06-04</date>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-07-08</date>
    <license uri="http://www.horde.org/licenses/apache">ASL</license>
    <notes>
-* 
+* [mms] Fix performing more than one filter drag/drop action on a single page (Bug #13434).
+* [mms] Add support for a negative regex test to the Maildrop driver.
+* [mms] Add support for a negative regex test to the Sieve driver (Request #12671; Pete Beardmore &lt;pete.beardmore@msn.com&gt;).
+* [mms] Fix vacation in the maildrop driver (Bug #13415; balestrieri@mag-data.com).
    </notes>
   </release>
  </changelog>

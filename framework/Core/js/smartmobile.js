@@ -33,7 +33,7 @@ var HordeMobile = {
     debug: function(label, e)
     {
         if (!HordeMobile.is_logout && window.console && window.console.error) {
-            window.console.error(label, jQuery.browser.mozilla ? e : jQuery.makeArray(e));
+            window.console.error(label, navigator.userAgent.indexOf("Gecko") > -1 ? e : jQuery.makeArray(e));
         }
     },
 
@@ -280,8 +280,6 @@ var HordeMobile = {
             data.toPage = location.href;
         }
 
-        this.page_init = true;
-
         /* Add view/parameter data to dataUrl:
          *   - params: (object) List of URL parameters.
          *   - parsed: (object) Parsed URL object.
@@ -290,6 +288,13 @@ var HordeMobile = {
             var parsed = $.mobile.path.parseUrl(data.toPage),
                 match = /^#([^?]*)/.exec(parsed.hash);
 
+            /* Sanity checking - make sure view exists. */
+            if (!this.page_init && match && !$(match[0]).size()) {
+                data.toPage = parsed.hrefNoHash;
+                parsed = $.mobile.path.parseUrl(data.toPage);
+                match = undefined;
+            }
+
             data.options.parsedUrl = {
                 params: $.extend({}, parsed.search.toQueryParams(), parsed.hash.toQueryParams()),
                 parsed: parsed,
@@ -297,10 +302,13 @@ var HordeMobile = {
             };
         } else {
             data.options.parsedUrl = {};
-            if (data.options.role === 'dialog') {
+            if (typeof(data.toPage) != 'undefined' &&
+                data.toPage.attr('data-role') == 'dialog') {
                 data.options.changeHash = false;
             }
         }
+
+        this.page_init = true;
     },
 
     onPageChange: function(e, data)

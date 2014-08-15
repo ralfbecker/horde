@@ -195,12 +195,10 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
      *                        Horde_Mime_Part object that contains the text
      *                        to send.
      * @param array $opts     An array of options w/the following keys:
-     * <pre>
      *   - autosave: (boolean) Is this an auto-saved draft?
      *   - html: (boolean) Is this an HTML message?
      *   - priority: (string) The message priority ('high', 'normal', 'low').
      *   - readreceipt: (boolean) Add return receipt headers?
-     * </pre>
      *
      * @return string  Notification text on success (not HTML encoded).
      *
@@ -274,12 +272,12 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
                 $imap_url = new Horde_Imap_Client_Url();
                 $imap_url->hostspec = $imp_imap->getParam('hostspec');
                 $imap_url->protocol = $imp_imap->isImap() ? 'imap' : 'pop';
-                $imap_url->uidvalidity = $imap_url->mailbox->uidvalid;
                 $imap_url->username = $imp_imap->getParam('username');
 
                 $urls = array();
                 foreach ($indices as $val) {
                     $imap_url->mailbox = $val->mbox;
+                    $imap_url->uidvalidity = $val->mbox->uidvalid;
                     foreach ($val->uids as $val2) {
                         $imap_url->uid = $val2;
                         $urls[] = '<' . strval($imap_url) . '>';
@@ -1628,12 +1626,15 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
                     )
                 )
             );
+
+            $base = $textpart;
         } else {
-            $textpart = $textBody;
+            $base = $textpart = strlen(trim($text_contents))
+                ? $textBody
+                : null;
         }
 
         /* Add attachments. */
-        $base = $textpart;
         if (empty($options['noattach'])) {
             $parts = array();
 
@@ -1662,13 +1663,27 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
             }
 
             if (!empty($parts)) {
-                $base = new Horde_Mime_Part();
-                $base->setType('multipart/mixed');
-                $base->addPart($textpart);
-                foreach ($parts as $val) {
-                    $base->addPart($val);
+                if (is_null($base) && (count($parts) === 1)) {
+                    /* If this is a single attachment with no text, the
+                     * attachment IS the message. */
+                    $base = reset($parts);
+                } else {
+                    $base = new Horde_Mime_Part();
+                    $base->setType('multipart/mixed');
+                    if (!is_null($textpart)) {
+                        $base->addPart($textpart);
+                    }
+                    foreach ($parts as $val) {
+                        $base->addPart($val);
+                    }
                 }
             }
+        }
+
+        /* If we reach this far with no base, we are sending a blank message.
+         * Assume this is what the user wants. */
+        if (is_null($base)) {
+            $base = $textBody;
         }
 
         /* Set up the base message now. */
@@ -2077,7 +2092,7 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
 
         $h = $contents->getHeader();
 
-        $from = strval($h->getOb('from'));
+        $from = $h->getOb('from');
 
         if ($prefs->getValue('reply_headers') && !empty($h)) {
             $msg_pre = '----- ' .
@@ -2791,17 +2806,20 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
             if (($node instanceof DOMElement) &&
                 $node->hasAttribute(self::RELATED_ATTR)) {
                 list($attr_name, $atc_id) = explode(';', $node->getAttribute(self::RELATED_ATTR));
-                $r_atc = $this[$atc_id];
 
-                if ($r_atc->linked) {
-                    $attr = strval($r_atc->link_url);
-                } else {
-                    $related_part = $r_atc->getPart(true);
-                    $attr = 'cid:' . $related_part->setContentId();
-                    $add[] = $related_part;
+                /* If attachment can't be found, ignore. */
+                if ($r_atc = $this[$atc_id]) {
+                    if ($r_atc->linked) {
+                        $attr = strval($r_atc->link_url);
+                    } else {
+                        $related_part = $r_atc->getPart(true);
+                        $attr = 'cid:' . $related_part->setContentId();
+                        $add[] = $related_part;
+                    }
+
+                    $node->setAttribute($attr_name, $attr);
                 }
 
-                $node->setAttribute($attr_name, $attr);
                 $node->removeAttribute(self::RELATED_ATTR);
             }
         }
@@ -3282,10 +3300,9 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
      */
     public function sessionExpireDraft(Horde_Variables $vars)
     {
-        global $conf, $injector;
+        global $injector;
 
-        if (empty($conf['compose']['use_vfs']) ||
-            !isset($vars->composeCache) ||
+        if (!isset($vars->composeCache) ||
             !isset($vars->composeHmac) ||
             !isset($vars->user) ||
             ($this->getHmac($vars->composeCache, $vars->user) != $vars->composeHmac)) {
@@ -3313,11 +3330,7 @@ class IMP_Compose implements ArrayAccess, Countable, IteratorAggregate
      */
     public function recoverSessionExpireDraft()
     {
-        global $conf, $injector, $notification;
-
-        if (empty($conf['compose']['use_vfs'])) {
-            return;
-        }
+        global $injector, $notification;
 
         $filename = hash('sha1', $GLOBALS['registry']->getAuth());
 

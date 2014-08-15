@@ -25,16 +25,11 @@ class Sesha_View_List extends Sesha_View_Base
     public function __construct(array $config)
     {
         if (!empty($config['what']) && !empty($config['loc'])) {
-            $this->title = _("Search Results");
-            $this->header = _("Search Results");
+            $this->title = $this->header = _("Search Results");
             $url = new Horde_Url('list.php');
             $this->backToList = $url->link() . _('Back to stock list') . '</a>';
         } else {
-            $this->header = $category_id
-                ? sprintf(_("Available Inventory in %s"),
-                          $selectedCategory->category)
-                : _("Available Inventory");
-            $this->title = _("Inventory List");
+            $this->title = $this->header = _("Available Inventory");
         }
         $this->selectedCategories = is_array($config['selectedCategories'])
             ? $config['selectedCategories']
@@ -52,26 +47,28 @@ class Sesha_View_List extends Sesha_View_Base
                                'value' => $this->selectedCategories,
                                'exact' => $config['exact']);
         }
-        if (in_array(Sesha::SEARCH_ID, $config['loc'])) {
-            $filters[] = array('type' => 'stock_id',
-                               'exact' => $config['exact'],
-                               'value' => $config['what']);
-        }
-        if (in_array(Sesha::SEARCH_NAME, $config['loc'])) {
-            $filters[] = array('type' => 'stock_name',
-                               'exact' => $config['exact'],
-                               'value' => $config['what']);
-        }
-        if (in_array(Sesha::SEARCH_NOTE, $config['loc'])) {
-            $filters[] = array('type' => 'note',
-                               'exact' => $config['exact'],
-                               'value' => $config['what']);
-        }
-        if (in_array(Sesha::SEARCH_PROPERTY, $config['loc'])) {
-            $filters[] = array(
-                'type' => 'values',
-                'exact' => $config['exact'],
-                'value' => array(array('values' => array($config['what']))));
+        if (!empty($config['loc'])) {
+            if (in_array(Sesha::SEARCH_ID, $config['loc'])) {
+                $filters[] = array('type' => 'stock_id',
+                                   'exact' => $config['exact'],
+                                   'value' => $config['what']);
+            }
+            if (in_array(Sesha::SEARCH_NAME, $config['loc'])) {
+                $filters[] = array('type' => 'stock_name',
+                                   'exact' => $config['exact'],
+                                   'value' => $config['what']);
+            }
+            if (in_array(Sesha::SEARCH_NOTE, $config['loc'])) {
+                $filters[] = array('type' => 'note',
+                                   'exact' => $config['exact'],
+                                   'value' => $config['what']);
+            }
+            if (in_array(Sesha::SEARCH_PROPERTY, $config['loc'])) {
+                $filters[] = array(
+                    'type' => 'values',
+                    'exact' => $config['exact'],
+                    'value' => array(array('values' => array($config['what']))));
+            }
         }
         $this->shownStock = $this->stock($filters);
         parent::__construct($config);
@@ -91,25 +88,25 @@ class Sesha_View_List extends Sesha_View_Base
      * Builds column header array out of the list of properties and default
      * attributes.
      */
-    protected function columnHeaders($sortDir, $sortBy)
+    protected function columnHeaders($sortdir, $sortby)
     {
         $prefs_url = Horde::url($GLOBALS['registry']->get('webroot', 'horde') . '/services/prefs/', true);
-        $sortdirclass = $sortDir ? 'sortup' : 'sortdown';
+        $sortdirclass = $sortdir ? 'sortup' : 'sortdown';
         $baseurl = Horde::url('list.php');
         $column_headers = array(
             array('id' => 's' . Sesha::SORT_STOCKID,
-                'class' => $sortBy == Sesha::SORT_STOCKID ? ' class="' . $sortdirclass . '"' : '',
+                'class' => $sortby == Sesha::SORT_STOCKID ? ' class="' . $sortdirclass . '"' : '',
                 'link' => Horde::link($baseurl->copy()->add('sortby', Sesha::SORT_STOCKID), _("Sort by stock ID"), 'sortlink') . _("Stock ID") . '</a>',
                 'width' => ' width="5%"'),
             array('id' => 's' . Sesha::SORT_NAME,
-                'class' => $sortBy == Sesha::SORT_NAME ? ' class="' . $sortdirclass . '"' : '',
+                'class' => $sortby == Sesha::SORT_NAME ? ' class="' . $sortdirclass . '"' : '',
                 'link' => Horde::link($baseurl->copy()->add('sortby', Sesha::SORT_NAME), _("Sort by item name"), 'sortlink') . _("Item Name") . '</a>',
                 'width' => '')
         );
         foreach ($this->shownProperties as $property) {
             $column_headers[] = array(
                 'id' => 'sp' . $property->property_id,
-                'class' => $sortBy == 'p' . $property->property_id ? ' class="' . $sortdirclass . '"' : '',
+                'class' => $sortby == 'p' . $property->property_id ? ' class="' . $sortdirclass . '"' : '',
                 'link' => Horde::link($baseurl->copy()->add('sortby', 'p' . $property->property_id), sprintf(_("Sort by %s"), htmlspecialchars($property->property)), 'sortlink') . htmlspecialchars($property->property) . '</a>',
                 'width' => '',
             );
@@ -159,6 +156,7 @@ class Sesha_View_List extends Sesha_View_Base
         $isAdminDelete = Sesha::isAdmin(Horde_Perms::DELETE);
         $adminDeleteImg = Horde::img('delete.png', _("Delete Item"));
         $stock_url = Horde::url('stock.php');
+        $items = array();
 
         foreach ($stock as $item) {
             $url = $stock_url->add('stock_id', $item->stock_id);

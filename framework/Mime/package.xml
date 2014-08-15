@@ -17,9 +17,9 @@
   <email>slusarz@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-06-22</date>
+ <date>2014-08-02</date>
  <version>
-  <release>2.4.3</release>
+  <release>2.4.5</release>
   <api>2.4.0</api>
  </version>
  <stability>
@@ -1385,7 +1385,33 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-06-22</date>
+   <date>2014-07-09</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mms] Fix determination of part size when the part contains explicit sizing information.
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.4.4</release>
+    <api>2.4.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-08-02</date>
+   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
+   <notes>
+* [mms] Fix fatal error in Horde_Mime_Mail#getBasePart() (Thomas Müller &lt;thomas.mueller@tmit.eu&gt;).
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.4.5</release>
+    <api>2.4.0</api></version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api></stability>
+   <date>2014-08-02</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
 * 

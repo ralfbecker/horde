@@ -117,10 +117,16 @@ class IMP_Mime_Viewer_Itip extends Horde_Mime_Viewer_Base
         }
 
         $out = array();
-        foreach ($vCal->getComponents() as $key => $component) {
+        $components = $vCal->getComponents();
+        foreach ($components as $key => $component) {
             switch ($component->getType()) {
             case 'vEvent':
-                $out[] = $this->_vEvent($component, $key, $method);
+                try {
+                    if ($component->getAttribute('RECURRENCE-ID')) {
+                        break;
+                    }
+                } catch (Horde_ICalendar_Exception $e) {}
+                $out[] = $this->_vEvent($component, $key, $method, $components);
                 break;
 
             case 'vTodo':
@@ -240,7 +246,7 @@ class IMP_Mime_Viewer_Itip extends Horde_Mime_Viewer_Base
     /**
      * Generate the HTML for a vEvent.
      */
-    protected function _vEvent($vevent, $id, $method = 'PUBLISH')
+    protected function _vEvent($vevent, $id, $method = 'PUBLISH', $components = array())
     {
         global $injector, $prefs, $registry, $notification;
 
@@ -268,7 +274,6 @@ class IMP_Mime_Viewer_Itip extends Horde_Mime_Viewer_Base
             // Check if this is an update.
             try {
                 $registry->call('calendar/export', array($vevent->getAttribute('UID'), 'text/calendar'));
-
                 $desc = _("%s wants to notify you about changes in \"%s\".");
                 $is_update = true;
             } catch (Horde_Exception $e) {
@@ -374,8 +379,8 @@ class IMP_Mime_Viewer_Itip extends Horde_Mime_Viewer_Base
         try {
             $end = $vevent->getAttribute('DTEND');
             $view->end = is_array($end)
-                ? strftime($prefs->getValue('date_format'), mktime(0, 0, 0, $end['month'], $end['mday'] - 1, $end['year']))
-                : strftime($prefs->getValue('date_format'), $end - 1) . ' ' . date($prefs->getValue('twentyFour') ? ' G:i' : ' g:i a', $end - 1);
+                ? strftime($prefs->getValue('date_format'), mktime(0, 0, 0, $end['month'], $end['mday'], $end['year']))
+                : strftime($prefs->getValue('date_format'), $end) . ' ' . date($prefs->getValue('twentyFour') ? ' G:i' : ' g:i a', $end);
         } catch (Horde_Icalendar_Exception $e) {
             $end = null;
         }
@@ -400,32 +405,44 @@ class IMP_Mime_Viewer_Itip extends Horde_Mime_Viewer_Base
 
         try {
             $rrule = $vevent->getAttribute('RRULE');
-            if (!is_array($rrule)) {
-                $recurrence = new Horde_Date_Recurrence(new Horde_Date($view->start));
-                if (strpos($rrule, '=') !== false) {
-                    $recurrence->fromRRule20($rrule);
-                } else {
-                    $recurrence->fromRRule10($rrule);
-                }
+        } catch (Horde_Icalendar_Exception $e) {
+            $rrule = array();
+        }
+        if (!is_array($rrule)) {
+            $recurrence = new Horde_Date_Recurrence(new Horde_Date($view->start));
+            if (strpos($rrule, '=') !== false) {
+                $recurrence->fromRRule20($rrule);
+            } else {
+                $recurrence->fromRRule10($rrule);
+            }
 
-                // Add exceptions
-                try {
-                    $exdates = $vevent->getAttributeValues('EXDATE');
-                    if (is_array($exdates)) {
-                        foreach ($exdates as $exdate) {
-                            if (is_array($exdate)) {
-                                $recurrence->addException(
-                                    (int)$exdate['year'],
-                                    (int)$exdate['month'],
-                                    (int)$exdate['mday']);
-                            }
+            // Add exceptions
+            try {
+                $exdates = $vevent->getAttributeValues('EXDATE');
+                if (is_array($exdates)) {
+                    foreach ($exdates as $exdate) {
+                        if (is_array($exdate)) {
+                            $recurrence->addException(
+                                (int)$exdate['year'],
+                                (int)$exdate['month'],
+                                (int)$exdate['mday']);
                         }
                     }
-                } catch (Horde_ICalendar_Exception $e) {}
+                }
+            } catch (Horde_ICalendar_Exception $e) {}
 
-                $view->recurrence = $recurrence->toString($prefs->getValue('date_format'));
+            $view->recurrence = $recurrence->toString($prefs->getValue('date_format'));
+            $view->exceptions = array();
+            foreach ($components as $key => $component) {
+                try {
+                    if ($component->getAttribute('RECURRENCE-ID') && $component->getAttribute('UID') == $vevent->getAttribute('UID')) {
+                        if ($ex = $this->_vEventException($component, $key, $method)) {
+                            $view->exceptions[] = $ex;
+                        }
+                    }
+                } catch (Horde_Icalendar_Exception $e) {}
             }
-        } catch (Horde_ICalendar_Exception $e) {}
+        }
 
         if (!empty($attendees)) {
             $view->attendees = $this->_parseAttendees($vevent, $attendees);
@@ -439,6 +456,135 @@ class IMP_Mime_Viewer_Itip extends Horde_Mime_Viewer_Base
             try {
                 $calendars = $registry->call('calendar/getFbCalendars');
 
+                $vevent_start = new Horde_Date($start);
+                $vevent_end = new Horde_Date($end);
+
+                // Check if it's an all-day event.
+                if (is_array($start)) {
+                    $vevent_allDay = true;
+                    $vevent_end = $vevent_end->sub(1);
+                } else {
+                    $vevent_allDay = false;
+                    $time_span_start = $vevent_start->sub($prefs->getValue('conflict_interval') * 60);
+                    $time_span_end = $vevent_end->add($prefs->getValue('conflict_interval') * 60);
+                }
+
+                $events = $registry->call('calendar/listEvents', array($start, $vevent_end, $calendars, false));
+
+                // TODO: Check if there are too many events to show.
+                $conflicts = array();
+                foreach ($events as $calendar) {
+                    foreach ($calendar as $event) {
+                        // TODO: WTF? Why are we using Kronolith constants
+                        // here?
+                        if (in_array($event->status, array(Kronolith::STATUS_CANCELLED, Kronolith::STATUS_FREE))) {
+                            continue;
+                        }
+
+                        if ($vevent_allDay || $event->isAllDay()) {
+                            $type = 'collision';
+                        } elseif (($event->end->compareDateTime($time_span_start) <= -1) ||
+                                ($event->start->compareDateTime($time_span_end) >= 1)) {
+                            continue;
+                        } elseif (($event->end->compareDateTime($vevent_start) <= -1) ||
+                                  ($event->start->compareDateTime($vevent_end) >= 1)) {
+                            $type = 'nearcollision';
+                        } else {
+                            $type = 'collision';
+                        }
+
+                        $conflicts[] = array(
+                            'collision' => ($type == 'collision'),
+                            'range' => $event->getTimeRange(),
+                            'title' => $event->getTitle()
+                        );
+                    }
+                }
+
+                if (!empty($conflicts)) {
+                    $view->conflicts = $conflicts;
+                }
+            } catch (Horde_Exception $e) {}
+        }
+
+        if (!empty($options)) {
+            reset($options);
+            $view->options = $options;
+            $view->options_id = $id;
+        }
+
+        return $view->render('action');
+    }
+
+    /**
+     * Generate the HTML for a vEvent.
+     */
+    protected function _vEventException($vevent, $id, $method = 'PUBLISH')
+    {
+        global $prefs, $registry;
+
+        $attendees = null;
+        $options = array();
+
+        try {
+            if (($attendees = $vevent->getAttribute('ATTENDEE')) &&
+                !is_array($attendees)) {
+                $attendees = array($attendees);
+            }
+        } catch (Horde_Icalendar_Exception $e) {}
+
+        $view = $this->_getViewOb();
+
+        try {
+            $start = $vevent->getAttribute('DTSTART');
+            $view->start = is_array($start)
+                ? strftime($prefs->getValue('date_format'), mktime(0, 0, 0, $start['month'], $start['mday'], $start['year']))
+                : strftime($prefs->getValue('date_format'), $start) . ' ' . date($prefs->getValue('twentyFour') ? ' G:i' : ' g:i a', $start);
+        } catch (Horde_Icalendar_Exception $e) {
+            $start = null;
+        }
+
+        try {
+            $end = $vevent->getAttribute('DTEND');
+            // Check for exceptions that are over and done with.
+            $d = new Horde_Date($end);
+            if ($d->timestamp() < time()) {
+                return false;
+            }
+            $view->end = is_array($end)
+                ? strftime($prefs->getValue('date_format'), mktime(0, 0, 0, $end['month'], $end['mday'], $end['year']))
+                : strftime($prefs->getValue('date_format'), $end) . ' ' . date($prefs->getValue('twentyFour') ? ' G:i' : ' g:i a', $end);
+        } catch (Horde_Icalendar_Exception $e) {
+            $end = null;
+        }
+
+        try {
+            $summary = $vevent->getAttribute('SUMMARY');
+            $view->summary = $summary;
+        } catch (Horde_Icalendar_Exception $e) {
+            $summary = _("Unknown Meeting");
+            $view->summary_error = _("None");
+        }
+
+        try {
+            $view->desc2 = $vevent->getAttribute('DESCRIPTION');
+        } catch (Horde_Icalendar_Exception $e) {}
+
+        try {
+            $view->loc = $vevent->getAttribute('LOCATION');
+        } catch (Horde_Icalendar_Exception $e) {}
+
+        if (!empty($attendees)) {
+            $view->attendees = $this->_parseAttendees($vevent, $attendees);
+        }
+
+        if (!is_null($start) &&
+            !is_null($end) &&
+            in_array($method, array('PUBLISH', 'REQUEST', 'ADD')) &&
+            $registry->hasMethod('calendar/getFbCalendars') &&
+            $registry->hasMethod('calendar/listEvents')) {
+            try {
+                $calendars = $registry->call('calendar/getFbCalendars');
                 $vevent_start = new Horde_Date($start);
                 $vevent_end = new Horde_Date($end);
 

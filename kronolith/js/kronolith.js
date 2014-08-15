@@ -4773,8 +4773,8 @@ KronolithCore = {
                 }
 
                 var tmp = orig;
-                if (tmp.tagName != 'td') {
-                    tmp.up('td');
+                if (tmp.tagName.toLowerCase() != 'td') {
+                    tmp = tmp.up('td');
                 }
                 if (tmp) {
                     if (tmp.retrieve('weekdate') &&

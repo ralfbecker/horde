@@ -42,6 +42,7 @@ class IMP_Dynamic_Compose_Common
 
         $page_output->addScriptPackage('Horde_Core_Script_Package_Keynavlist');
         $page_output->addScriptPackage('IMP_Script_Package_ComposeBase');
+        $page_output->addScriptPackage('IMP_Script_Package_ContactAutocomplete');
         $page_output->addScriptFile('compose-dimp.js');
         $page_output->addScriptFile('draghandler.js');
         $page_output->addScriptFile('editor.js');
@@ -61,22 +62,12 @@ class IMP_Dynamic_Compose_Common
 
         $view->compose_enable = IMP_Compose::canCompose();
 
-        /* Attach spellchecker & auto completer. */
-        $imp_ui = $injector->getInstance('IMP_Compose_Ui');
-
         if (!empty($args['redirect'])) {
             $base->js_conf['redirect'] = 1;
-            $imp_ui->attachAutoCompleter(array('redirect_to'));
             return $view->render('redirect');
         }
 
-        $ac = array('to', 'cc', 'bcc');
-        if (!isset($args['redirect'])) {
-            $ac[] = 'redirect_to';
-        }
-
-        $imp_ui->attachAutoCompleter($ac);
-        $view->spellcheck = $imp_ui->attachSpellChecker();
+        $view->spellcheck = $injector->getInstance('IMP_Compose_Ui')->attachSpellChecker();
 
         $this->_compose($base, $view, $args);
         return $view->render('compose') . (isset($args['redirect']) ? '' : $view->render('redirect'));
@@ -165,7 +156,7 @@ class IMP_Dynamic_Compose_Common
      */
     protected function _addComposeVars($base)
     {
-        global $browser, $injector, $prefs, $registry;
+        global $browser, $conf, $injector, $prefs, $registry;
 
         /* Context menu definitions. */
         $base->js_context['ctx_other'] = new stdClass;
@@ -219,6 +210,8 @@ class IMP_Dynamic_Compose_Common
 
         if ($registry->hasMethod('contacts/search')) {
             $base->js_conf['URI_ABOOK'] = strval(IMP_Basic_Contacts::url()->setRaw(true));
+            $base->js_conf['ac_delete'] = strval(Horde_Themes::img('delete-small.png'));
+            $base->js_conf['ac_minchars'] = intval($conf['compose']['ac_threshold']) ?: 1;
         }
 
         if ($prefs->getValue('set_priority')) {
@@ -259,13 +252,14 @@ class IMP_Dynamic_Compose_Common
             'compose_cancel' => _("Cancelling this message will permanently discard its contents and will delete auto-saved drafts.\nAre you sure you want to do this?"),
             'compose_close' => _("Compose action completed. You may now safely close this window."),
             'dragdropimg_error' => _("Could not add %d file(s) to message: only images are supported."),
-            'multiple_atc' => _("%d Attachments"),
+            'max_atc_size' => _("Your attachment(s) are too large and cannot be uploaded."),
+            'max_atc_num' => _("You have reached the limit for the number of attachments in this message."),
             'nosubject' => _("The message does not have a subject entered.") . "\n" . _("Send message without a subject?"),
             'paste_error' => _("Could not paste image as the clipboard data is invalid."),
             'replyall' => _("%d recipients"),
             'spell_noerror' => _("No spelling errors found."),
             'toggle_html' => _("Discard all text formatting information (by converting from HTML to plain text)? This conversion cannot be reversed."),
-            'uploading' => _("Uploading..."),
+            'uploading' => _("Uploading...")
         );
     }
 

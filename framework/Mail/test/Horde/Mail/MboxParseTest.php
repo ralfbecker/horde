@@ -2,32 +2,32 @@
 /**
  * Copyright 2011-2014 Horde LLC (http://www.horde.org/)
  *
- * See the enclosed file COPYING for license information (GPL). If you
- * did not receive this file, see http://www.horde.org/licenses/gpl.
+ * See the enclosed file COPYING for license information (BSD). If you
+ * did not receive this file, see http://www.horde.org/licenses/bsd.
  *
  * @category   Horde
  * @copyright  2011-2014 Horde LLC
- * @license    http://www.horde.org/licenses/gpl GPL
- * @package    IMP
+ * @license    http://www.horde.org/licenses/bsd New BSD License
+ * @package    Mail
  * @subpackage UnitTests
  */
 
 /**
- * Test the mbox parsing library.
+ * Test the mbox parsing objecct.
  *
  * @author     Michael Slusarz <slusarz@horde.org>
  * @category   Horde
  * @copyright  2011-2014 Horde LLC
  * @ignore
- * @license    http://www.horde.org/licenses/gpl GPL
- * @package    IMP
+ * @license    http://www.horde.org/licenses/bsd New BSD License
+ * @package    Mail
  * @subpackage UnitTests
  */
-class Imp_Unit_MboxParseTest extends PHPUnit_Framework_TestCase
+class Horde_Mail_MboxParseTest extends PHPUnit_Framework_TestCase
 {
     public function testMboxParse()
     {
-        $parse = new IMP_Mbox_Parse(__DIR__ . '/../fixtures/test.mbox');
+        $parse = new Horde_Mail_Mbox_Parse(__DIR__ . '/fixtures/test.mbox');
 
         $this->assertEquals(
             2,
@@ -53,12 +53,15 @@ class Imp_Unit_MboxParseTest extends PHPUnit_Framework_TestCase
         }
     }
 
-    public function testEmlParse()
+    /**
+     * @dataProvider emlParseProvider
+     */
+    public function testEmlParse($data, $first_line)
     {
-        $parse = new IMP_Mbox_Parse(__DIR__ . '/../fixtures/test.eml');
+        $parse = new Horde_Mail_Mbox_Parse($data);
 
         $this->assertEquals(
-            0,
+            1,
             count($parse)
         );
 
@@ -70,17 +73,31 @@ class Imp_Unit_MboxParseTest extends PHPUnit_Framework_TestCase
         );
 
         $this->assertEquals(
-            "Return-Path: <bugs@horde.org>\r\n",
+            $first_line . "\r\n",
             fgets($val['data'])
         );
     }
 
+    public function emlParseProvider()
+    {
+        return array(
+            array(
+                __DIR__ . '/fixtures/test.eml',
+                'Return-Path: <bugs@horde.org>'
+            ),
+            array(
+                __DIR__ . '/fixtures/test2.eml',
+                'Return-Path: <test@example.com>'
+            )
+        );
+    }
+
     /**
-     * @expectedException IMP_Exception
+     * @expectedException Horde_Mail_Exception
      */
     public function testBadData()
     {
-        new IMP_Mbox_Parse(__DIR__ . '/noexist');
+        new Horde_Mail_Mbox_Parse(__DIR__ . '/noexist');
     }
 
 }

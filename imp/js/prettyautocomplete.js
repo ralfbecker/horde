@@ -4,7 +4,6 @@
  *
  * Events handled by this class:
  *   - AutoComplete:focus
- *   - AutoComplete:handlers
  *   - AutoComplete:reset
  *   - AutoComplete:update
  *
@@ -40,12 +39,13 @@ var IMP_PrettyAutocompleter = Class.create({
             listClassItem: 'hordeACListItem',
             // input (created below)
             // CSS class for real input field
-            growingInputClass: 'hordeACTrigger impACTrigger',
+            growingInputClass: 'hordeACTrigger',
             removeClass: 'hordeACItemRemove',
             // Allow for a function that filters the display value
             // This function should *always* return escaped HTML
             displayFilter: function(t) { return t.escapeHTML(); },
             filterCallback: this.filterChoices.bind(this),
+            maxItemSize: 50,
             onAdd: Prototype.K,
             onRemove: Prototype.K,
             processValueCallback: this.processValueCallback.bind(this),
@@ -93,14 +93,11 @@ var IMP_PrettyAutocompleter = Class.create({
         new PeriodicalExecuter(this.inputWatcher.bind(this), 0.25);
 
         p_clone = $H(this.p).toObject();
+        p_clone.input = this.input;
         p_clone.onSelect = this.updateElement.bind(this);
-        p_clone.paramName = this.elt.readAttribute('name');
         p_clone.tokens = [];
 
-        ac = new Ajax.Autocompleter(this.input, this.p.uri, p_clone);
-        ac.getToken = function() {
-            return $F(this.input);
-        }.bind(this);
+        ac = new Ajax.IMP_Autocompleter(this.input, p_clone);
 
         this.reset();
 
@@ -110,9 +107,6 @@ var IMP_PrettyAutocompleter = Class.create({
                 e.stop();
             }
         }.bindAsEventListener(this));
-        document.observe('AutoComplete:handlers', function(e) {
-            e.memo[this.elt.identify()] = this;
-        }.bind(this));
         document.observe('AutoComplete:reset', this.reset.bind(this));
         document.observe('AutoComplete:update', this.processInput.bind(this));
     },
@@ -196,7 +190,7 @@ var IMP_PrettyAutocompleter = Class.create({
             return false;
         }
 
-        displayValue = this.p.displayFilter(value);
+        displayValue = this.p.displayFilter(value.truncate(this.p.maxItemSize));
 
         this.input.up('LI').insert({
             before: new Element('LI', {
@@ -337,6 +331,41 @@ var IMP_PrettyAutocompleter = Class.create({
             // Pre-load the delete image now.
             this.deleteImg();
         }
+    }
+
+});
+
+Ajax.IMP_Autocompleter = Class.create(Autocompleter.Base, {
+
+    initialize: function(element, opts)
+    {
+        this.baseInitialize(element, opts);
+        this.cache = $H();
+    },
+
+    getToken: function()
+    {
+        return $F(this.opts.input);
+    },
+
+    getUpdatedChoices: function(t)
+    {
+        var c = this.cache.get(t);
+
+        if (c) {
+            this.updateChoices(c);
+        } else {
+            DimpCore.doAction('autocompleteSearch', {
+                search: t
+            }, {
+                callback: this._onComplete.bind(this)
+            });
+        }
+    },
+
+    _onComplete: function(request)
+    {
+        this.updateChoices(this.cache.set(this.getToken(), request));
     }
 
 });

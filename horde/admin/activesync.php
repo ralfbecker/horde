@@ -18,10 +18,12 @@ Horde_Registry::appInit('horde', array(
     'permission' => array('horde:administration:activesync')
 ));
 
-if (empty($conf['activesync']['enabled'])) {
+try {
+    $state = $injector->getInstance('Horde_ActiveSyncState');
+} catch (Horde_Exception $e) {
     throw new Horde_Exception_PermissionDenied(_("ActiveSync not activated."));
 }
-$state = $injector->getInstance('Horde_ActiveSyncState');
+
 $state->setLogger($injector->getInstance('Horde_Log_Logger'));
 
 /** Check for any actions **/
@@ -82,6 +84,7 @@ $selfurl = Horde::selfUrl();
 $view->reset = $selfurl->copy()->add('reset', 1);
 $devs = array();
 $js = array();
+$collections = array();
 foreach ($devices as $key => $device) {
     $dev = $state->loadDeviceInfo($device['device_id'], $device['device_user']);
     $syncCache = new Horde_ActiveSync_SyncCache($state, $dev->id, $dev->user, $injector->getInstance('Horde_Log_Logger'));
@@ -93,8 +96,19 @@ foreach ($devices as $key => $device) {
         'user' => $dev->user
     );
     $devs[] = $dev;
+    $collection = array();
+    foreach ($syncCache->getCollections() as $id => $c) {
+        $collection[] = array(
+            _("Collection id") => $id,
+            _("Class") => $c['class'],
+            _("Server Id") => $c['serverid'],
+            _("Last synckey") => $c['lastsynckey']
+        );
+    }
+    $collections[] = $collection;
 }
 $view->devices = $devs;
+$view->collections = $collections;
 $view->isAdmin = true;
 $page_output->header(array(
     'title' => _("ActiveSync Administration")

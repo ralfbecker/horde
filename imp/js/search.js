@@ -380,7 +380,7 @@ var ImpSearch = {
             [ $('no_search_mboxes'), $('search_mboxes_add').up() ].invoke('hide');
             $('search_mboxes').show();
             div2.insert(
-                new Element('EM').insert(ImpSearch.text.search_all.escapeHTML())
+                new Element('EM').insert(this.text.search_all.escapeHTML())
             ).insert(
                 new Element('A', { href: '#', className: 'iconImg searchuiImg searchuiDelete' })
             );
@@ -593,7 +593,7 @@ var ImpSearch = {
 
         switch (elt.readAttribute('id')) {
         case 'recent_searches':
-            tmp = this.saved_searches.get($F(elt));
+            tmp = this.saved_searches.get(val);
             this.updateCriteria(tmp.c);
             this.updateMailboxes(tmp.f);
             elt.clear();
@@ -638,7 +638,11 @@ var ImpSearch = {
             break;
 
         case 'search_mboxes_add':
-            this.insertMailbox($F('search_mboxes_add'));
+            this.insertMailbox(val);
+            break;
+
+        case 'search_type':
+            $('search_label').up('DIV').show();
             break;
         }
 
@@ -678,9 +682,9 @@ var ImpSearch = {
         HordeCore.initHandler('click');
 
         if (Prototype.Browser.IE) {
-            $('recent_searches', 'search_criteria_add', 'search_mboxes_add').compact().invoke('observe', 'change', ImpSearch.changeHandler.bindAsEventListener(ImpSearch));
+            $$('SELECT').compact().invoke('observe', 'change', this.changeHandler.bindAsEventListener(this));
         } else {
-            document.observe('change', ImpSearch.changeHandler.bindAsEventListener(ImpSearch));
+            document.observe('change', this.changeHandler.bindAsEventListener(this));
         }
 
         this.data.constants.within = $H(this.data.constants.within);
@@ -703,6 +707,6 @@ var ImpSearch = {
 
 };
 
-document.observe('dom:loaded', ImpSearch.onDomLoad.bindAsEventListener(ImpSearch));
+document.observe('dom:loaded', ImpSearch.onDomLoad.bind(ImpSearch));
 document.observe('HordeCore:click', ImpSearch.clickHandler.bindAsEventListener(ImpSearch));
 document.observe('Horde_Calendar:select', ImpSearch.calendarSelectHandler.bindAsEventListener(ImpSearch));

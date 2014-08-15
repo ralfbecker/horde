@@ -11,6 +11,57 @@
 This lists the API changes between releases of the package.
 
 
+Upgrading to 2.25.0
+===================
+
+  - Horde_Imap_Client_Data_Format_Astring_Nonascii
+  - Horde_Imap_Client_Data_Format_Nstring_Nonascii
+  - Horde_Imap_Client_Data_Format_String_Nonascii
+
+    Extended base classes to indicate that IMAP data element supports
+    non-ASCII characters.
+
+  - Horde_Imap_Client_Data_Format_String_Support_Nonascii
+
+    Added interface to indicate which IMAP data string elements support
+    non-ASCII characters.
+
+
+Upgrading to 2.24.0
+===================
+
+  - Horde_Imap_Client
+
+    The $capabilities_deps property has been deprecated.
+
+  - Horde_Imap_Client_Base
+
+    Added the $capability, $search_charset, and $url properties.
+
+    - capability()
+    - queryCapability()
+
+      These methods have been deprecated. Use the $capability property
+      instead.
+
+    - validSearchCharset()
+
+      This method has been deprecated. Use the query() method of the
+      $search_charset property instead.
+
+  - Horde_Imap_Client_Interaction_Command
+
+    Added the $on_error property.
+
+  - Horde_Imap_Client_Search_Query
+
+    - Constructor
+
+      The constructor now expects either a Horde_Imap_Client_Base object,
+      a Horde_Imap_Client_Data_Capability object, or null as its argument.
+      Passing a list of extensions as the argument is deprecated.
+
+
 Upgrading to 2.23.0
 ===================
 

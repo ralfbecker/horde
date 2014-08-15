@@ -60,6 +60,7 @@ extends Horde_Core_Ajax_Application_Handler
      * AJAX action: Create a mailbox.
      *
      * Variables used:
+     *   - create_poll: (boolean) If true, add new mailbox to poll list.
      *   - mbox: (string) The name of the new mailbox.
      *   - parent: (string) The parent mailbox (base64url encoded).
      *
@@ -67,6 +68,8 @@ extends Horde_Core_Ajax_Application_Handler
      */
     public function createMailbox()
     {
+        global $injector, $notification;
+
         if (!isset($this->vars->mbox)) {
             return false;
         }
@@ -79,9 +82,14 @@ extends Horde_Core_Ajax_Application_Handler
         $new_mbox = $parent->createMailboxName($this->vars->mbox);
 
         if ($new_mbox->exists) {
-            $GLOBALS['notification']->push(sprintf(_("Mailbox \"%s\" already exists."), $new_mbox->display), 'horde.warning');
+            $notification->push(sprintf(_("Mailbox \"%s\" already exists."), $new_mbox->display), 'horde.warning');
         } elseif ($new_mbox->create()) {
             $result = true;
+
+            if ($this->vars->create_poll) {
+                $injector->getInstance('IMP_Ftree')->poll->addPollList($new_mbox);
+                $this->_base->queue->poll($new_mbox);
+            }
         }
 
         return $result;
@@ -400,6 +408,7 @@ extends Horde_Core_Ajax_Application_Handler
             }
         } else {
             $filter->add($filter::EXPANDED);
+            $this->_base->queue->setMailboxOpt('expand', 1);
 
             foreach (array_filter(IMP_Mailbox::formFrom(json_decode($this->vars->mboxes))) as $val) {
                 $filter->iterator = new IMP_Ftree_Iterator($val->tree_elt);
@@ -1081,9 +1090,7 @@ extends Horde_Core_Ajax_Application_Handler
      *   - flagname: (string) Flag name.
      *
      * @return object  An object with the following properties:
-     * <pre>
      *   - success: (boolean) True if successful.
-     * </pre>
      */
     public function createFlag()
     {
@@ -1126,9 +1133,7 @@ extends Horde_Core_Ajax_Application_Handler
      * Variables used: NONE
      *
      * @return object  An object with the following properties:
-     * <pre>
      *   - flist: (array) TODO
-     * </pre>
      */
     public function sentMailList()
     {
@@ -1137,11 +1142,8 @@ extends Horde_Core_Ajax_Application_Handler
         /* Check to make sure the sent-mail mailboxes are created; they need
          * to exist to show up in drop-down list. */
         $identity = $injector->getInstance('IMP_Identity');
-        foreach (array_keys($identity->getAll('id')) as $ident) {
-            $mbox = $identity->getValue(IMP_Mailbox::MBOX_SENT, $ident);
-            if ($mbox instanceof IMP_Mailbox) {
-                $mbox->create();
-            }
+        foreach ($identity->getAllSentmail() as $mbox) {
+            $mbox->create();
         }
 
         $flist = array();
@@ -1174,9 +1176,7 @@ extends Horde_Core_Ajax_Application_Handler
      * Requires EITHER 'addr' -or- mailbox/indices from form params.
      *
      * Variables used:
-     * <pre>
      *   - addr: (string) The e-mail address to use.
-     * </pre>
      *
      * @return Horde_Core_Ajax_Response_HordeCore_Reload  Object with URL to
      *                                                    redirect to.
@@ -1224,16 +1224,12 @@ extends Horde_Core_Ajax_Application_Handler
      * AJAX action: Return the contacts images for a given e-mail address.
      *
      * Variables used:
-     * <pre>
      *   - addr: (string) The e-mail address.
-     * </pre>
      *
      * @return object  An object with the following properties:
-     * <pre>
      *   - avatar: (string) The URL of the avatar image.
      *   - flag: (string) The URL of the sender's country flag image.
      *   - flagname: (string) The name of the country of the sender.
-     * </pre>
      */
     public function getContactsImage()
     {
@@ -1262,9 +1258,7 @@ extends Horde_Core_Ajax_Application_Handler
      *           encoded).
      *
      * @return object  An object with the following properties:
-     * <pre>
      *   - size: (string) Formatted size string.
-     * </pre>
      */
     public function mailboxSize()
     {
@@ -1274,6 +1268,20 @@ extends Horde_Core_Ajax_Application_Handler
         $ret->size = $mbox->size;
 
         return $ret;
+    }
+
+    /**
+     * TODO
+     */
+    public function autocompleteSearch()
+    {
+        return array_map(
+            'strval',
+            $GLOBALS['injector']->getInstance('IMP_Contacts')->searchEmail(
+                $this->vars->search,
+                array('levenshtein' => true)
+            )->base_addresses
+        );
     }
 
 }
