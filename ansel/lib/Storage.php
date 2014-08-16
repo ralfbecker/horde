@@ -1122,7 +1122,7 @@ class Ansel_Storage
         } elseif ($params['gallery_id']) {
             $query_where = 'WHERE gallery_id = ' . $params['gallery_id'];
         } else {
-            $query_where = '';
+            $query_where = 'WHERE gallery_id > 0';
         }
         if ($params['filter']) {
             foreach ($params['filter'] as $filter) {
