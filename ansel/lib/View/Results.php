@@ -150,7 +150,7 @@ class Ansel_View_Results extends Ansel_View_Ansel
         // The number of resources to display on this page.
         $view->numimages = count($view->results);
         $view->tilesperrow = $prefs->getValue('tilesperrow');
-        $view->cellwidth = round(100 / $view->tilesperrow);
+        $view->cellwidth = round(100 / $this->tilesperrow);
 
         // Get any related tags to display.
         if ($conf['tags']['relatedtags']) {

@@ -26,7 +26,6 @@
  </tr>
 </thead>
 <tbody>
-<?php if (count($this->shownStock)): ?>
 <?php foreach ($this->shownStock as $item): ?>
  <tr>
 <?php foreach ($item['columns'] as $column): ?>
@@ -34,10 +33,5 @@
 <?php endforeach ?>
  </tr>
 <?php endforeach ?>
-<?php else: ?>
- <tr>
-  <td><em><?php echo _("No items") ?></em></td>
- </tr>
-<?php endif ?>
 </tbody>
 </table>

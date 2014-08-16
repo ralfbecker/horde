@@ -689,7 +689,7 @@ class Horde_Core_ActiveSync_Connector
      *
      * @param string $uid     The UID of the task we are interested in.
      * @param string $action  The action we are interested in (add, modify...)
-     * @param string $notepad  The notepad to use, if not using multiplex.
+     * @param string $notpad  The notepad to use, if not using multiplex.
      *
      * @return integer
      * @since 5.1
@@ -901,18 +901,6 @@ class Horde_Core_ActiveSync_Connector
     }
 
     /**
-     * Add any user-defined flags to IMP's preferences.
-     *
-     * @param  array  $flags An array of flags to add.
-     */
-    public function mail_ensureMessageFlags(array $flags)
-    {
-        if ($this->_registry->hasMethod('addFlags', $this->_registry->hasInterface('mail'))) {
-            $this->_registry->mail->addFlags($flags);
-        }
-    }
-
-    /**
      * Get all server changes for the specified collection
      *
      * @param string $collection  The collection type (a Horde interface name -
@@ -923,17 +911,12 @@ class Horde_Core_ActiveSync_Connector
      *                            multiplexed.
      *
      * @return array  A hash of add, modify, and delete uids
-     * @throws InvalidArgumentException, Horde_Exception
+     * @throws InvalidArgumentException
      */
     public function getChanges($collection, $from_ts, $to_ts, $server_id)
     {
         if (!in_array($collection, array('calendar', 'contacts', 'tasks', 'notes'))) {
             throw new InvalidArgumentException('collection must be one of calendar, contacts, tasks or notes');
-        }
-
-        $app = $this->_registry->hasInterface($collection);
-        if (!$app || $this->_registry->isInactive($app)) {
-            throw new Horde_Exception(sprintf('The %s interface is not active in Horde.', $collection));
         }
 
         // We can use modification sequences.
@@ -1147,7 +1130,7 @@ class Horde_Core_ActiveSync_Connector
                     Horde_ActiveSync_Exception::UNSUPPORTED
                 );
             }
-            return $this->_registry->contacts->addAddressbook($foldername, array('synchronize' => true));
+            return $this->_registry->contacts->addAddressbook($foldername);
 
         case Horde_ActiveSync::CLASS_NOTES:
             // @todo Remove hasMethod checks in H6.
@@ -1158,7 +1141,7 @@ class Horde_Core_ActiveSync_Connector
                     Horde_ActiveSync_Exception::UNSUPPORTED
                 );
             }
-            return $this->_registry->notes->addNotepad($foldername, array('synchronize' => true));
+            return $this->_registry->notes->addNotepad($foldername);
 
         case Horde_ActiveSync::CLASS_TASKS:
             if (!$this->_registry->horde->getPreference($this->_registry->hasInterface('tasks'), 'activesync_no_multiplex')) {
@@ -1167,7 +1150,7 @@ class Horde_Core_ActiveSync_Connector
                     Horde_ActiveSync_Exception::UNSUPPORTED
                 );
             }
-            return $this->_registry->tasks->addTasklist($foldername, array('synchronize' => true));
+            return $this->_registry->tasks->addTasklist($foldername);
         }
     }
 
@@ -1225,7 +1208,6 @@ class Horde_Core_ActiveSync_Connector
                 );
             }
             $this->_registry->notes->updateNotepad($id, array('name' => $name));
-            break;
 
         case Horde_ActiveSync::CLASS_TASKS:
             if (!$this->_registry->horde->getPreference($this->_registry->hasInterface('tasks'), 'activesync_no_multiplex')) {
@@ -1257,7 +1239,7 @@ class Horde_Core_ActiveSync_Connector
     {
         switch ($class) {
         case Horde_ActiveSync::CLASS_TASKS:
-            if (!$this->_registry->horde->getPreference($this->_registry->hasInterface('tasks'), 'activesync_no_multiplex')) {
+            if (!$this->_registry->horde->getPrefs($this->_registry->hasInterface('tasks'), 'activesync_no_multiplex')) {
                 throw new Horde_ActiveSync_Exception(
                     'Deleting addressbooks not supported by the contacts API.',
                     Horde_ActiveSync_Exception::UNSUPPORTED
@@ -1268,7 +1250,7 @@ class Horde_Core_ActiveSync_Connector
 
         case Horde_ActiveSync::CLASS_CONTACTS:
             if (!$this->_registry->hasMethod('contacts/deleteAddressbook') ||
-                !$this->_registry->horde->getPreference($this->_registry->hasInterface('contacts'), 'activesync_no_multiplex')) {
+                !$this->_registry->horde->getPrefs($this->_registry->hasInterface('contacts'), 'activesync_no_multiplex')) {
                 throw new Horde_ActiveSync_Exception(
                     'Deleting addressbooks not supported by the contacts API.',
                     Horde_ActiveSync_Exception::UNSUPPORTED
@@ -1279,7 +1261,7 @@ class Horde_Core_ActiveSync_Connector
 
         case Horde_ActiveSync::CLASS_CALENDAR:
             if (!$this->_registry->hasMethod('calendar/deleteCalendar') ||
-                !$this->_registry->horde->getPreference($this->_registry->hasInterface('calendar'), 'activesync_no_multiplex')) {
+                !$this->_registry->horde->getPrefs($this->_registry->hasInterface('calendar'), 'activesync_no_multiplex')) {
                 throw new Horde_ActiveSync_Exception(
                     'Deleting calendars not supported by the calendar API.',
                     Horde_ActiveSync_Exception::UNSUPPORTED
@@ -1290,13 +1272,13 @@ class Horde_Core_ActiveSync_Connector
 
         case Horde_ActiveSync::CLASS_NOTES  :
             if (!$this->_registry->hasMethod('notes/deleteNotepad') ||
-                !$this->_registry->horde->getPreference($this->_registry->hasInterface('notes'), 'activesync_no_multiplex')) {
+                !$this->_registry->horde->getPrefs($this->_registry->hasInterface('notes'), 'activesync_no_multiplex')) {
                 throw new Horde_ActiveSync_Exception(
                     'Deleting notepads not supported by the notes API.',
                     Horde_ActiveSync_Exception::UNSUPPORTED
                 );
             }
-            $this->_registry->notes->deleteNotepad($id);
+            $this->_registry->notes->deleteNotpad($id);
             break;
         }
 

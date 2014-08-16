@@ -43,7 +43,7 @@ case 'add_stock':
     $params = array('varrenderer_driver' => array('sesha', 'Stockedit_Html'));
     $renderer = new Horde_Form_Renderer($params);
     $form = new Sesha_Form_Stock($vars);
-    $title = _("Add Stock To Inventory");
+    $form->setTitle(_("Add Stock To Inventory"));
 
     $valid = $form->validate($vars);
     if ($valid && $form->isSubmitted()) {
@@ -94,13 +94,10 @@ case 'remove_stock':
 
 case 'view_stock':
     $active = false;
-    // Fall through.
 
 case 'update_stock':
-    if ($active) {
-        $title = _("Edit Inventory Item");
-    } else {
-        $title = _("View Inventory Item");
+    if (!$active) {
+        $form_title = _("View Inventory Item");
     }
     // Get the stock item.
     $stock = $sesha_driver->fetch($stock_id);
@@ -137,6 +134,7 @@ case 'update_stock':
     $params = array('varrenderer_driver' => array('sesha', 'stockedit_Html'));
     $renderer = new Horde_Form_Renderer($params);
     $form = new Sesha_Form_Stock($vars);
+    $form->setTitle((!isset($form_title) ? _("Edit Inventory Item") : $form_title));
     if (!$active) {
         $form->setExtra('<span class="smallheader">' . Horde::link(Horde::url('stock.php')->add(array('stock_id' => $vars->get('stock_id'), 'actionId' => 'update_stock'))) . _("Edit") . '</a></span>');
     }
@@ -182,7 +180,6 @@ default:
 }
 
 // Begin page display.
-$form->setTitle($title);
 $page_output->header(array(
     'title' => $title
 ));

@@ -364,8 +364,7 @@ $prefGroups['language'] = array(
     'desc' => _("Set your preferred language, timezone and date preferences."),
     'members' => array(
         'language', 'sending_charset', 'timezone', 'twentyFour', 'date_format',
-        'date_format_mini', 'time_format', 'time_format_mini',
-        'first_week_day'
+        'date_format_mini', 'time_format', 'first_week_day'
     )
 );
 
@@ -483,19 +482,10 @@ $_prefs['time_format'] = array(
         '%X' => strftime('%X') . ' (' . _("Default") . ')',
         '%H:%M:%S' => strftime('%H:%M:%S') . ' (' . _("24-hour format") . ')',
         '%l:%M:%S %p' => strftime('%l:%M:%S %p'),
-    ),
-    'desc' => _("Choose how to display times (full format):")
-);
-
-$_prefs['time_format_mini'] = array(
-    'value' => '%X',
-    'type' => 'enum',
-    'enum' => array(
-        '%X' => strftime('%X') . ' (' . _("Default") . ')',
-        '%H:%M' => strftime('%H:%M') . ' (' . _("24-hour format") . ')',
+        '%R' => strftime('%R') . ' (' . _("24-hour format") . ')',
         '%l:%M %p' => strftime('%l:%M %p'),
     ),
-    'desc' => _("Choose how to display times (abbreviated format):")
+    'desc' => _("Choose how to display times:")
 );
 
 $_prefs['first_week_day'] = array(
@@ -741,7 +731,7 @@ $prefGroups['activesync'] = array(
     'column' => _("Other Information"),
     'label' => _("ActiveSync"),
     'desc' => _("Manage your ActiveSync devices."),
-    'members' => array('activesyncmanagement'),
+    'members' => array('activesync_replyposition', 'activesyncmanagement'),
     'suppress' => function() {
         return empty($GLOBALS['conf']['activesync']['enabled']);
     }
@@ -752,6 +742,15 @@ $_prefs['activesyncmanagement'] = array(
     'handler' => 'Horde_Prefs_Special_Activesync'
 );
 
+$_prefs['activesync_replyposition'] = array(
+    'type' => 'enum',
+    'desc' => _("Position of reply text when replying to email on your device. Note that some devices will always send the citation string at the end of the reply text."),
+    'enum' => array('bottom' => _("Bottom"), 'top' => _("Top")),
+    'value' => 'bottom',
+    'suppress' => function() {
+        return empty($GLOBALS['conf']['activesync']['emailsync']);
+    }
+);
 // Handled by the special.
 // 'horde' = The horde configured default identity.
 // integer - The identity identifier.

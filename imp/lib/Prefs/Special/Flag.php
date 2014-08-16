@@ -40,7 +40,6 @@ class IMP_Prefs_Special_Flag implements Horde_Core_Prefs_Ui_Special
         global $injector, $page_output, $prefs;
 
         if (!$ui->nobuttons) {
-            $page_output->addScriptFile('hordecore.js', 'horde');
             $page_output->addScriptFile('colorpicker.js', 'horde');
             $page_output->addScriptFile('flagprefs.js');
         }

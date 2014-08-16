@@ -1,6 +1,5 @@
-<?php if (strlen($this->desc)): ?>
 <h2 class="header"><?php echo $this->h($this->desc) ?></h2>
-<?php endif; ?>
+
 <table class="horde-table imp-itip">
 <?php if (strlen($this->start)): ?>
  <tr>
@@ -56,6 +55,7 @@
    <td><?php echo nl2br($this->h($this->recurrence)) ?></td>
   </tr>
 <?php endif; ?>
+
 </table>
 
 <?php if (isset($this->attendees)): ?>
@@ -92,13 +92,6 @@
  </tr>
 <?php endforeach; ?>
 </table>
-<?php endif; ?>
-
-<?php if (!empty($this->exceptions)): ?>
-  <h2 class="header"><?php echo _("Exceptions") ?>:</h2>
-  <?php foreach ($this->exceptions as $exception): ?>
-    <?php echo $exception ?><div class="linedRow">&nbsp;</div><br />
-  <?php endforeach; ?>
 <?php endif; ?>
 
 <?php if (isset($this->options)): ?>

@@ -36,13 +36,10 @@ class Horde_Core_Auth_Ldap extends Horde_Auth_Ldap
      * @param string $oldID       The old user ID.
      * @param string $newID       The new user ID.
      * @param array $credentials  The new credentials
-     * @param string $olddn       NOT USED.
-     * @param string $newdn       NOT USED.
      *
      * @throws Horde_Auth_Exception
      */
-    public function updateUser($oldID, $newID, $credentials, $olddn = null,
-                               $newdn = null)
+    public function updateUser($oldID, $newID, $credentials)
     {
         $auth = $GLOBALS['injector']->getInstance('Horde_Core_Factory_Auth')->create();
 
@@ -58,11 +55,10 @@ class Horde_Core_Auth_Ldap extends Horde_Auth_Ldap
      * Delete a set of authentication credentials.
      *
      * @param string $userId  The user ID to delete.
-     * @param string $dn      NOT USED.
      *
      * @throws Horde_Auth_Exception
      */
-    public function removeUser($userId, $dn = null)
+    public function removeUser($userId)
     {
         list($userId, $credentials) = $GLOBALS['injector']->getInstance('Horde_Core_Factory_Auth')->create()->runHook($userId, array(), 'preauthenticate', 'admin');
 

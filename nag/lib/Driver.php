@@ -217,7 +217,6 @@ abstract class Nag_Driver
          * because this might be a recurring task, and marking the
          * task complete might only shift the due date to the next
          * recurrence. */
-        $task_completed = $task->completed;
         if (isset($properties['completed']) &&
             $properties['completed'] != $task->completed) {
             if (isset($properties['recurrence'])) {
@@ -237,10 +236,6 @@ abstract class Nag_Driver
         }
 
         $this->_modify($taskId, array_merge($task->toHash(), $properties));
-
-        // Must persist the original completed value so we can detect the
-        // change when notifications are sent.
-        $task->completed = $task_completed;
 
         $new_task = $this->get($task->id);
         $log_tasklist = $this->_tasklist;

@@ -9,12 +9,13 @@
 var DimpCompose = {
 
     // Variables defaulting to empty/false:
-    //   attachlist, atc_context, auto_save_interval, compose_cursor,
-    //   disabled, drafts_mbox, fwdattach, hash_hdrs, hash_msg,
+    //   atc_context, auto_save_interval, compose_cursor, disabled,
+    //   drafts_mbox, fwdattach, hash_hdrs, hash_msg,
     //   hash_msgOrig, hash_sig, hash_sigOrig, knl, last_identity,
     //   onload_show, old_action, old_identity, sc_submit,
-    //   skip_spellcheck, spellcheck, tasks
+    //   skip_spellcheck, spellcheck, tasks, upload_limit
 
+    ajax_atc_id: 0,
     checkbox_context: $H({
         ctx_atc: $H({
             pgppubkey: 'pgp_attach_pubkey',
@@ -88,8 +89,9 @@ var DimpCompose = {
     closeQReply: function()
     {
         this.hash_hdrs = this.hash_msg = this.hash_msgOrig = this.hash_sig = this.hash_sigOrig = '';
+        this.upload_limit = false;
 
-        this.attachlist.reset();
+        $('attach_list').hide().childElements().each(this.removeAttachRow.bind(this));
         this.getCacheElt().clear();
         $('qreply', 'sendcc', 'sendbcc').compact().invoke('hide');
         $('noticerow').down('UL.notices').childElements().invoke('hide');
@@ -254,7 +256,7 @@ var DimpCompose = {
         case 'saveDraft':
         case 'saveTemplate':
             // Don't send/save until uploading is completed.
-            if (this.attachlist.busy()) {
+            if ($('upload_wait').visible()) {
                 (function() { if (this.disabled) { this.uniqueSubmit(action); } }).bind(this).delay(0.25);
                 return;
             }
@@ -267,24 +269,30 @@ var DimpCompose = {
 
         this.skip_spellcheck = false;
 
-        // Move HTML text to textarea field for submission.
-        if (ImpComposeBase.editor_on) {
-            this.rte.updateElement();
-            if (ImpComposeBase.rte_sig) {
-                ImpComposeBase.rte_sig.updateElement();
+        if (action == 'addAttachment') {
+            // We need a submit action here because browser security models
+            // won't let us access files on user's filesystem otherwise.
+            HordeCore.submit(c);
+        } else {
+            // Move HTML text to textarea field for submission.
+            if (ImpComposeBase.editor_on) {
+                this.rte.updateElement();
+                if (ImpComposeBase.rte_sig) {
+                    ImpComposeBase.rte_sig.updateElement();
+                }
             }
-        }
 
-        DimpCore.doAction(
-            action,
-            ImpComposeBase.sendParams(c.serialize(true), action == 'sendMessage'),
-            { callback: this.uniqueSubmitCallback.bind(this) }
-        );
+            DimpCore.doAction(
+                action,
+                ImpComposeBase.sendParams(c.serialize(true), action == 'sendMessage'),
+                { callback: this.uniqueSubmitCallback.bind(this) }
+            );
 
-        // Can't disable until we send the message - or else nothing
-        // will get POST'ed.
-        if (action != 'autoSaveDraft') {
-            this.setDisabled(true);
+            // Can't disable until we send the message - or else nothing
+            // will get POST'ed.
+            if (action != 'autoSaveDraft') {
+                this.setDisabled(true);
+            }
         }
     },
 
@@ -292,7 +300,7 @@ var DimpCompose = {
     {
         var base;
 
-        if (d.success) {
+        if (d.success || d.action == 'addAttachment') {
             switch (d.action) {
             case 'autoSaveDraft':
             case 'saveDraft':
@@ -338,6 +346,10 @@ var DimpCompose = {
                 }
 
                 return this.closeCompose();
+
+            case 'addAttachment':
+                this.addAttachmentEnd();
+                break;
             }
         } else {
             if (!Object.isUndefined(d.identity)) {
@@ -460,6 +472,14 @@ var DimpCompose = {
     RTELoading: function(show, notxt)
     {
         var o;
+
+        if (!$('rteloading')) {
+            $(document.body).insert(
+                new Element('DIV', { id: 'rteloading' }).hide()
+            ).insert(
+                new Element('SPAN', { id: 'rteloadingtxt' }).hide().insert(DimpCore.text.loading)
+            );
+        }
 
         if (show) {
             $('rteloading').clonePosition('composeMessageParent').show();
@@ -589,6 +609,11 @@ var DimpCompose = {
             return;
         }
 
+        switch (ob.type) {
+        case 'forward_redirect':
+            return;
+        }
+
         ob.opts = ob.opts || {};
 
         if (ob.addr) {
@@ -666,12 +691,9 @@ var DimpCompose = {
             this.hash_msgOrig = this.msgHash();
         }
 
-        // Set auto-save-drafts now if not already active. Only need if
-        // compose template is output on current page (redirect doesn't
-        // need autosave).
+        // Set auto-save-drafts now if not already active.
         if (DimpCore.conf.auto_save_interval_val &&
-            !this.auto_save_interval &&
-            $('compose')) {
+            !this.auto_save_interval) {
             this.auto_save_interval = new PeriodicalExecuter(
                 this.autoSaveDraft.bind(this),
                 DimpCore.conf.auto_save_interval_val * 60
@@ -782,6 +804,120 @@ var DimpCompose = {
         $('to_loading_img').hide();
     },
 
+    // opts = (Object)
+    //   icon: (string) Data url of icon data
+    //   name: (string) Attachment name
+    //   num: (integer) Attachment number
+    //   size: (string) Size.
+    //   type: (string) MIME type
+    //   url: (string) Data view URL
+    //   view: (boolean) Link to attachment preview page
+    addAttach: function(opts)
+    {
+        var canvas, img,
+            li = new Element('LI')
+                .store('atc_id', opts.num)
+                .store('atc_url', opts.url),
+            span = new Element('SPAN')
+                .addClassName(opts.view ? 'attachName' : 'attachNameNoview')
+                .insert(opts.name.escapeHTML());
+
+        if (opts.icon) {
+            canvas = new Element('CANVAS', { height: '16px', width: '16px' });
+            // IE8 doesn't support canvas
+            if (canvas.getContext) {
+                li.insert(canvas);
+                img = new Image();
+                img.onload = function() {
+                    canvas.getContext('2d').drawImage(img, 0, 0, 16, 16);
+                };
+                img.src = opts.icon;
+            }
+        }
+
+        li.insert(span);
+
+        canvas.writeAttribute('title', opts.type);
+        li.insert(
+            new Element('SPAN')
+                .addClassName('attachSize')
+                .insert('(' + opts.size + ')')
+        );
+
+        $('attach_list').insert(li).show();
+
+        DimpCore.addPopdown(li.down(':last'), 'atcfile', {
+            no_offset: true
+        });
+
+        this.resizeMsgArea();
+    },
+
+    getAttach: function(id)
+    {
+        return $('attach_list').childElements().detect(function(e) {
+            return e.retrieve('atc_id') == id;
+        });
+    },
+
+    removeAttach: function(elt)
+    {
+        DimpCore.doAction('deleteAttach', this.actionParams({
+            atc_indices: Object.toJSON([ elt.retrieve('atc_id') ])
+        }), {
+            callback: this.removeAttachCallback.bind(this)
+        });
+    },
+
+    removeAttachCallback: function(r)
+    {
+        r.collect(this.getAttach.bind(this)).compact().each(function(elt) {
+            elt.fade({
+                afterFinish: function() {
+                    this.removeAttachRow(elt);
+                    this.initAttachList();
+                }.bind(this),
+                duration: 0.4
+            });
+        }, this);
+    },
+
+    removeAttachRow: function(elt)
+    {
+        DimpCore.DMenu.removeElement(elt.down('.horde-popdown').identify());
+        elt.remove();
+    },
+
+    initAttachList: function()
+    {
+        var al = $('attach_list'),
+            u = $('upload');
+
+        if (this.upload_limit) {
+            $('upload_limit').show();
+            u.up().hide();
+        } else {
+            $('upload_limit').hide();
+            u.up().show();
+        }
+
+        if (!al.childElements().size()) {
+            al.hide();
+        }
+
+        this.resizeMsgArea();
+    },
+
+    addAttachmentEnd: function()
+    {
+        var u = $('upload_wait');
+
+        if (u.visible()) {
+            u.hide();
+            this.initAttachList();
+        }
+    },
+
     resizeMsgArea: function(e)
     {
         if (!document.loaded || $('dimpLoading').visible()) {
@@ -820,9 +956,75 @@ var DimpCompose = {
 
         $('composeMessage').setStyle({ height: mah + 'px' });
 
-        if ($('rteloading').visible()) {
+        if ($('rteloading') && $('rteloading').visible()) {
             this.RTELoading(true);
         }
+    },
+
+    uploadAttachmentWait: function(f)
+    {
+        var t;
+
+        $('upload').up().hide();
+
+        if (Object.isElement(f)) {
+            if (f.files) {
+                f = f.files;
+            } else {
+                t = $F(f).escapeHTML();
+                f = null;
+            }
+        }
+
+        if (f) {
+            t = (f.length > 1)
+                ? DimpCore.text.multiple_atc.sub('%d', f.length)
+                : f[0].name.escapeHTML();
+        }
+
+        $('upload_wait').update(DimpCore.text.uploading + ' (' + t + ')')
+            .show();
+    },
+
+    uploadAttachmentAjax: function(data, params, callback)
+    {
+        var out = $H();
+
+        params = $H(params).update({
+            composeCache: $F(this.getCacheElt()),
+            json_return: 1
+        });
+        HordeCore.addRequestParams(params);
+
+        this.uploadAttachmentWait(data);
+
+        $A($R(0, data.length - 1)).each(function(i) {
+            var fd = new FormData();
+
+            params.merge({
+                file_id: ++this.ajax_atc_id,
+                file_upload: data[i]
+            }).each(function(p) {
+                fd.append(p.key, p.value);
+            });
+
+            HordeCore.doAction('addAttachment', {}, {
+                ajaxopts: {
+                    postBody: fd,
+                    requestHeaders: { "Content-type": null }
+                },
+                callback: function(r) {
+                    if (callback) {
+                        callback(r);
+                    }
+                    this.addAttachmentEnd();
+                }.bind(this)
+            });
+
+            out.set(this.ajax_atc_id, data[i]);
+        }, this);
+
+        return out;
     },
 
     toggleCC: function(type)
@@ -853,17 +1055,6 @@ var DimpCompose = {
         });
         this.knl.sm.knl.setSelected($F('save_sent_mail_mbox'));
         this.knl.sm.knl.show();
-    },
-
-    doTasks: function()
-    {
-        if (this.tasks) {
-            document.fire('HordeCore:runTasks', {
-                response: {},
-                tasks: this.tasks
-            });
-            delete this.tasks;
-        }
     },
 
     /* Open the addressbook window. */
@@ -1080,6 +1271,11 @@ var DimpCompose = {
                 $('identity').setValue(this.last_identity);
             }
             break;
+
+        case 'upload':
+            this.uniqueSubmit('addAttachment');
+            this.uploadAttachmentWait($('upload'));
+            break;
         }
     },
 
@@ -1089,7 +1285,7 @@ var DimpCompose = {
 
         switch (id) {
         case 'ctx_atcfile_delete':
-            this.attachlist.removeAttach(this.atc_context);
+            this.removeAttach(this.atc_context);
             break;
 
         default:
@@ -1155,6 +1351,11 @@ var DimpCompose = {
             if ($('composeCache')) {
                 $('composeHmac').setValue(t['imp:compose'].hmac);
             }
+            this.upload_limit = t['imp:compose'].atclimit;
+        }
+
+        if (t['imp:compose-atc']) {
+            t['imp:compose-atc'].each(this.addAttach.bind(this));
         }
 
         if (base) {
@@ -1174,26 +1375,6 @@ var DimpCompose = {
 
     onDomLoad: function()
     {
-        /* Initialize autocompleters. */
-        $('to', 'cc', 'bcc', 'redirect_to').compact().each(function(a) {
-            ImpComposeBase.ac.set(
-                a.identify(),
-                new IMP_PrettyAutocompleter(a.identify(), {
-                    boxClass: 'hordeACBox impACBox',
-                    boxClassFocus: 'impACBoxFocus',
-                    deleteIcon: DimpCore.conf.ac_delete,
-                    displayFilter: function(t) { return t.sub(/<[^>]*>$/, "").strip().escapeHTML(); },
-                    growingInputClass: 'hordeACTrigger impACTrigger',
-                    listClass: 'hordeACList impACList',
-                    minChars: DimpCore.conf.ac_minchars,
-                    processValueCallback: ImpComposeBase.autocompleteValue.bind(ImpComposeBase),
-                    removeClass: 'hordeACItemRemove impACItemRemove',
-                    trigger: a.identify(),
-                    triggerContainer: Math.random().toString()
-                })
-            );
-        });
-
         /* Initialize redirect elements. */
         if (DimpCore.conf.redirect) {
             $('redirect').observe('submit', Event.stop);
@@ -1203,16 +1384,19 @@ var DimpCompose = {
             $('dimpLoading').hide();
             $('composeContainer', 'redirect').invoke('show');
 
-            this.doTasks();
-            ImpComposeBase.focus('redirect_to');
+            this.tasksHandler({ tasks: this.tasks });
 
+            if (this.onload_show) {
+                this.fillForm(this.onload_show);
+                delete this.onload_show;
+            }
             return;
         }
 
         /* Attach event handlers. */
         if (Prototype.Browser.IE) {
             // IE doesn't bubble change events.
-            $('identity').observe('change', this.changeHandler.bindAsEventListener(this));
+            $('identity', 'upload').invoke('observe', 'change', this.changeHandler.bindAsEventListener(this));
         } else {
             document.observe('change', this.changeHandler.bindAsEventListener(this));
         }
@@ -1225,11 +1409,14 @@ var DimpCompose = {
         }.bind(this));
 
         HordeCore.initHandler('click');
-
-        this.attachlist = new IMP_Compose_Attachlist(this);
+        HordeCore.handleSubmit($('compose'), {
+            callback: this.uniqueSubmitCallback.bind(this)
+        });
 
         if ($H(DimpCore.context.ctx_atc).size()) {
-            $('atcdrop').observe('DragHandler:drop', this.attachlist.uploadAttach.bindAsEventListener(this.attachlist));
+            $('atcdrop').observe('DragHandler:drop', function(e) {
+                this.uploadAttachmentAjax(e.memo);
+            }.bindAsEventListener(this));
             DragHandler.dropelt = $('atcdrop');
             DragHandler.droptarget = $('atcdiv');
             DragHandler.hoverclass = 'atcdrop_over';
@@ -1283,7 +1470,7 @@ var DimpCompose = {
         $('dimpLoading').hide();
         $('composeContainer', 'compose').compact().invoke('show');
 
-        this.doTasks();
+        this.tasksHandler({ tasks: this.tasks });
 
         if (this.onload_show) {
             this.fillForm(this.onload_show);
@@ -1306,304 +1493,11 @@ var DimpCompose = {
             break;
         }
 
+        this.addAttachmentEnd();
         this.RTELoading(false);
     }
 
 };
-
-var IMP_Compose_Attachlist = Class.create({
-
-    // ajax_atc_id,
-    // curr_upload,
-    // num_limit,
-    // size_limit
-
-    initialize: function(compose)
-    {
-        this.compose = compose;
-
-        this.ajax_atc_id = 0;
-        this.curr_upload = 0;
-
-        /* Attach event handlers. */
-        document.observe('HordeCore:runTasks', this.tasksHandler.bindAsEventListener(this));
-        if (Prototype.Browser.IE) {
-            // IE doesn't bubble change events.
-            $('upload').observe('change', this.changeHandler.bindAsEventListener(this));
-        } else {
-            document.observe('change', this.changeHandler.bindAsEventListener(this));
-        }
-    },
-
-    reset: function()
-    {
-        this.curr_upload = 0;
-        delete this.num_limit;
-        $('attach_list').hide().childElements().each(this.removeAttachRow, this);
-    },
-
-    busy: function()
-    {
-        return !!(this.curr_upload);
-    },
-
-    // opts = (Object)
-    //   icon: (string) Data url of icon data
-    //   name: (string) Attachment name
-    //   num: (integer) Attachment number
-    //   size: (string) Size.
-    //   type: (string) MIME type
-    //   url: (string) Data view URL
-    //   view: (boolean) Link to attachment preview page
-    addAttach: function(opts)
-    {
-        var canvas, img,
-            li = new Element('LI')
-                .addClassName('attach_file')
-                .store('atc_id', opts.num)
-                .store('atc_url', opts.url),
-            span = new Element('SPAN')
-                .addClassName(opts.view ? 'attachName' : 'attachNameNoview')
-                .insert(opts.name.escapeHTML());
-
-        if (opts.icon) {
-            canvas = new Element('CANVAS', { height: '16px', width: '16px' });
-            // IE8 doesn't support canvas
-            if (canvas.getContext) {
-                li.insert(canvas);
-                img = new Image();
-                img.onload = function() {
-                    canvas.getContext('2d').drawImage(img, 0, 0, 16, 16);
-                };
-                img.src = opts.icon;
-            }
-        }
-
-        li.insert(span);
-
-        canvas.writeAttribute('title', opts.type);
-        li.insert(
-            new Element('SPAN')
-                .addClassName('attachSize')
-                .insert('(' + opts.size + ')')
-        );
-
-        $('attach_list').insert(li).show();
-
-        DimpCore.addPopdown(li.down(':last'), 'atcfile', {
-            no_offset: true
-        });
-
-        this.compose.resizeMsgArea();
-    },
-
-    getAttach: function(id)
-    {
-        return $('attach_list').childElements().detect(function(e) {
-            return e.retrieve('atc_id') == id;
-        });
-    },
-
-    // elt: (array | Element)
-    removeAttach: function(elt, quiet)
-    {
-        if (Object.isElement(elt)) {
-            elt = [ elt.retrieve('atc_id') ];
-        }
-
-        if (elt.size()) {
-            DimpCore.doAction('deleteAttach', this.compose.actionParams({
-                atc_indices: Object.toJSON(elt),
-                quiet: ~~(!!quiet)
-            }), {
-                callback: this.removeAttachCallback.bind(this)
-            });
-        }
-    },
-
-    removeAttachCallback: function(r)
-    {
-        r.collect(this.getAttach, this).compact().each(function(elt) {
-            elt.fade({
-                afterFinish: function() {
-                    this.removeAttachRow(elt);
-                    this.initAttachList();
-                }.bind(this),
-                duration: 0.4
-            });
-        }, this);
-    },
-
-    removeAttachRow: function(elt)
-    {
-        DimpCore.DMenu.removeElement(elt.down('.horde-popdown').identify());
-        elt.remove();
-    },
-
-    initAttachList: function()
-    {
-        var al = $('attach_list'),
-            u = $('upload');
-
-        if (this.num_limit === 0) {
-            $('upload_limit').show();
-            u.up().hide();
-        } else {
-            $('upload_limit').hide();
-            u.up().show();
-        }
-
-        if (!al.childElements().size()) {
-            al.hide();
-        }
-
-        this.compose.resizeMsgArea();
-    },
-
-    uploadAttachWait: function(f)
-    {
-        var li = new Element('LI')
-            .addClassName('attach_upload')
-            .insert(
-                new Element('SPAN')
-                    .addClassName('attach_upload_text')
-                    .insert((Object.isElement(f) ? $F(f) : f.name).escapeHTML() + ' (' + DimpCore.text.uploading + ')')
-            );
-
-        $('attach_list').show().insert(li);
-
-        return li;
-    },
-
-    // data: (Element | Event object | array)
-    uploadAttach: function(data, params, callback)
-    {
-        var li, out = $H();
-
-        if (Object.isElement(data)) {
-            if (!data.files) {
-                // We need a submit action here because browser security
-                // models won't let us access files on user's filesystem
-                // otherwise.
-                ++this.curr_upload;
-                li = this.uploadAttachWait(data);
-                HordeCore.submit('compose', {
-                    callback: function() {
-                        --this.curr_upload;
-                        li.remove();
-                    }.bind(this)
-                });
-                return;
-            }
-            data = data.files;
-        } else if (!Object.isArray(data)) {
-            data = data.memo;
-        }
-
-        if ($A(data).size() > this.num_limit) {
-            HordeCore.notify(DimpCore.text.max_atc_num, 'horde.error');
-            return;
-        }
-
-        /* First pass - check for size limitations. Do in groups, rather than
-         * individually, since it is a UX nightmare if some files are attached
-         * and others aren't. */
-        if ($A(data).detect(function(d) {
-            return (~~d.size >= this.size_limit);
-        }, this)) {
-            HordeCore.notify(DimpCore.text.max_atc_size, 'horde.error');
-            return;
-        }
-
-        params = $H(params).update({
-            composeCache: $F(this.compose.getCacheElt()),
-            json_return: 1
-        });
-        HordeCore.addRequestParams(params);
-
-        /* Second pass - actually send the files. */
-        $A(data).each(function(d) {
-            var fd = new FormData(), li;
-
-            params.merge({
-                file_id: ++this.ajax_atc_id,
-                file_upload: d
-            }).each(function(p) {
-                fd.append(p.key, p.value);
-            });
-
-            ++this.curr_upload;
-            if (Object.isNumber(this.num_limit)) {
-                --this.num_limit;
-            }
-
-            HordeCore.doAction('addAttachment', {}, {
-                ajaxopts: {
-                    postBody: fd,
-                    requestHeaders: { "Content-type": null },
-                    onComplete: function() {
-                        --this.curr_upload;
-                        li.remove();
-                    }.bind(this),
-                    onCreate: function(e) {
-                        if (e.transport && e.transport.upload) {
-                            var p = new Element('SPAN')
-                                .addClassName('attach_upload_progress')
-                                .hide();
-                            li = this.uploadAttachWait(d);
-                            li.insert(p);
-
-                            e.transport.upload.onprogress = function(e2) {
-                                if (e2.lengthComputable) {
-                                    p.setStyle({
-                                        backgroundPosition: parseInt(100 - (e2.loaded / e2.total * 100), 10) + "% 0"
-                                    });
-                                    if (!p.visible()) {
-                                        li.down('.attach_upload_text').addClassName('attach_upload_text_progress');
-                                        p.show();
-                                    }
-                                }
-                            };
-                        } else {
-                            li = this.uploadAttachWait(d);
-                        }
-                    }.bind(this)
-                },
-                callback: callback || Prototype.emptyFunction
-            });
-
-            out.set(this.ajax_atc_id, d);
-        }, this);
-
-        return out;
-    },
-
-    /* Event observers. */
-
-    changeHandler: function(e)
-    {
-        switch (e.element().readAttribute('id')) {
-        case 'upload':
-            this.uploadAttach($('upload'));
-            break;
-        }
-    },
-
-    tasksHandler: function(e)
-    {
-        var t = e.memo.tasks || {};
-
-        if (t['imp:compose']) {
-            this.num_limit = t['imp:compose'].atclimit;
-            this.size_limit = t['imp:compose'].atcmax;
-        }
-
-        if (t['imp:compose-atc']) {
-            t['imp:compose-atc'].each(this.addAttach, this);
-        }
-    }
-
-});
 
 /* Attach event handlers. */
 document.observe('dom:loaded', DimpCompose.onDomLoad.bind(DimpCompose));

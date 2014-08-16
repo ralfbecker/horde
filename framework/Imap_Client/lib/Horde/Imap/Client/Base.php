@@ -20,16 +20,8 @@
  * @copyright 2008-2014 Horde LLC
  * @license   http://www.horde.org/licenses/lgpl21 LGPL 2.1
  * @package   Imap_Client
- *
- * @property-read Horde_Imap_Client_Data_Capability $capability
- *                A capability object. (@since 2.24.0)
- * @property-read Horde_Imap_Client_Data_SearchCharset $search_charset
- *                A search charset object. (@since 2.24.0)
- * @property-read Horde_Imap_Client_Url $url  The URL object for the current
- *                connection parameters (@since 2.24.0)
  */
-abstract class Horde_Imap_Client_Base
-implements Serializable, SplObserver
+abstract class Horde_Imap_Client_Base implements Serializable
 {
     /** Serialized version. */
     const VERSION = 2;
@@ -154,7 +146,9 @@ implements Serializable, SplObserver
      *
      * @var array
      */
-    protected $_temp = array();
+    protected $_temp = array(
+        'enabled' => array()
+    );
 
     /**
      * Constructor.
@@ -289,18 +283,6 @@ implements Serializable, SplObserver
         $this->_debug = ($debug = $this->getParam('debug'))
             ? new Horde_Imap_Client_Base_Debug($debug)
             : new Horde_Support_Stub();
-
-        // @todo: Remove (BC purposes)
-        if (isset($this->_init['capability']) &&
-            !is_object($this->_init['capability'])) {
-            $this->_setInit('capability');
-        }
-
-        foreach (array('capability', 'search_charset') as $val) {
-            if (isset($this->_init[$val])) {
-                $this->_init[$val]->attach($this);
-            }
-        }
     }
 
     /**
@@ -317,16 +299,6 @@ implements Serializable, SplObserver
     public function __clone()
     {
         throw new LogicException('Object cannot be cloned.');
-    }
-
-    /**
-     */
-    public function update(SplSubject $subject)
-    {
-        if (($subject instanceof Horde_Imap_Client_Data_Capability) ||
-            ($subject instanceof Horde_Imap_Client_Data_SearchCharset)) {
-            $this->changed = true;
-        }
     }
 
     /**
@@ -358,31 +330,6 @@ implements Serializable, SplObserver
     }
 
     /**
-     */
-    public function __get($name)
-    {
-        switch ($name) {
-        case 'capability':
-            return $this->_capability();
-
-        case 'search_charset':
-            if (!isset($this->_init['search_charset'])) {
-                $this->_init['search_charset'] = new Horde_Imap_Client_Data_SearchCharset();
-               $this->_init['search_charset']->attach($this);
-            }
-            $this->_init['search_charset']->setBaseOb($this);
-            return $this->_init['search_charset'];
-
-        case 'url':
-            $url = new Horde_Imap_Client_Url();
-            $url->hostspec = $this->getParam('hostspec');
-            $url->port = $this->getParam('port');
-            $url->protocol = 'imap';
-            return $url;
-        }
-    }
-
-    /**
      * Set an initialization value.
      *
      * @param string $key  The initialization key. If null, resets all keys.
@@ -391,38 +338,55 @@ implements Serializable, SplObserver
     public function _setInit($key = null, $val = null)
     {
         if (is_null($key)) {
-            $this->_init = array();
+            $this->_init = array(
+                'namespace' => array(),
+                's_charset' => array()
+            );
         } elseif (is_null($val)) {
             unset($this->_init[$key]);
+
+            switch ($key) {
+            case 'capability':
+                unset($this->_init['cmdlength']);
+                break;
+            }
         } else {
             switch ($key) {
             case 'capability':
                 if ($ci = $this->getParam('capability_ignore')) {
-                    $ignored = array();
-
-                    foreach ($ci as $val2) {
-                        $c = explode('=', $val2);
-
-                        if ($val->query($c[0], isset($c[1]) ? $c[1] : null)) {
-                            $ignored[] = $val2;
-                            $val->remove($c[0], isset($c[1]) ? $c[1] : null);
-                        }
-                    }
-
-                    if ($this->_debug->debug && !empty($ignored)) {
+                    if ($this->_debug->debug &&
+                        ($ignored = array_intersect_key($val, array_flip($ci)))) {
                         $this->_debug->info(sprintf(
                             'CONFIG: IGNORING these IMAP capabilities: %s',
-                            implode(', ', $ignored)
+                            implode(', ', array_keys($ignored))
                         ));
                     }
+
+                    $val = array_diff_key($val, array_flip($ci));
                 }
 
-                $val->attach($this);
+                /* RFC 7162 [3.2.3] - QRESYNC implies CONDSTORE and ENABLE,
+                 * even if not listed as a capability. */
+                if (!empty($val['QRESYNC'])) {
+                    $val['CONDSTORE'] = true;
+                    $val['ENABLE'] = true;
+                }
+
+                /* RFC 2683 [3.2.1.5] originally recommended that lines should
+                 * be limited to "approximately 1000 octets". However, servers
+                 * should allow a command line of at least "8000 octets".
+                 * RFC 7162 [4] updates the recommendation to 8192 octets.
+                 * As a compromise, assume all modern IMAP servers handle
+                 * ~2000 octets and, if CONDSTORE/ENABLE is supported, assume
+                 * they can handle ~8000 octets. */
+                $this->_init['cmdlength'] = (isset($val['CONDSTORE']) || isset($val['QRESYNC']))
+                    ? 8000
+                    : 2000;
                 break;
             }
 
             /* Nothing has changed. */
-            if (isset($this->_init[$key]) && ($this->_init[$key] === $val)) {
+            if (isset($this->_init[$key]) && ($this->_init[$key] == $val)) {
                 return;
             }
 
@@ -430,6 +394,40 @@ implements Serializable, SplObserver
         }
 
         $this->changed = true;
+    }
+
+    /**
+     * Set the list of enabled extensions.
+     *
+     * @param array $exts      The list of extensions.
+     * @param integer $status  1 means to report as ENABLED, although it has
+     *                         not been formally enabled on server yet. 2 is
+     *                         verified enabled on the server.
+     */
+    protected function _enabled($exts, $status)
+    {
+        /* RFC 7162 [3.2.3] - Enabling QRESYNC also implies enabling of
+         * CONDSTORE. */
+        if (in_array('QRESYNC', $exts)) {
+            $exts[] = 'CONDSTORE';
+        }
+
+        switch ($status) {
+        case 2:
+            $enabled_list = array_intersect(array(2), $this->_temp['enabled']);
+            break;
+
+        case 1:
+        default:
+            $enabled_list = $this->_temp['enabled'];
+            $status = 1;
+            break;
+        }
+
+        $this->_temp['enabled'] = array_merge(
+            $enabled_list,
+            array_fill_keys($exts, $status)
+        );
     }
 
     /**
@@ -566,8 +564,6 @@ implements Serializable, SplObserver
      * Returns whether the IMAP server supports the given capability
      * (See RFC 3501 [6.1.1]).
      *
-     * @deprecated  Use $capability property instead.
-     *
      * @param string $capability  The capability string to query.
      *
      * @return mixed  True if the server supports the queried capability,
@@ -576,20 +572,34 @@ implements Serializable, SplObserver
      */
     public function queryCapability($capability)
     {
+        // @todo: Remove this catch(); if capability fails due to connection
+        // error, should throw an exception.
         try {
-            $c = $this->_capability();
-            return ($out = $c->getParams($capability))
-                ? $out
-                : $c->query($capability);
+            $this->capability();
         } catch (Horde_Imap_Client_Exception $e) {
             return false;
         }
+
+        $capability = strtoupper($capability);
+
+        if (!isset($this->_init['capability'][$capability])) {
+            return false;
+        }
+
+        /* Check for capability requirements. */
+        if (isset(Horde_Imap_Client::$capability_deps[$capability])) {
+            foreach (Horde_Imap_Client::$capability_deps[$capability] as $val) {
+                if (!$this->queryCapability($val)) {
+                    return false;
+                }
+            }
+        }
+
+        return $this->_init['capability'][$capability];
     }
 
     /**
      * Get CAPABILITY information from the IMAP server.
-     *
-     * @deprecated  Use $capability property instead.
      *
      * @return array  The capability array.
      *
@@ -597,39 +607,19 @@ implements Serializable, SplObserver
      */
     public function capability()
     {
-        return $this->_capability()->toArray();
-    }
-
-    /**
-     * Query server capability.
-     *
-     * Required because internal code can't call capability via magic method
-     * directly - it may not exist yet, the creation code may call capability
-     * recursively, and __get() doesn't allow recursive calls to the same
-     * property (chicken/egg issue).
-     *
-     * @return mixed  The capability object if no arguments provided. If
-     *                arguments are provided, they are passed to the query()
-     *                method and this value is returned.
-     * @throws Horde_Imap_Client_Exception
-     */
-    protected function _capability()
-    {
         if (!isset($this->_init['capability'])) {
-            $this->_initCapability();
+            $this->_capability();
         }
 
-        return ($args = func_num_args())
-            ? $this->_init['capability']->query(func_get_arg(0), ($args > 1) ? func_get_arg(1) : null)
-            : $this->_init['capability'];
+        return $this->_init['capability'];
     }
 
     /**
-     * Retrieve capability information from the IMAP server.
+     * Retrieve CAPABILITY information from the IMAP server.
      *
      * @throws Horde_Imap_Client_Exception
      */
-    abstract protected function _initCapability();
+    abstract protected function _capability();
 
     /**
      * Send a NOOP command (RFC 3501 [6.1.2]).
@@ -852,7 +842,7 @@ implements Serializable, SplObserver
      */
     public function sendID($info = null)
     {
-        if (!$this->_capability('ID')) {
+        if (!$this->queryCapability('ID')) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension('ID');
         }
 
@@ -879,7 +869,7 @@ implements Serializable, SplObserver
      */
     public function getID()
     {
-        if (!$this->_capability('ID')) {
+        if (!$this->queryCapability('ID')) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension('ID');
         }
 
@@ -913,7 +903,7 @@ implements Serializable, SplObserver
     {
         $lang = null;
 
-        if ($this->_capability('LANGUAGE')) {
+        if ($this->queryCapability('LANGUAGE')) {
             $lang = is_null($langs)
                 ? $this->getParam('lang')
                 : $langs;
@@ -949,7 +939,7 @@ implements Serializable, SplObserver
      */
     public function getLanguage($list = false)
     {
-        if (!$this->_capability('LANGUAGE')) {
+        if (!$this->queryCapability('LANGUAGE')) {
             return $list ? array() : null;
         }
 
@@ -1095,7 +1085,7 @@ implements Serializable, SplObserver
     {
         $this->login();
 
-        if (!$this->_capability('CREATE-SPECIAL-USE')) {
+        if (!$this->queryCapability('CREATE-SPECIAL-USE')) {
             unset($opts['special_use']);
         }
 
@@ -1360,14 +1350,14 @@ implements Serializable, SplObserver
         }
 
         if (isset($options['special_use']) &&
-            !$this->_capability('SPECIAL-USE')) {
+            !$this->queryCapability('SPECIAL-USE')) {
             unset($options['special_use']);
         }
 
         $ret = $this->_listMailboxes($plist, $mode, $options);
 
         if (!empty($options['status']) &&
-            !$this->_capability('LIST-STATUS')) {
+            !$this->queryCapability('LIST-STATUS')) {
             foreach ($this->status(array_keys($ret), $options['status']) as $key => $val) {
                 $ret[$key]['status'] = $val;
             }
@@ -1585,13 +1575,13 @@ implements Serializable, SplObserver
 
         /* Catch flags that are not supported. */
         if (($flags & Horde_Imap_Client::STATUS_HIGHESTMODSEQ) &&
-            !$this->_capability()->isEnabled('CONDSTORE')) {
+            !isset($this->_temp['enabled']['CONDSTORE'])) {
             $master['highestmodseq'] = 0;
             $flags &= ~Horde_Imap_Client::STATUS_HIGHESTMODSEQ;
         }
 
         if (($flags & Horde_Imap_Client::STATUS_UIDNOTSTICKY) &&
-            !$this->_capability('UIDPLUS')) {
+            !$this->queryCapability('UIDPLUS')) {
             $master['uidnotsticky'] = false;
             $flags &= ~Horde_Imap_Client::STATUS_UIDNOTSTICKY;
         }
@@ -1677,7 +1667,7 @@ implements Serializable, SplObserver
 
         if ($flags && !empty($to_process)) {
             if ((count($to_process) > 1) &&
-                $this->_capability('LIST-STATUS')) {
+                $this->queryCapability('LIST-STATUS')) {
                 foreach ($this->listMailboxes($to_process, Horde_Imap_Client::MBOX_ALL, array('status' => $flags)) as $key => $val) {
                     if (isset($val['status'])) {
                         $ret[$key] += $val['status'];
@@ -2079,34 +2069,36 @@ implements Serializable, SplObserver
 
         // Check for SEARCHRES support.
         if ((($pos = array_search(Horde_Imap_Client::SEARCH_RESULTS_SAVE, $options['results'])) !== false) &&
-            !$this->_capability('SEARCHRES')) {
+            !$this->queryCapability('SEARCHRES')) {
             unset($options['results'][$pos]);
         }
 
         // Check for SORT-related options.
         if (!empty($options['sort'])) {
+            $sort = $this->queryCapability('SORT');
             foreach ($options['sort'] as $key => $val) {
                 switch ($val) {
                 case Horde_Imap_Client::SORT_DISPLAYFROM_FALLBACK:
-                    $options['sort'][$key] = $this->_capability('SORT', 'DISPLAY')
-                        ? Horde_Imap_Client::SORT_DISPLAYFROM
-                        : Horde_Imap_Client::SORT_FROM;
+                    $options['sort'][$key] = (!is_array($sort) || !in_array('DISPLAY', $sort))
+                        ? Horde_Imap_Client::SORT_FROM
+                        : Horde_Imap_Client::SORT_DISPLAYFROM;
                     break;
 
                 case Horde_Imap_Client::SORT_DISPLAYTO_FALLBACK:
-                    $options['sort'][$key] = $this->_capability('SORT', 'DISPLAY')
-                        ? Horde_Imap_Client::SORT_DISPLAYTO
-                        : Horde_Imap_Client::SORT_TO;
+                    $options['sort'][$key] = (!is_array($sort) || !in_array('DISPLAY', $sort))
+                        ? Horde_Imap_Client::SORT_TO
+                        : Horde_Imap_Client::SORT_DISPLAYTO;
                     break;
                 }
             }
         }
 
         // Check for supported charset.
-        $options['_query'] = $query->build($this);
+        $options['_query'] = $query->build($this->capability());
         if (!is_null($options['_query']['charset']) &&
-            ($this->search_charset->query($options['_query']['charset'], true) === false)) {
-            foreach ($this->search_charset->charsets as $val) {
+            array_key_exists($options['_query']['charset'], $this->_init['s_charset']) &&
+            !$this->_init['s_charset'][$options['_query']['charset']]) {
+            foreach (array_merge(array_keys(array_filter($this->_init['s_charset'])), array('US-ASCII')) as $val) {
                 try {
                     $new_query = clone $query;
                     $new_query->charset($val);
@@ -2121,7 +2113,7 @@ implements Serializable, SplObserver
             }
 
             $query = $new_query;
-            $options['_query'] = $query->build($this);
+            $options['_query'] = $query->build($this->capability());
         }
 
         /* RFC 6203: MUST NOT request relevancy results if we are not using
@@ -2173,7 +2165,7 @@ implements Serializable, SplObserver
         $cache = null;
         if (empty($options['nocache']) &&
             $this->_initCache(true) &&
-            ($this->_capability()->isEnabled('CONDSTORE') ||
+            (isset($this->_temp['enabled']['CONDSTORE']) ||
              !$query->flagSearch())) {
             $cache = $this->_getSearchCache('search', $options);
             if (isset($cache['data'])) {
@@ -2258,7 +2250,8 @@ implements Serializable, SplObserver
 
         $this->login();
 
-        if (!$this->_capability('I18NLEVEL', '2')) {
+        $i18n = $this->queryCapability('I18NLEVEL');
+        if (empty($i18n) || (max($i18n) < 2)) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension(
                 'I18NLEVEL',
                 'The IMAP server does not support changing SEARCH/SORT comparators.'
@@ -2292,9 +2285,12 @@ implements Serializable, SplObserver
     {
         $this->login();
 
-        return $this->_capability('I18NLEVEL', '2')
-            ? $this->_getComparator()
-            : null;
+        $i18n = $this->queryCapability('I18NLEVEL');
+        if (empty($i18n) || (max($i18n) < 2)) {
+            return null;
+        }
+
+        return $this->_getComparator();
     }
 
     /**
@@ -2344,7 +2340,7 @@ implements Serializable, SplObserver
          * that don't involve flags. See search() for similar caching. */
         $cache = null;
         if ($this->_initCache(true) &&
-            ($this->_capability()->isEnabled('CONDSTORE') ||
+            (isset($this->_temp['enabled']['CONDSTORE']) ||
              empty($options['search']) ||
              !$options['search']->flagSearch())) {
             $cache = $this->_getSearchCache('thread', $options);
@@ -2443,7 +2439,7 @@ implements Serializable, SplObserver
         } elseif ($options['ids']->isEmpty()) {
             return new Horde_Imap_Client_Fetch_Results($this->_fetchDataClass);
         } elseif ($options['ids']->search_res &&
-                  !$this->_capability('SEARCHRES')) {
+                  !$this->queryCapability('SEARCHRES')) {
             /* SEARCHRES requires server support. */
             throw new Horde_Imap_Client_Exception_NoSupportExtension('SEARCHRES');
         }
@@ -2466,7 +2462,7 @@ implements Serializable, SplObserver
 
         $modseq_check = !empty($options['changedsince']);
         if ($query->contains(Horde_Imap_Client::FETCH_MODSEQ)) {
-            if (!$this->_capability()->isEnabled('CONDSTORE')) {
+            if (!isset($this->_temp['enabled']['CONDSTORE'])) {
                 unset($query[Horde_Imap_Client::FETCH_MODSEQ]);
             } elseif (empty($options['changedsince'])) {
                 $modseq_check = true;
@@ -2728,8 +2724,10 @@ implements Serializable, SplObserver
     {
         $this->login();
 
+        $qresync = $this->queryCapability('QRESYNC');
+
         if (empty($opts['ids'])) {
-            if (!$this->_capability('QRESYNC')) {
+            if (!$qresync) {
                 return $this->getIdsOb();
             }
             $opts['ids'] = $this->getIdsOb(Horde_Imap_Client_Ids::ALL);
@@ -2741,7 +2739,7 @@ implements Serializable, SplObserver
 
         $this->openMailbox($mailbox, Horde_Imap_Client::OPEN_AUTO);
 
-        if ($this->_capability('QRESYNC')) {
+        if ($qresync) {
             if (!$this->_mailboxOb()->getStatus(Horde_Imap_Client::STATUS_HIGHESTMODSEQ)) {
                 throw new Horde_Imap_Client_Exception(
                     Horde_Imap_Client_Translation::r("Mailbox does not support mod-sequences."),
@@ -2816,12 +2814,12 @@ implements Serializable, SplObserver
         } elseif ($options['ids']->isEmpty()) {
             return $this->getIdsOb();
         } elseif ($options['ids']->search_res &&
-                  !$this->_capability('SEARCHRES')) {
+                  !$this->queryCapability('SEARCHRES')) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension('SEARCHRES');
         }
 
         if (!empty($options['unchangedsince'])) {
-            if (!$this->_capability()->isEnabled('CONDSTORE')) {
+            if (!isset($this->_temp['enabled']['CONDSTORE'])) {
                 throw new Horde_Imap_Client_Exception_NoSupportExtension('CONDSTORE');
             }
 
@@ -2888,7 +2886,7 @@ implements Serializable, SplObserver
         } elseif ($options['ids']->isEmpty()) {
             return array();
         } elseif ($options['ids']->search_res &&
-                  !$this->_capability('SEARCHRES')) {
+                  !$this->queryCapability('SEARCHRES')) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension('SEARCHRES');
         }
 
@@ -2947,7 +2945,7 @@ implements Serializable, SplObserver
     {
         $this->login();
 
-        if (!$this->_capability('QUOTA')) {
+        if (!$this->queryCapability('QUOTA')) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension('QUOTA');
         }
 
@@ -2986,7 +2984,7 @@ implements Serializable, SplObserver
     {
         $this->login();
 
-        if (!$this->_capability('QUOTA')) {
+        if (!$this->queryCapability('QUOTA')) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension('QUOTA');
         }
 
@@ -3023,7 +3021,7 @@ implements Serializable, SplObserver
     {
         $this->login();
 
-        if (!$this->_capability('QUOTA')) {
+        if (!$this->queryCapability('QUOTA')) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension('QUOTA');
         }
 
@@ -3091,7 +3089,7 @@ implements Serializable, SplObserver
     {
         $this->login();
 
-        if (!$this->_capability('ACL')) {
+        if (!$this->queryCapability('ACL')) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension('ACL');
         }
 
@@ -3112,7 +3110,7 @@ implements Serializable, SplObserver
             : new Horde_Imap_Client_Data_Acl(strval($options['rights']));
 
         $options['rights'] = $acl->getString(
-            $this->_capability('RIGHTS')
+            $this->queryCapability('RIGHTS')
                 ? Horde_Imap_Client_Data_AclCommon::RFC_4314
                 : Horde_Imap_Client_Data_AclCommon::RFC_2086
         );
@@ -3163,7 +3161,7 @@ implements Serializable, SplObserver
     {
         $this->login();
 
-        if (!$this->_capability('ACL')) {
+        if (!$this->queryCapability('ACL')) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension('ACL');
         }
 
@@ -3202,7 +3200,7 @@ implements Serializable, SplObserver
     {
         $this->login();
 
-        if (!$this->_capability('ACL')) {
+        if (!$this->queryCapability('ACL')) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension('ACL');
         }
 
@@ -3242,7 +3240,7 @@ implements Serializable, SplObserver
     {
         $this->login();
 
-        if (!$this->_capability('ACL')) {
+        if (!$this->queryCapability('ACL')) {
             throw new Horde_Imap_Client_Exception_NoSupportExtension('ACL');
         }
 
@@ -3279,7 +3277,7 @@ implements Serializable, SplObserver
             Horde_Imap_Client::ACL_ADMINISTER
         );
 
-        if ($capability = $this->_capability()->getParams('RIGHTS')) {
+        if ($capability = $this->queryCapability('RIGHTS')) {
             // Add rights defined in CAPABILITY string (RFC 4314).
             return array_merge($rights, str_split(reset($capability)));
         }
@@ -3393,7 +3391,7 @@ implements Serializable, SplObserver
      */
     public function getCacheId($mailbox, array $addl = array())
     {
-        return Horde_Imap_Client_Base_Deprecated::getCacheId($this, $mailbox, $this->_capability()->isEnabled('CONDSTORE'), $addl);
+        return Horde_Imap_Client_Base_Deprecated::getCacheId($this, $mailbox, isset($this->_temp['enabled']['CONDSTORE']), $addl);
     }
 
     /**
@@ -3492,15 +3490,40 @@ implements Serializable, SplObserver
      * Determines if the given charset is valid for search-related queries.
      * This check pertains just to the basic IMAP SEARCH command.
      *
-     * @deprecated Use $search_charset property instead.
-     *
      * @param string $charset  The query charset.
      *
      * @return boolean  True if server supports this charset.
      */
     public function validSearchCharset($charset)
     {
-        return $this->search_charset->query($charset);
+        $charset = strtoupper($charset);
+
+        if ($charset == 'US-ASCII') {
+            return true;
+        }
+
+        if (!isset($this->_init['s_charset'][$charset])) {
+            $s_charset = $this->_init['s_charset'];
+
+            /* Use a dummy search query and search for BADCHARSET response. */
+            $query = new Horde_Imap_Client_Search_Query();
+            $query->charset($charset, false);
+            $query->ids($this->getIdsOb(1, true));
+            $query->text('a');
+            try {
+                $this->search('INBOX', $query, array(
+                    'nocache' => true,
+                    'sequence' => true
+                ));
+                $s_charset[$charset] = true;
+            } catch (Horde_Imap_Client_Exception $e) {
+                $s_charset[$charset] = ($e->getCode() !== Horde_Imap_Client_Exception::BADCHARSET);
+            }
+
+            $this->_setInit('s_charset', $s_charset);
+        }
+
+        return $this->_init['s_charset'][$charset];
     }
 
     /* Mailbox syncing functions. */
@@ -3938,7 +3961,7 @@ implements Serializable, SplObserver
         $c = $this->getParam('cache');
         $out = $c['fields'];
 
-        if (!$this->_capability()->isEnabled('CONDSTORE')) {
+        if (!isset($this->_temp['enabled']['CONDSTORE'])) {
             unset($out[Horde_Imap_Client::FETCH_FLAGS]);
         }
 

@@ -458,11 +458,7 @@ class Horde_ActiveSync_Imap_Message
             $mime_part = $data;
         }
         $tnef_parser = Horde_Compress::factory('Tnef');
-        try {
-            $tnef_data = $tnef_parser->decompress($mime_part->getContents());
-        } catch (Horde_Compress_Exception $e) {
-            return false;
-        }
+        $tnef_data = $tnef_parser->decompress($mime_part->getContents());
         if (!count($tnef_data)) {
             return false;
         }
@@ -778,17 +774,6 @@ class Horde_ActiveSync_Imap_Message
         return (array_search($flag, $this->_flags) !== false)
             ? 1
             : 0;
-    }
-
-    /**
-     * Return all message flags.
-     *
-     * @return array  An array of message flags.
-     * @since 2.17.0
-     */
-    public function getFlags()
-    {
-        return $this->_flags;
     }
 
     /**

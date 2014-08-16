@@ -119,18 +119,10 @@ The following prerequisites are **REQUIRED** for Horde to function properly.
 
       http://www.php.net/
 
-   .. Note:: Although the PHP 5.3 API is supported, for stability, performance,
-      and security reasons it is **HIGHLY RECOMMENDED** to use a version of
-      PHP >= 5.4.0.
-
    .. Note:: While it may be possible to install PHP using the package manager
-      for your operating system, it is not recommended to do so if your
-      distribution (e.g. Debian) does NOT update the actual PHP version in
-      its package updates. Otherwise, you will be stuck with a PHP version that
-      does not contain the most recent bug and security patches. On these
-      systems, it is **HIGHLY RECOMMENDED** to either install PHP from source
-      OR use a 3rd party package repository that contains the most recently
-      released PHP version on the branch (5.4, 5.5, etc.) that you want to use.
+      for your operating system, it is highly recommended to install PHP from
+      source, since distribution packages often do not contain the most recent
+      bug and security patches.
 
    Follow the instructions in the PHP package to build PHP for your system. If
    you use Apache, be sure to build PHP as a library with one of the following
@@ -205,23 +197,23 @@ The following prerequisites are **REQUIRED** for Horde to function properly.
 
    b. A preferences container.
 
-      Horde applications can store user preferences in a variety of backends.
-      Common storage backends include an SQL database, an LDAP directory, a
-      Kolab server, local files, a NoSQL database, or in PHP sessions.
+      Horde applications can store user preferences in an SQL database, an
+      LDAP directory, an IMSP server, a Kolab server, or in PHP sessions.
 
       For SQL database preferences storage, Horde is thoroughly tested on
-      MySQL(i) (``--with-mysql(i)``), PostgreSQL (``--with-pgsql``), and
-      SQLite (enabled by default in PHP). LDAP and/or Kolab (``--with-ldap``)
-      is another common storage backend. NoSQL support is provided through
-      MongoDB.
+      MySQL(i) (``--with-mysql(i)``) and PostgreSQL (``--with-pgsql``), and has
+      been reported to work with SQLite (enabled by default).
+
+      Preferences can also be stored via LDAP (``--with-ldap``), Kolab
+      (``--with-ldap``), and IMSP.
 
       Alternatively, preferences can be stored in PHP sessions, which
       requires no external programs or configure options, but which will not
       maintain preferences between sessions.
 
-      While the SQL, LDAP, or Kolab server need not be running on the machine
-      on which you are installing Horde, the appropriate client libraries to
-      access the server must be available locally.
+      While the LDAP, database, Kolab, or IMSP server need not be running on
+      the machine onto which you are installing Horde, the appropriate
+      client libraries to access the server must be available locally.
 
       If a preference container is not configured, no preference options
       will be configurable via Horde's web interface - the default values
@@ -681,26 +673,8 @@ Configuring Horde
    configuration to already exist, and the configured database user to have
    sufficient permissions to create new tables in this database.
 
-   Alternatively you can run the ``horde-db-migrate`` script in the Horde
+   Alternatively you can run the ``bin/horde-db-migrate`` script in the Horde
    directory from the command line.
-
-   If you installed Horde into the global PEAR system, this script should be in
-   your command path. If the script cannot be found in your path, you need to
-   specify the full path to the script, e.g.::
-
-      /var/www/horde/pear/horde-db-migrate
-
-   You can use the ``pear`` command to find the place where the script has been
-   installed::
-
-      pear config-get bin_dir
-
-   If you installed into a local PEAR installation, you need to tell PHP and
-   PEAR where to find the installation and the script, e.g.::
-
-      PHP_PEAR_SYSCONF_DIR=/var/www/horde php \
-          -d include_path=/var/www/horde/pear/php \
-          /var/www/horde/pear/horde-db-migrate
 
 5. Setting up alarm emails
 

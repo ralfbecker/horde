@@ -175,8 +175,6 @@ class Horde_Imap_Client
     /**
      * Capability dependencies.
      *
-     * @deprecated
-     *
      * @var array
      */
     static public $capability_deps = array(

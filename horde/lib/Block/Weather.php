@@ -32,7 +32,7 @@ class Horde_Block_Weather extends Horde_Core_Block
     {
         // @TODO: Check config key etc...
         parent::__construct($app, $params);
-        $this->_name = _("Weather");
+        $this->_name = _("weather");
     }
 
     /**

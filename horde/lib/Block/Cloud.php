@@ -41,19 +41,15 @@ class Horde_Block_Cloud extends Horde_Core_Block
 
     /**
      */
-    protected function _getTags()
+    private function _getTags()
     {
-        global $registry;
-
         $results = array();
-        foreach ($registry->listAPIs() as $api) {
-            if ($registry->hasMethod($api . '/listTagInfo')) {
+        foreach ($GLOBALS['registry']->listAPIs() as $api) {
+            if ($GLOBALS['registry']->hasMethod($api . '/listTagInfo')) {
                 try {
                     $results = array_merge(
                         $results,
-                        $registry->call(
-                            $api . '/listTagInfo',
-                            array(null, $registry->getAuth())));
+                        $GLOBALS['registry']->call($api . '/listTagInfo', array(null, $GLOBALS['registry']->getAuth())));
                 } catch (Horde_Exception $e) {}
             }
         }

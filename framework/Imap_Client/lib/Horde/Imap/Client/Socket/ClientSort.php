@@ -125,13 +125,13 @@ class Horde_Imap_Client_Socket_ClientSort
         /* Step 1: Sort by base subject (already done).
          * Step 2: Sort by sent date within each thread. */
         foreach (array_keys($sorted) as $key) {
-            $this->_stableAsort($sorted[$key]);
+            asort($sorted[$key], SORT_NUMERIC);
             $tsort[$key] = reset($sorted[$key]);
         }
 
         /* Step 3: Sort by the sent date of the first message in the
          * thread. */
-        $this->_stableAsort($tsort);
+        asort($tsort, SORT_NUMERIC);
 
         /* Now, $tsort contains the order of the threads, and each thread
          * is sorted in $sorted. */
@@ -142,10 +142,7 @@ class Horde_Imap_Client_Socket_ClientSort
             ) + array_fill_keys(array_slice($keys, 1) , 1);
         }
 
-        return new Horde_Imap_Client_Data_Thread(
-            $out,
-            $uids ? 'uid' : 'sequence'
-        );
+        return new Horde_Imap_Client_Data_Thread($out, $uids ? 'uid' : 'sequence');
     }
 
     /**
@@ -315,22 +312,6 @@ class Horde_Imap_Client_Socket_ClientSort
         }
 
         return $dates;
-    }
-
-    /**
-     * Stable asort() function.
-     *
-     * PHP's asort() (BWT) is not a stable sort - identical values have no
-     * guarantee of key order. Use Schwartzian Transform instead. See:
-     * http://notmysock.org/blog/php/schwartzian-transform.html
-     *
-     * @param array &$a  Array to sort.
-     */
-    protected function _stableAsort(&$a)
-    {
-        array_walk($a, function(&$v, $k) { $v = array($v, $k); });
-        asort($a);
-        array_walk($a, function(&$v, $k) { $v = $v[0]; });
     }
 
 }

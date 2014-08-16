@@ -29,16 +29,16 @@ class IMP_Contacts_Avatar_Addressbook implements IMP_Contacts_Avatar_Backend
         global $injector, $registry;
 
         if ($registry->hasMethod('contacts/search')) {
-            $contacts = $injector->getInstance('IMP_Contacts');
+            $sparams = $injector->getInstance('IMP_Contacts')->getAddressbookSearchParams();
 
             try {
                 $res = $registry->call('contacts/search', array(
                     $email,
                     array(
                         'customStrict' => array('email'),
-                        'fields' => array_fill_keys($contacts->sources, array('email')),
+                        'fields' => array_fill_keys($sparams['sources'], array('email')),
                         'returnFields' => array('photo', 'phototype'),
-                        'sources' => $contacts->sources
+                        'sources' => $sparams['sources']
                     )
                 ));
 

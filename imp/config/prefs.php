@@ -831,8 +831,8 @@ $_prefs['save_attachments'] = array(
     'value' => 'never',
     'type' => 'enum',
     'enum' => array(
-        'always' => _("Yes"),
-        'never' => _("No")
+        'always' => _("Save attachments"),
+        'never' => _("Do not save attachments")
     ),
     'desc' => _("Save attachments in the sent-mail message?"),
     'help' => 'prefs-save_attachments'
@@ -889,7 +889,7 @@ $prefGroups['addressbooks'] = array(
     'column' => _("Compose"),
     'label' => _("Address Books"),
     'desc' => _("Select address book sources for adding/searching."),
-    'members' => array(
+   'members' => array(
         'save_recipients', 'display_contact', 'sourceselect', 'add_source'
     ),
     'suppress' => function() {
@@ -924,19 +924,16 @@ $_prefs['sourceselect'] = array(
 );
 
 // Address book(s) to use when expanding addresses
-// Refer to Turba's config/backends.php for possible source values
+// Refer to turba/config/backends.php for possible source values
 //
 // You can provide default values this way:
 //   'value' => json_encode(array('source_one', 'source_two'))
 $_prefs['search_sources'] = array(
-    'value' => '',
-    'on_change' => function() {
-        $GLOBALS['injector']->getInstance('IMP_Contacts')->clearCache();
-    }
+    'value' => ''
 );
 
 // Field(s) to use when expanding addresses
-// Refer to Turba's config/backends.php for possible source and field values
+// Refer to turba/config/backends.php for possible source and field values
 //
 // If you want to provide a default value, this field depends on the
 // search_sources preference. For example:
@@ -947,10 +944,7 @@ $_prefs['search_sources'] = array(
 // will search the fields 'field_one' and 'field_two' in source_one and
 // 'field_three' in source_two.
 $_prefs['search_fields'] = array(
-    'value' => '',
-    'on_change' => function() {
-        $GLOBALS['injector']->getInstance('IMP_Contacts')->clearCache();
-    }
+    'value' => ''
 );
 
 // If NOT using shared address books in Turba, you can put a $cfgSources array
@@ -1116,7 +1110,7 @@ $_prefs['send_mdn'] = array(
     'desc' => _("Prompt to send read receipt (a/k/a message disposition notification) when requested by the sender?"),
     'help' => 'prefs-send_mdn',
     'suppress' => function() {
-        return ($GLOBALS['injector']->getInstance('IMP_Maillog') instanceof IMP_Maillog_Storage_Null);
+        return empty($GLOBALS['conf']['maillog']['use_maillog']);
     }
 );
 

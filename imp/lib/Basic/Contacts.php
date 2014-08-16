@@ -43,9 +43,8 @@ class IMP_Basic_Contacts extends IMP_Basic_Base
             throw $e;
         }
 
-        /* Get the lists of address books. */
-        $contacts = $injector->getInstance('IMP_Contacts');
-        $source_list = $contacts->source_list;
+        /* Get the lists of address books through the API. */
+        $source_list = $registry->call('contacts/sources');
 
         /* If we self-submitted, use that source. Otherwise, choose a good
          * source. */
@@ -56,9 +55,13 @@ class IMP_Basic_Contacts extends IMP_Basic_Base
         }
 
         if ($this->vars->searched || $prefs->getValue('display_contact')) {
-            $a_list = iterator_to_array($contacts->searchEmail($this->vars->get('search', ''), array(
+            $search_params = $injector->getInstance('IMP_Contacts')->getAddressbookSearchParams();
+            $a_list = iterator_to_array($registry->call('contacts/search', array($this->vars->get('search', ''), array(
+                'fields' => $search_params['fields'],
+                'returnFields' => array('email', 'name'),
+                'rfc822Return' => true,
                 'sources' => array($this->vars->source)
-            )));
+            ))));
         } else {
             $a_list = array();
         }

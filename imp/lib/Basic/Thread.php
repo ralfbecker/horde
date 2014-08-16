@@ -102,8 +102,7 @@ class IMP_Basic_Thread extends IMP_Basic_Base
                 $curr_msg['idx'] = $idx;
 
                 /* Get headers for the message. */
-                $date_ob = new IMP_Message_Date($envelope->date);
-                $curr_msg['date'] = $date_ob->format($date_ob::DATE_LOCAL);
+                $curr_msg['date'] = $imp_ui->getLocalTime($envelope->date);
 
                 if ($this->indices->mailbox->special_outgoing) {
                     $curr_msg['addr_to'] = true;

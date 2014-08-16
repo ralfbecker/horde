@@ -21,8 +21,7 @@ class Trean_Tagger extends Horde_Core_Tagger
      *                       - user (array) - only include objects owned by
      *                         these users.
      *
-     * @return  array An array of bookmark ids
-     * @throws Trean_Exception
+     * @return  A hash of 'bookmark' that contains an array of bookmark ids
      */
     public function search($tags, $filter = array())
     {
@@ -34,13 +33,10 @@ class Trean_Tagger extends Horde_Core_Tagger
             ->getTagIds($tags);
 
         $args['typeId'] = $this->_type_ids['bookmark'];
-        try {
-            $results = $GLOBALS['injector']
-                ->getInstance('Content_Tagger')
-                ->getObjects($args);
-        } catch (Content_Exception $e) {
-            throw new Trean_Exception($e);
-        }
+        $results = $GLOBALS['injector']
+            ->getInstance('Content_Tagger')
+            ->getObjects($args);
+
         $results = array_values($results);
         return $results;
     }
@@ -49,7 +45,7 @@ class Trean_Tagger extends Horde_Core_Tagger
      * Returns tags on bookmarks belonging to the current user.
      *
      * @return A tag_id => tag_name hash
-     * @throws Trean_Exception
+     * @throws Horde_Exception
      */
     public function listBookmarkTags()
     {
@@ -60,7 +56,7 @@ class Trean_Tagger extends Horde_Core_Tagger
                     'userId' => $GLOBALS['registry']->getAuth())
                 );
         } catch (Content_Exception $e) {
-            throw new Trean_Exception($e);
+            throw new Horde_Exception($e);
         }
     }
 }

@@ -107,7 +107,6 @@ class IMP_Ajax_Application_ShowMessage
      *   - atc_list: The list (HTML code) of attachments
      *   - bcc (FULL): The Bcc addresses
      *   - cc: The CC addresses
-     *   - fulldate (FULL): The full canonical date.
      *   - from: The From addresses
      *   - headers (FULL): An array of headers (not including basic headers)
      *   - js: Javascript code to run on display
@@ -134,6 +133,9 @@ class IMP_Ajax_Application_ShowMessage
         $result = array(
             'js' => array()
         );
+
+        /* Set the current time zone. */
+        $registry->setTimeZone();
 
         $mime_headers = $this->_peek
             ? $this->_contents->getHeader()
@@ -170,29 +172,22 @@ class IMP_Ajax_Application_ShowMessage
             if ($val = $mime_headers->getValue($head)) {
                 if ($head == 'date') {
                     /* Add local time to date header. */
-                    $date_ob = new IMP_Message_Date($this->_envelope->date);
-                    $val = htmlspecialchars($date_ob->format($date_ob::DATE_LOCAL));
+                    $val = htmlspecialchars($imp_ui->getLocalTime($this->_envelope->date));
                     if ($preview) {
                         $result['localdate'] = $val;
-                    } else {
-                        $result['fulldate'] = $date_ob->format($date_ob::DATE_FORCE);
                     }
                 } elseif (!$preview) {
                     $val = htmlspecialchars($val);
                 }
 
                 if (!$preview) {
-                    $headers[$head] = array(
-                        'id' => Horde_String::ucfirst($head),
-                        'name' => $str,
-                        'value' => $val
-                    );
+                    $headers[$head] = array('id' => Horde_String::ucfirst($head), 'name' => $str, 'value' => $val);
                 }
             }
         }
 
         if (empty($result['reply-to']) ||
-            ($result['from']['addr'][0]->b == $result['reply-to']['addr'][0]->b)) {
+            ($result['from']['addr'][0]['b'] == $result['reply-to']['addr'][0]['b'])) {
             unset($result['reply-to'], $headers['reply-to']);
         }
 
@@ -407,18 +402,48 @@ class IMP_Ajax_Application_ShowMessage
         $addrlist = ($header == 'reply-to')
             ? $this->_envelope->reply_to
             : $this->_envelope->$header;
+        $addr_array = $out = array();
+        $count = 0;
+
         $addrlist->unique();
 
-        $addr_ob = new IMP_Ajax_Addresses($addrlist);
-        $addr_array = $addr_ob->toArray($limit);
+        foreach ($addrlist->base_addresses as $ob) {
+            if ($ob instanceof Horde_Mail_Rfc822_Group) {
+                $ob->addresses->unique();
 
-        $out = array();
-        if ($addr_array->limit) {
-            $out['limit'] = $addr_array->total;
+                $tmp = array(
+                    'a' => array(),
+                    'g' => $ob->groupname
+                );
+
+                foreach ($ob->addresses as $val) {
+                    $tmp['a'][] = array_filter(array(
+                        'b' => $val->bare_address,
+                        'p' => $val->personal
+                    ));
+
+                    if (!is_null($limit) && ($count++ > $limit)) {
+                        break;
+                    }
+                }
+            } else {
+                $tmp = array_filter(array(
+                    'b' => $ob->bare_address,
+                    'p' => $ob->personal
+                ));
+                ++$count;
+            }
+
+            $addr_array[] = $tmp;
+
+            if (!is_null($limit) && ($count > $limit)) {
+                $out['limit'] = count($addrlist);
+                break;
+            }
         }
 
-        if (!empty($addr_array->addr)) {
-            $out['addr'] = $addr_array->addr;
+        if (!empty($addr_array)) {
+            $out['addr'] = $addr_array;
         } elseif ($header == 'to') {
             $out['raw'] = _("Undisclosed Recipients");
         }

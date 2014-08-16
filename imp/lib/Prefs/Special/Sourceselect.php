@@ -32,10 +32,10 @@ class IMP_Prefs_Special_Sourceselect implements Horde_Core_Prefs_Ui_Special
      */
     public function display(Horde_Core_Prefs_Ui $ui)
     {
-        $contacts = $GLOBALS['injector']->getInstance('IMP_Contacts');
+        $search = $GLOBALS['injector']->getInstance('IMP_Contacts')->getAddressbookSearchParams();
         return Horde_Core_Prefs_Ui_Widgets::addressbooks(array(
-            'fields' => $contacts->fields,
-            'sources' => $contacts->sources
+            'fields' => $search['fields'],
+            'sources' => $search['sources']
         ));
     }
 

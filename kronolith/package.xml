@@ -53,9 +53,7 @@
     <file name="kronolith-import-icals" role="script">
      <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
     </file>
-    <file name="kronolith-import-openxchange" role="script">
-     <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
-    </file>
+    <file name="kronolith-import-openxchange" role="script" />
     <file name="kronolith-import-squirrelmail-calendar" role="script">
      <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
     </file>
@@ -2282,14 +2280,9 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-07-07</date>
+   <date>2014-03-10</date>
    <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
    <notes>
-* [jan] Fix history not always returning the last modification time of an event (Bug #13113).
-* [jan] Support timezone aliases when importing events (Bug #13100).
-* [mjr] Honor the no_sharing configuration option in dynamic view (Bug #13002).
-* [mjr] Fix issue that could remove all events from shared calendars if a user with Horde_Perms::EDIT on that calendar is removed via the removeUserData API (Bug #12524).
-* [jan] Fix TRIGGER generation if alarm value is negative (Bug #13064).
 * [jan] Update Korean translation (Deokgon Kim &lt;dgkim@dgkim.net&gt;).
    </notes>
   </release>
@@ -2371,64 +2364,13 @@
    <stability>
     <release>beta</release>
     <api>beta</api></stability>
-   <date>2014-06-17</date>
+   <date>2014-06-04</date>
    <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
    <notes>
-* [jan] Fix error when deleting unselected calendars.
-* [jan] Improve DTEND compatibility with other programs using iCalendar.
-* [mjr] Fix sending iTip invitations when Save As New is used (Bug #13239).
 * [jan] Fix free/busy display with 24-hours-busy days.
 * [jan] Fix navigating free/busy dates.
 * [jan] Fix hover style in year view (Bug #13057).
 * [jan] Update Polish translation (Maciej Uhlig &lt;maciej.uhlig@us.edu.pl&gt;).
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>4.2.0RC2</release>
-    <api>4.2.0</api></version>
-   <stability>
-    <release>beta</release>
-    <api>beta</api></stability>
-   <date>2014-07-01</date>
-   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
-   <notes>
-* [jan] Fix issues with event URL field not updating (Carlos Timóteo &lt;ctimoteo@sapo.pt&gt;).
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>4.2.0</release>
-    <api>4.2.0</api></version>
-   <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-07-08</date>
-   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
-   <notes>
-* [jan] Fix selecting days in the sidebar mini calendar (Bug #13327).
-* [mjr] Issue a cancellation iTip when an event&apos;s status changes to cancelled (Bug #13321).
-* [jan] Fix loading events for intial view in smartphone mode.
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>4.2.1</release>
-    <api>4.2.0</api></version>
-   <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-07-08</date>
-   <license uri="http://www.horde.org/licenses/gpl">GPL-2.0</license>
-   <notes>
-* [jan] Fix displayed CalDAV URLs for shared calendars (Bug #12380).
-* [jan] Don&apos;t show today&apos;s events that are over in portal (Bug #13368).
-* [mjr] Fix exporting to ics file when event contains exceptions and an explicit timezone (Bug #13369).
-* [mjr] Fix importing iCalendar data that contains timezone parameters.
-* [mjr] Fix both importing and replacing text/calendar data via the API when recurrence exceptions are present (Bug #13399).
-* [mjr] Ensure default share attribute is set when auto determining a default share.
-* [mjr] Fix fatal error when calculating alarms on a recurring event that has completed.
-* [mjr] Fix catching minical clicks on browsers that return element names in uppercase (Jasper.Olbrich@students.uni-marburg.de, Bug #13370).
    </notes>
   </release>
   <release>

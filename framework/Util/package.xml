@@ -23,10 +23,10 @@
   <email>slusarz@horde.org</email>
   <active>yes</active>
  </developer>
- <date>2014-08-14</date>
+ <date>2014-05-02</date>
  <version>
-  <release>2.5.2</release>
-  <api>2.5.0</api>
+  <release>2.4.1</release>
+  <api>2.4.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -668,47 +668,7 @@ Converted to package.xml 2.0 for pear.horde.org
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-08-05</date>
-   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
-   <notes>
-* [mms] Fallback to lesser priority transliterator driver when an error is encountered.
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>2.5.0</release>
-    <api>2.5.0</api></version>
-   <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-08-06</date>
-   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
-   <notes>
-* [mms] Fix regression in Horde_String_Transliterate for PHP 5.3 (Bug #13419).
-* [mms] Added Horde_String::ipos() and Horde_String::ripos().
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>2.5.1</release>
-    <api>2.5.0</api></version>
-   <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-08-14</date>
-   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
-   <notes>
-* [mms] Fix another issue with older versions of PHP in Horde_String_Transliterate.
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>2.5.2</release>
-    <api>2.5.0</api></version>
-   <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-08-14</date>
+   <date>2014-05-02</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
 * 

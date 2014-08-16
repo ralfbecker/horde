@@ -64,24 +64,6 @@ class IMP_Prefs_Identity extends Horde_Core_Prefs_Identity
     }
 
     /**
-     */
-    public function save()
-    {
-        global $injector;
-
-        parent::save();
-
-        /* Changing the ID may change the sent-mail names, so clear the
-         * display cache.
-         * @todo If identity ID is changed outside of Horde, this won't be
-         * caught. */
-        $sc = $injector->getInstance('IMP_Mailbox_SessionCache');
-        foreach ($this->getAllSentmail() as $val) {
-            $sc->expire(IMP_Mailbox_SessionCache::CACHE_DISPLAY, $val);
-        }
-    }
-
-    /**
      * Verifies and sanitizes all identity properties.
      *
      * @param integer $identity  The identity to verify.
@@ -562,26 +544,19 @@ class IMP_Prefs_Identity extends Horde_Core_Prefs_Identity
     /**
      * Returns an array with the sent-mail mailboxes from all identities.
      *
-     * @param boolean $unique  If true, return the unique list of sent-mail
-     *                         mailboxes. If false, returns list of
-     *                         sent-mail mailboxes, with the key corresponding
-     *                         to the identity.
-     *
      * @return array  The array with the sent-mail IMP_Mailbox objects.
      */
-    public function getAllSentmail($unique = true)
+    public function getAllSentmail()
     {
         $list = array();
 
         foreach (array_keys($this->_identities) as $key) {
             if ($mbox = $this->getValue(IMP_Mailbox::MBOX_SENT, $key)) {
-                $list[$key] = $mbox;
+                $list[strval($mbox)] = 1;
             }
         }
 
-        return $unique
-            ? array_unique($list)
-            : $list;
+        return IMP_Mailbox::get(array_keys($list));
     }
 
     /**

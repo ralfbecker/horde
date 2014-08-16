@@ -21,15 +21,20 @@
  * @license   http://www.horde.org/licenses/gpl GPL
  * @package   IMP
  */
-class IMP_Compose_Attachment_Storage_VfsLinked
-extends IMP_Compose_Attachment_Storage
-implements IMP_Compose_Attachment_Linked
+class IMP_Compose_Attachment_Storage_VfsLinked extends IMP_Compose_Attachment_Storage_Vfs implements IMP_Compose_Attachment_Linked
 {
     /* The name of the metadata file. */
     const METADATA_NAME = 'metadata';
 
-    /* The base virtual path to use for VFS data (permanent storage). */
+    /* The virtual path to use for VFS data (permanent storage). */
     const VFS_LINK_ATTACH_PATH = '.horde/imp/attachments';
+
+    /**
+     * Force this attachment to be linked.
+     *
+     * @var boolean
+     */
+    public $forceLinked = false;
 
     /**
      * Cached metadata information.
@@ -39,67 +44,50 @@ implements IMP_Compose_Attachment_Linked
     protected $_md;
 
     /**
-     * VFS storage object.
-     *
-     * @var Horde_Core_HashTable_Vfs
-     */
-    protected $_vfs;
-
-    /**
-     * VFS link attach path.
-     *
-     * @var string
-     */
-    protected $_vfspath;
-
-    /**
      */
     public function __construct($user, $id = null)
     {
-        global $injector;
-
         parent::__construct($user, $id);
 
-        $this->_vfs = $injector->getInstance('Horde_Core_Factory_Vfs')->create();
-        $this->_vfspath = self::VFS_LINK_ATTACH_PATH . '/'. $this->_user;
+        $this->_vfspath = $this->_linkAttachPath();
     }
 
     /**
      */
-    protected function _read()
+    public function __get($name)
     {
-        try {
-            if (method_exists($this->_vfs, 'readStream')) {
-                $stream = new Horde_Stream_Existing(array(
-                    'stream' => $this->_vfs->readStream($this->_vfspath, $this->_id)
-                ));
-                $stream->rewind();
-            } else {
-                $stream = new Horde_Stream_Temp();
-                $stream->add($this->_vfs->read($this->_vfspath, $this->_id), true);
-            }
-            return $stream;
-        } catch (Horde_Vfs_Exception $e) {
-            throw new IMP_Compose_Exception($e);
+        switch ($name) {
+        case 'linked':
+            return ($this->_vfspath == $this->_linkAttachPath());
         }
+
+        return parent::__get($name);
+    }
+
+    /**
+     * Return the VFS link attachment path.
+     *
+     * @return string  VFS path.
+     */
+    protected function _linkAttachPath()
+    {
+        return self::VFS_LINK_ATTACH_PATH . '/' . $this->_user;
     }
 
     /**
      */
     protected function _write($filename, Horde_Mime_Part $part)
     {
-        global $browser;
+        global $browser, $conf;
 
-        try {
-            $this->_vfs->write(
-                $this->_vfspath,
-                $this->_id,
-                $filename,
-                true
-            );
-        } catch (Horde_Vfs_Exception $e) {
-            throw new IMP_Compose_Exception($e);
+        if (!$this->forceLinked &&
+            (filesize($filename) < intval($conf['compose']['link_attach_threshold']))) {
+            $this->_vfspath = self::VFS_ATTACH_PATH;
+            parent::write($filename, $part);
+            return;
         }
+
+        parent::write($filename, $part);
 
         // Prevent 'jar:' attacks on Firefox.  See Ticket #5892.
         $type = $part->getType();
@@ -112,22 +100,7 @@ implements IMP_Compose_Attachment_Linked
         $md->filename = $part->getName(true);
         $md->time = time();
         $md->type = $type;
-
         $this->saveMetadata($md);
-    }
-
-    /**
-     */
-    public function delete()
-    {
-        $this->_vfs->deleteFile($this->_vfspath, $this->_id);
-    }
-
-    /**
-     */
-    public function exists()
-    {
-        return $this->_vfs->exists($this->_vfspath, $this->_id);
     }
 
     /**

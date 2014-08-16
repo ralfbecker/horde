@@ -343,15 +343,9 @@ class IMP_Mailbox_SessionCache implements Serializable
                 self::CACHE_PREFTO,
                 self::CACHE_UIDVALIDITY
             );
-        } elseif (!is_array($entries)) {
-            $entries = array($entries);
         }
 
-        if (in_array(self::CACHE_DISPLAY, $entries)) {
-            $entries[] = self::CACHE_LABEL;
-        }
-
-        foreach ($entries as $val) {
+        foreach ((is_array($entries) ? $entries : array($entries)) as $val) {
             switch ($val) {
             case self::CACHE_ACL:
             case self::CACHE_DISPLAY:
@@ -360,22 +354,21 @@ class IMP_Mailbox_SessionCache implements Serializable
             case self::CACHE_LABEL:
             case self::CACHE_PREFTO:
             case self::CACHE_UIDVALIDITY:
-                if (!isset($mbox_list)) {
-                    $mbox_list = $mbox
-                        ? array(strval($mbox))
-                        : array_merge(array_keys($this->_cache), array_keys($this->_temp));
-                }
-
-                foreach ($mbox_list as $val2) {
-                    if (isset($this->_cache[$val2][$val])) {
-                        $this->_changed = self::CHANGED_YES;
+                if ($mbox) {
+                    $mbox = strval($mbox);
+                    if (($c = isset($this->_cache[$val][$mbox])) ||
+                        isset($this->_temp[$val][$mbox])) {
+                        if ($c) {
+                            $this->_changed = self::CHANGED_YES;
+                        }
+                        unset(
+                            $this->_cache[$val][$mbox],
+                            $this->_temp[$val][$mbox]
+                        );
                     }
-                    unset(
-                        $this->_cache[$val2][$val],
-                        $this->_temp[$val2][$val]
-                    );
+                    break;
                 }
-                break;
+                // Fall-through
 
             case self::CACHE_ICONHOOK:
             case self::CACHE_SPECIALMBOXES:

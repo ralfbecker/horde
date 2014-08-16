@@ -2,43 +2,6 @@
 v5.3.0-git
 ----------
 
-[mms] Add the 'time_format_mini' preference.
-[mjr] Display ActiveSync client lastSyncTime in user's timezone (Request
-      #13200).
-
-
-------
-v5.2.1
-------
-
-[mjr] Fix cancelling remote wipe of EAS client from user prefs.
-[mms] Fix fatal error in signup confirmation script.
-[mjr] Fix removing ActiveSync device state from administrative interface when
-      multiple user accounts exist on the same device (Bug #13336).
-
-
-------
-v5.2.0
-------
-
-[mms] Add configuration to allow for SMTP authentication if the current Horde
-      access does not have an authenticated user.
-
-
----------
-v5.2.0RC2
----------
-
-[mjr] Fix removing EAS device pairings via the removeUserData API (Bug #13278).
-
-
----------
-v5.2.0RC1
----------
-
-[jan] Add configuration for searching user DNs in LDAP groups (Bug #12128).
-[jan] Don't try to write to read-only group backends when removing user data
-      (skhorde@smail.inf.fh-bonn-rhein-sieg.de, Bug #13248).
 
 
 -----------
@@ -85,15 +48,6 @@ v5.2.0alpha1
 [mjr] Improve logging options for ActiveSync logging configuration.
 [mjr] Add support for managing ActiveSync devices through the API.
 [mjr] Add prefs for selecting From address when sending email via ActiveSync.
-
-
-------
-v5.1.7
-------
-
-[jan] Detect REPORT queries as DAV requests in RPC server (Bug #13124).
-[jan] Fix fatal error in LDAP account portal block (Bug #12910).
-[jan] Update Korean translation (Deokgon Kim <dgkim@dgkim.net>).
 
 
 ------

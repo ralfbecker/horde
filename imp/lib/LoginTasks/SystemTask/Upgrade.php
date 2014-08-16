@@ -437,17 +437,17 @@ class IMP_LoginTasks_SystemTask_Upgrade extends Horde_Core_LoginTasks_SystemTask
                 case 'date_on':
                 case 'date_until':
                 case 'date_since':
-                    $d = new DateTime(
-                        $ui['date'][$key]['year'] . '-' . $ui['date'][$key]['month'] . '-' . $ui['date'][$key]['day']
-                    );
-
                     if ($val == 'date_on') {
-                        $ob->add(new IMP_Search_Element_Daterange($d, $d));
+                        $type = IMP_Search_Element_Date::DATE_ON;
                     } elseif ($val == 'date_until') {
-                        $ob->add(new IMP_Search_Element_Daterange(null, $d));
+                        $type = IMP_Search_Element_Date::DATE_BEFORE;
                     } else {
-                        $ob->add(new IMP_Search_Element_Daterange($d, null));
+                        $type = IMP_Search_Element_Date::DATE_SINCE;
                     }
+                    $ob->add(new IMP_Search_Element_Date(
+                        new DateTime($ui['date'][$key]['year'] . '-' . $ui['date'][$key]['month'] . '-' . $ui['date'][$key]['day']),
+                        $type
+                    ));
                     break;
 
                 case 'size_smaller':
@@ -543,7 +543,7 @@ class IMP_LoginTasks_SystemTask_Upgrade extends Horde_Core_LoginTasks_SystemTask
         foreach ($imp_identity->getAll('sent_mail_folder') as $key => $val) {
             if (!is_null($val) && !Horde_Mime::is8bit($val, 'UTF-8')) {
                 $mbox = IMP_Mailbox::get(Horde_String::convertCharset(strval($val), 'UTF7-IMAP', 'UTF-8'));
-                $imp_identity->setValue(IMP_Mailbox::MBOX_SENT, $mbox, $key);
+                $imp_identity->setValue('sent_mail_folder', $mbox, $key);
             }
         }
     }
@@ -605,7 +605,7 @@ class IMP_LoginTasks_SystemTask_Upgrade extends Horde_Core_LoginTasks_SystemTask
 
             foreach (array_keys($tmp) as $key2) {
                 if ($tmp[$key2] instanceof IMP_Search_Element_Date) {
-                    $criteria = $tmp[$key2]->data;
+                    $criteria = $tmp[$key2]->getCriteria();
 
                     switch ($criteria->t) {
                     case IMP_Search_Element_Date::DATE_ON:
@@ -663,32 +663,6 @@ class IMP_LoginTasks_SystemTask_Upgrade extends Horde_Core_LoginTasks_SystemTask
         if ($prefs->getValue('request_mdn') == 'ask') {
             $prefs->remove('request_mdn');
         }
-    }
-
-}
-
-/**
- * @internal
- */
-class IMP_Search_Element_Date implements Serializable
-{
-    const DATE_ON = 1;
-    const DATE_BEFORE = 2;
-    const DATE_SINCE = 3;
-
-    /* Data element:
-     * d = (integer) UNIX timestamp.
-     * t = (integer) Type: one of the self::DATE_* constants. */
-    public $data;
-
-    public function serialize()
-    {
-        return '';
-    }
-
-    public function unserialize($data)
-    {
-        $this->data = json_decode($data);
     }
 
 }

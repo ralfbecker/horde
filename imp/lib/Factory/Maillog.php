@@ -39,7 +39,8 @@ class IMP_Factory_Maillog extends Horde_Core_Factory_Injector
 
         $driver = isset($conf['maillog']['driver'])
             ? $conf['maillog']['driver']
-            : 'none';
+            // @todo BC support for 'use_maillog'
+            : (empty($conf['maillog']['use_maillog']) ? 'none' : 'history');
 
         switch ($driver) {
         case 'history':

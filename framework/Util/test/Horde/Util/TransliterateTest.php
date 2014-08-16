@@ -8,81 +8,77 @@
  */
 class Horde_Util_TransliterateTest extends PHPUnit_Framework_TestCase
 {
-    /**
-     * @dataProvider fallbackDataProvider
-     */
-    public function testTransliterateToAsciiFallback($str, $expected)
+    public function testTransliterateToAsciiFallback()
     {
+        // No normalization
+        $str = 'ABC123abc';
         $this->assertEquals(
-            $expected,
+            $str,
             Horde_Util_Mock_Transliterate::testFallback($str)
         );
-    }
 
-    public function fallbackDataProvider()
-    {
-        return array(
-            // No normalization
-            array('ABC123abc', 'ABC123abc'),
-            // Non-ascii can all be transliterated
-            array('AÀBÞEÉSß', 'AABTHEESss'),
-            // Some non-ascii cannot be transliterated
-            array('AÀ黾BÞ', 'AA黾BTH')
+        // Non-ascii can all be transliterated
+        $this->assertEquals(
+            'AABTHEESss',
+            Horde_Util_Mock_Transliterate::testFallback('AÀBÞEÉSß')
+        );
+
+        // Some non-ascii cannot be transliterated
+        $this->assertEquals(
+            'AA黾BTH',
+            Horde_Util_Mock_Transliterate::testFallback('AÀ黾BÞ')
         );
     }
 
-    /**
-     * @dataProvider intlDataProvider
-     */
-    public function testTransliterateToAsciiIntl($str, $expected)
+    public function testTransliterateToAsciiIntl()
     {
         if (!class_exists('Transliterator')) {
             $this->markTestSkipped('intl extension not installed or too old');
         }
 
+        // No normalization
+        $str = 'ABC123abc';
         $this->assertEquals(
-            $expected,
+            $str,
             Horde_Util_Mock_Transliterate::testIntl($str)
         );
-    }
 
-    public function intlDataProvider()
-    {
-        return array(
-            // No normalization
-            array('ABC123abc', 'ABC123abc'),
-            // Non-ascii can all be transliterated
-            array('AÀBÞEÉSß', 'AABTHEESss'),
-            // Some non-ascii cannot be transliterated
-            array('AÀ黾BÞ', 'AA mianBTH')
+        // Non-ascii can all be transliterated
+        $this->assertEquals(
+            'AABTHEESss',
+            Horde_Util_Mock_Transliterate::testIntl('AÀBÞEÉSß')
+        );
+
+        // Some non-ascii cannot be transliterated
+        $this->assertEquals(
+            'AA mianBTH',
+            Horde_Util_Mock_Transliterate::testIntl('AÀ黾BÞ')
         );
     }
 
-    /**
-     * @dataProvider iconvDataProvider
-     */
-    public function testTransliterateToAsciiIconv($str, $expected)
+    public function testTransliterateToAsciiIconv()
     {
         if (!extension_loaded('iconv')) {
             $this->markTestSkipped('iconv extension not installed');
         }
 
+        // No normalization
+        $str = 'ABC123abc';
         $this->assertEquals(
-            $expected,
+            $str,
             Horde_Util_Mock_Transliterate::testIconv($str)
         );
-    }
 
-    public function iconvDataProvider()
-    {
-        return array(
-            // No normalization
-            array('ABC123abc', 'ABC123abc'),
-            // Non-ascii can all be transliterated
-            array('AÀBÞEÉSß', 'AAB?EESss'),
-            // Some non-ascii cannot be transliterated
-            array('AÀ黾BÞ', 'AA?B?')
+        // Non-ascii can all be transliterated
+        $this->assertEquals(
+            'AAB?EESss',
+            Horde_Util_Mock_Transliterate::testIconv('AÀBÞEÉSß')
+        );
+
+        // Some non-ascii cannot be transliterated
+        $this->assertEquals(
+            'AA?B?',
+            Horde_Util_Mock_Transliterate::testIconv('AÀ黾BÞ')
         );
     }
-
 }

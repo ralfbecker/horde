@@ -145,25 +145,13 @@ class Nag_Api extends Horde_Registry_Api
      * @param string $name        Task list name.
      * @param string $description Task list description.
      * @param string $color       Task list color.
-     * @param array  $params      Any addtional parameters needed. @since 4.2.1
-     *     - synchronize:   (boolean) If true, add task list to the list of
-     *                                task lists to syncronize.
-     *                      DEFAULT: false (do not add to the list).
      *
      * @return string  The new tasklist's id.
      */
-    public function addTasklist($name, $description = '', $color = '', array $params = array())
+    public function addTasklist($name, $description = '', $color = '')
     {
         $tasklist = Nag::addTasklist(array('name' => $name, 'description' => $description, 'color' => $color));
-
-        $name = $tasklist->getName();
-        if (!empty($params['synchronize'])) {
-            $sync = @unserialize($prefs->getValue('sync_lists'));
-            $sync[] = $name;
-            $prefs->setValue('sync_lists', serialize($sync));
-        }
-
-        return $name;
+        return $tasklist->getName();
     }
 
     /**
@@ -350,12 +338,12 @@ class Nag_Api extends Horde_Registry_Api
                 throw new Nag_Exception(_("Invalid task list file requested."), 404);
             }
             $ical_data = $this->exportTasklist($tasklist, 'text/calendar');
-            return array(
-                'data'          => $ical_data,
+            $result = array('data'          => $ical_data,
                 'mimetype'      => 'text/calendar',
                 'contentlength' => strlen($ical_data),
-                'mtime'         => $_SERVER['REQUEST_TIME']
-            );
+                'mtime'         => $_SERVER['REQUEST_TIME']);
+
+            return $result;
 
         } elseif (count($parts) == 2) {
             //
@@ -1098,7 +1086,6 @@ class Nag_Api extends Horde_Registry_Api
         $tasks = Nag::listTasks(array(
             'tasklists' => array($tasklist),
             'completed' => Nag::VIEW_ALL,
-            'external' => false,
             'include_tags' => true));
 
         $version = '2.0';
@@ -1463,78 +1450,4 @@ class Nag_Api extends Horde_Registry_Api
         return Nag::getDefaultTasklist(Horde_Perms::EDIT);
     }
 
-    /**
-     * Retrieve the list of used tag_names, tag_ids and the total number
-     * of resources that are linked to that tag.
-     *
-     * @param array $tags  An optional array of tag_ids. If omitted, all tags
-     *                     will be included.
-     *
-     * @return array  An array containing tag_name, and total
-     */
-    public function listTagInfo($tags = null, $user = null)
-    {
-        return $GLOBALS['injector']->getInstance('Nag_Tagger')
-            ->getTagInfo($tags, 500, null, $user);
-    }
-
-    /**
-     * SearchTags API:
-     * Returns an application-agnostic array (useful for when doing a tag search
-     * across multiple applications)
-     *
-     * The 'raw' results array can be returned instead by setting $raw = true.
-     *
-     * @param array $names           An array of tag_names to search for.
-     * @param integer $max           The maximum number of resources to return.
-     * @param integer $from          The number of the resource to start with.
-     * @param string $resource_type  The resource type [bookmark, '']
-     * @param string $user           Restrict results to resources owned by $user.
-     * @param boolean $raw           Return the raw data?
-     *
-     * @return array An array of results:
-     * <pre>
-     *  'title'    - The title for this resource.
-     *  'desc'     - A terse description of this resource.
-     *  'view_url' - The URL to view this resource.
-     *  'app'      - The Horde application this resource belongs to.
-     *  'icon'     - URL to an image.
-     * </pre>
-     */
-    public function searchTags($names, $max = 10, $from = 0,
-                               $resource_type = '', $user = null, $raw = false)
-    {
-        // TODO: $max, $from, $resource_type not honored
-        global $injector, $registry;
-
-        $results = $injector
-            ->getInstance('Nag_Tagger')
-            ->search(
-                $names,
-                array('user' => $user));
-
-        // Check for error or if we requested the raw data array.
-        if ($raw) {
-            return $results;
-        }
-
-        $return = array();
-        $redirectUrl = Horde::url('redirect.php');
-        foreach ($results as $task_id) {
-            try {
-                $task = $injector->getInstance('Nag_Factory_Driver')
-                    ->create(null)
-                    ->getByUID($task_id);
-                $return[] = array(
-                    'title' => $task->name,
-                    'desc' => $task->description,
-                    'view_url' => $redirectUrl->add('b', $task->id),
-                    'app' => 'nag'
-                );
-            } catch (Exception $e) {
-            }
-        }
-
-        return $return;
-    }
 }

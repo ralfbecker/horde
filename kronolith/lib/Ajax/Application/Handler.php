@@ -318,8 +318,7 @@ class Kronolith_Ajax_Application_Handler extends Horde_Core_Ajax_Application_Han
         }
 
         if (($result !== true) && $this->vars->sendupdates) {
-            $type = $event->status == Kronolith::STATUS_CANCELLED ? Kronolith::ITIP_CANCEL : Kronolith::ITIP_REQUEST;
-            Kronolith::sendITipNotifications($event, $GLOBALS['notification'], $type);
+            Kronolith::sendITipNotifications($event, $GLOBALS['notification'], Kronolith::ITIP_REQUEST);
         }
         Kronolith::notifyOfResourceRejection($event);
 

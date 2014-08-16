@@ -29,25 +29,13 @@
  *   - RFC 5321: Simple Mail Transfer Protocol
  *   - RFC 6152/STD 71: 8bit-MIMEtransport
  *   - RFC 6409/STD 72: Message Submission for Mail
- *   - RFC 6531: Internationalized Email
  *
  *   - XOAUTH2: https://developers.google.com/gmail/xoauth2_protocol
  * </pre>
  *
  * TODO:
  * <pre>
- *   - RFC 1845: CHECKPOINT
- *   - RFC 2852: DELIVERYBY
  *   - RFC 3030: BINARYMIME/CHUNKING
- *   - RFC 3461: DSN
- *   - RFC 3865: NO-SOLICITING
- *   - RFC 3885: MTRK
- *   - RFC 4141: CONPERM/CONNEG
- *   - RFC 4405: SUBMITTER
- *   - RFC 4468: BURL
- *   - RFC 4865: FUTURERELEASE
- *   - RFC 6710: MT-PRIORITY
- *   - RFC 7293: RRVS
  * </pre>
  *
  * @author    Michael Slusarz <slusarz@horde.org>
@@ -58,9 +46,6 @@
  *
  * @property-read boolean $data_8bit  Does server support sending 8-bit MIME
  *                                    data?
- * @property-read boolean $data_intl  Does server support sending
- *                                    internationalized (UTF-8) header data?
- *                                    (@since 1.6.0)
  * @property-read integer $size  The maximum message size supported (in
  *                               bytes) or null if this cannot be determined.
  */
@@ -247,10 +232,6 @@ class Horde_Smtp implements Serializable
         case 'data_8bit':
             // RFC 6152
             return $this->queryExtension('8BITMIME');
-
-        case 'data_intl':
-            // RFC 6531
-            return $this->queryExtension('SMTPUTF8');
 
         case 'size':
             // RFC 1870
@@ -488,9 +469,6 @@ class Horde_Smtp implements Serializable
      *   - 8bit: (boolean) If true, $data is a MIME message with arbitrary
      *           octet content (i.e. 8-bit encoding).
      *           DEFAULT: false
-     *   - intl: (boolean) If true, $data contains internationalized header
-     *           content (UTF-8). (@since 1.6.0)
-     *           DEFAULT: false
      * </pre>
      *
      * @return array  If no receipients were successful, a
@@ -511,28 +489,7 @@ class Horde_Smtp implements Serializable
             $from = new Horde_Mail_Rfc822_Address($from);
         }
 
-        /* RFC 6531 */
-        if (!empty($opts['intl'])) {
-            if (!$this->data_intl) {
-                throw new InvalidArgumentException(
-                    'Server does not support sending internationalized header data.'
-                );
-            }
-
-            /* RFC 6531[1.2] requires 8BITMIME to be available. */
-            $opts['8bit'] = true;
-        }
-
-        /* RFC 6152[3] */
-        if (!empty($opts['8bit']) && !$this->data_8bit) {
-            throw new InvalidArgumentException(
-                'Server does not support sending 8-bit data.'
-            );
-        }
-
-        $mailcmd = 'MAIL FROM:<' .
-            (empty($opts['intl']) ? $from->bare_address_idn : $from->bare_address) .
-            '>';
+        $mailcmd = 'MAIL FROM:<' . $from->bare_address_idn . '>';
 
         // RFC 1870[6]
         if ($this->queryExtension('SIZE')) {
@@ -546,13 +503,14 @@ class Horde_Smtp implements Serializable
             $mailcmd .= ' SIZE=' . intval($size);
         }
 
-        // RFC 6531[3.4]
-        if (!empty($opts['intl'])) {
-            $mailcmd .= ' SMTPUTF8';
-        }
-
         // RFC 6152[3]
         if (!empty($opts['8bit'])) {
+            if (!$this->data_8bit) {
+                throw new InvalidArgumentException(
+                    'Server does not support sending 8-bit data.'
+                );
+            }
+
             $mailcmd .= ' BODY=8BITMIME';
         } elseif ($this->_debug->active && $this->data_8bit) {
             /* Only output extended 7bit command if debug is active (it is
@@ -566,9 +524,7 @@ class Horde_Smtp implements Serializable
             $to = new Horde_Mail_Rfc822_List($to);
         }
 
-        $recipients = empty($opts['intl'])
-            ? $to->bare_addresses_idn
-            : $to->bare_addresses;
+        $recipients = $to->bare_addresses_idn;
         foreach ($recipients as $val) {
             $cmds[] = 'RCPT TO:<' . $val . '>';
         }

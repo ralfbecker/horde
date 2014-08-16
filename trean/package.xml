@@ -22,18 +22,20 @@
   <email>jan@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-07-06</date>
+ <date>2014-04-03</date>
  <version>
-  <release>1.1.0RC2</release>
+  <release>1.1.0alpha1</release>
   <api>1.1.0</api>
  </version>
  <stability>
-  <release>beta</release>
+  <release>alpha</release>
   <api>stable</api>
  </stability>
  <license uri="http://www.horde.org/licenses/bsd">BSD-2-Clause</license>
  <notes>
-* [mjr] Add new block for displaying bookmarks tagged with a certain set of tags (Request #13020).
+* [jan] Add Hungarian translation (Andras Galos &lt;galosa@netinform.hu&gt;).
+* [jan] Add Danish translation (Erling Preben Hansen &lt;erling@eph.dk&gt;).
+* [mjr] Add support for importing bookmarks from Mozilla&apos;s JSON format.
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -45,18 +47,10 @@
     </dir> <!-- /app/controllers -->
    </dir> <!-- /app -->
    <dir name="bin">
-    <file name="trean-backfill-crawler" role="script">
-     <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
-    </file>
-    <file name="trean-backfill-favicons" role="script">
-     <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
-    </file>
-    <file name="trean-backfill-remove-utm-params" role="script">
-     <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
-    </file>
-    <file name="trean-url-checker" role="script">
-     <tasks:replace from="/usr/bin/env php" to="php_bin" type="pear-config" />
-    </file>
+    <file name="trean-backfill-crawler" role="script" />
+    <file name="trean-backfill-favicons" role="script" />
+    <file name="trean-backfill-remove-utm-params" role="script" />
+    <file name="trean-url-checker" role="script" />
    </dir> <!-- /bin -->
    <dir name="config">
     <file name=".htaccess" role="horde" />
@@ -85,7 +79,6 @@
     <dir name="Block">
      <file name="Bookmarks.php" role="horde" />
      <file name="Mostclicked.php" role="horde" />
-     <file name="Tagsearch.php" role="horde" />
     </dir> <!-- /lib/Block -->
     <dir name="Data">
      <file name="Json.php" role="horde" />
@@ -149,12 +142,6 @@
       <file name="trean.po" role="horde" />
      </dir> <!-- /locale/fr/LC_MESSAGES -->
     </dir> <!-- /locale/fr -->
-    <dir name="hu">
-     <dir name="LC_MESSAGES">
-      <file name="trean.mo" role="horde" />
-      <file name="trean.po" role="horde" />
-     </dir> <!-- /locale/hu/LC_MESSAGES -->
-    </dir> <!-- /locale/hu -->
     <dir name="it">
      <dir name="LC_MESSAGES">
       <file name="trean.mo" role="horde" />
@@ -482,7 +469,6 @@
    <install as="trean/lib/Ajax/Imple/TopTags.php" name="lib/Ajax/Imple/TopTags.php" />
    <install as="trean/lib/Block/Bookmarks.php" name="lib/Block/Bookmarks.php" />
    <install as="trean/lib/Block/Mostclicked.php" name="lib/Block/Mostclicked.php" />
-   <install as="trean/lib/Block/Tagsearch.php" name="lib/Block/Tagsearch.php" />
    <install as="trean/lib/Data/Json.php" name="lib/Data/Json.php" />
    <install as="trean/lib/Factory/TagBrowser.php" name="lib/Factory/TagBrowser.php" />
    <install as="trean/lib/Queue/Task/Crawl.php" name="lib/Queue/Task/Crawl.php" />
@@ -504,8 +490,6 @@
    <install as="trean/locale/fi/LC_MESSAGES/trean.po" name="locale/fi/LC_MESSAGES/trean.po" />
    <install as="trean/locale/fr/LC_MESSAGES/trean.mo" name="locale/fr/LC_MESSAGES/trean.mo" />
    <install as="trean/locale/fr/LC_MESSAGES/trean.po" name="locale/fr/LC_MESSAGES/trean.po" />
-   <install as="trean/locale/hu/LC_MESSAGES/trean.mo" name="locale/hu/LC_MESSAGES/trean.mo" />
-   <install as="trean/locale/hu/LC_MESSAGES/trean.po" name="locale/hu/LC_MESSAGES/trean.po" />
    <install as="trean/locale/it/LC_MESSAGES/trean.mo" name="locale/it/LC_MESSAGES/trean.mo" />
    <install as="trean/locale/it/LC_MESSAGES/trean.po" name="locale/it/LC_MESSAGES/trean.po" />
    <install as="trean/locale/lv/help.xml" name="locale/lv/help.xml" />
@@ -657,11 +641,11 @@
   </release>
   <release>
    <version>
-    <release>1.1.0RC1</release>
+    <release>1.1.0alpha1</release>
     <api>1.1.0</api>
    </version>
    <stability>
-    <release>beta</release>
+    <release>alpha</release>
     <api>stable</api>
    </stability>
    <license uri="http://www.horde.org/licenses/bsd">BSD-2-Clause</license>
@@ -669,32 +653,6 @@
 * [jan] Add Hungarian translation (Andras Galos &lt;galosa@netinform.hu&gt;).
 * [jan] Add Danish translation (Erling Preben Hansen &lt;erling@eph.dk&gt;).
 * [mjr] Add support for importing bookmarks from Mozilla&apos;s JSON format.
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>1.1.0</release>
-    <api>1.1.0</api></version>
-   <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-07-08</date>
-   <license uri="http://www.horde.org/licenses/bsd">BSD-2-Clause</license>
-   <notes>
-* [mjr] Fix creating tags from folder names when importing bookmarks.
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>1.1.1</release>
-    <api>1.1.0</api></version>
-   <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-07-08</date>
-   <license uri="http://www.horde.org/licenses/bsd">BSD-2-Clause</license>
-   <notes>
-* 
    </notes>
   </release>
  </changelog>

@@ -73,7 +73,7 @@ class Turba_Form_EditAddressBook extends Horde_Form
                 . 'principals/'. $GLOBALS['registry']->getAuth() . '/';
             if ($addressbook->get('owner')) {
                 $carddavUrl = Horde::url($carddavUrl, true, -1)
-                    . $GLOBALS['registry']->getAuth()
+                    . $addressbook->get('owner')
                     . '/'
                     . $GLOBALS['injector']->getInstance('Horde_Dav_Storage')->getExternalCollectionId($addressbook->getName(), 'contacts')
                     . '/';

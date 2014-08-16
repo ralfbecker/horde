@@ -120,7 +120,6 @@ class Ingo_Transport_Timsieved extends Ingo_Transport_Base
         $this->_connect();
 
         if (!strlen($script['script'])) {
-            Ingo_Exception_Pear::catchError($this->_sieve->setActive(''));
             Ingo_Exception_Pear::catchError($this->_sieve->removeScript($script['name']));
             return;
         }

@@ -149,8 +149,7 @@ class IMP_Dynamic_Compose extends IMP_Dynamic_Base
             } catch (IMP_Compose_Exception $e) {
                 $notification->push($e, 'horde.error');
             }
-            // Not used in JS
-            $onload = new stdClass;
+            $onload = $compose_ajax->getBaseResponse();
             break;
 
         case 'editasnew':

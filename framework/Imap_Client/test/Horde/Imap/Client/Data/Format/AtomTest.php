@@ -24,106 +24,102 @@
  * @subpackage UnitTests
  */
 class Horde_Imap_Client_Data_Format_AtomTest
-extends Horde_Imap_Client_Data_Format_TestBase
+extends PHPUnit_Framework_TestCase
 {
-    protected function getTestObs()
+    private $ob;
+    private $ob2;
+    private $ob3;
+    private $ob4;
+
+    public function setUp()
     {
-        return array(
-            new Horde_Imap_Client_Data_Format_Atom('Foo'),
-            /* Illegal atom character. */
-            new Horde_Imap_Client_Data_Format_Atom('Foo('),
-            /* This is an invalid atom, but valid (non-quoted) astring. */
-            new Horde_Imap_Client_Data_Format_Atom('Foo]'),
-            new Horde_Imap_Client_Data_Format_Atom('')
-        );
+        $this->ob = new Horde_Imap_Client_Data_Format_Atom('Foo');
+        /* Illegal atom character. */
+        $this->ob2 = new Horde_Imap_Client_Data_Format_Atom('Foo(');
+        /* This is an invalid atom, but valid (non-quoted) astring. */
+        $this->ob3 = new Horde_Imap_Client_Data_Format_Atom('Foo]');
+        $this->ob4 = new Horde_Imap_Client_Data_Format_Atom('');
     }
 
-    /**
-     * @dataProvider stringRepresentationProvider
-     */
-    public function testStringRepresentation($ob, $expected)
+    public function testStringRepresentation()
     {
         $this->assertEquals(
-            $expected,
-            strval($ob)
-        );
-    }
-
-    public function stringRepresentationProvider()
-    {
-        return $this->createProviderArray(array(
             'Foo',
+            strval($this->ob)
+        );
+
+        $this->assertEquals(
             'Foo(',
+            strval($this->ob2)
+        );
+
+        $this->assertEquals(
             'Foo]',
+            strval($this->ob3)
+        );
+
+        $this->assertEquals(
             '',
-        ));
-    }
-
-    /**
-     * @dataProvider escapeProvider
-     */
-    public function testEscape($ob, $expected)
-    {
-        $this->assertEquals(
-            $expected,
-            $ob->escape()
+            strval($this->ob4)
         );
     }
 
-    public function escapeProvider()
+    public function testEscape()
     {
-        return $this->createProviderArray(array(
+        $this->assertEquals(
             'Foo',
+            $this->ob->escape()
+        );
+
+        // Require quoting
+        $this->assertEquals(
             'Foo(',
+            $this->ob2->escape()
+        );
+
+        $this->assertEquals(
             'Foo]',
+            $this->ob3->escape()
+        );
+
+        /* Empty string should be quoted. */
+        $this->assertEquals(
             '""',
-        ));
+            $this->ob4->escape()
+        );
     }
 
-    /**
-     * @dataProvider verifyProvider
-     */
-    public function testVerify($ob, $expected)
+    public function testVerify()
     {
+        // Don't throw Exception
+        $this->ob->verify();
         try {
-            $ob->verify();
-            if ($expected) {
-                $this->fail();
-            }
-        } catch (Horde_Imap_Client_Data_Format_Exception $e) {
-            if (!$expected) {
-                $this->fail();
-            }
-        }
+            // Expecting exception.
+            $this->ob2->verify();
+            $this->fail();
+        } catch (Horde_Imap_Client_Data_Format_Exception $e) {}
+        try {
+            // Expecting exception.
+            $this->ob3->verify();
+            $this->fail();
+        } catch (Horde_Imap_Client_Data_Format_Exception $e) {}
+        $this->ob4->verify();
     }
 
-    public function verifyProvider()
+    public function testStripNonAtomCharacters()
     {
-        return $this->createProviderArray(array(
-            false,
-            true,
-            true,
-            false
-        ));
-    }
-
-    /**
-     * @dataProvider stripNonAtomCharactersProvider
-     */
-    public function testStripNonAtomCharacters($str, $expected)
-    {
+        $str = 'ABC123abc';
         $atom = new Horde_Imap_Client_Data_Format_Atom($str);
         $this->assertEquals(
-            $expected,
-            $atom->stripNonAtomCharacters()
+            $atom->stripNonAtomCharacters(),
+            $str
         );
-    }
 
-    public function stripNonAtomCharactersProvider()
-    {
-        return array(
-            array('ABC123abc', 'ABC123abc'),
-            array('A[{À*"A', 'A[A')
+        $str = 'A[{À*"A';
+        $atom = new Horde_Imap_Client_Data_Format_Atom($str);
+        $this->assertEquals(
+            'A[A',
+            $atom->stripNonAtomCharacters()
         );
     }
 

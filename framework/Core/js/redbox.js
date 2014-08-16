@@ -10,7 +10,7 @@
 var RedBox = {
 
     overlay: true,
-    duration: 0.2,
+    duration: 0.4,
     onDisplay: null,
     opacity: 0.6,
 

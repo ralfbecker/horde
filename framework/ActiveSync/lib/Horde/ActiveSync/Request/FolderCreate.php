@@ -96,13 +96,11 @@ class Horde_ActiveSync_Request_FolderCreate extends Horde_ActiveSync_Request_Bas
         }
 
         // Server_uid (the EAS uid for this collection).
-        // Another place we have to work around broken Blackberry clients that
-        // send an empty SERVERENTRYID tag (Bug #13351, #12370).
         $server_uid = false;
         if ($this->_decoder->getElementStartTag(Horde_ActiveSync::FOLDERHIERARCHY_SERVERENTRYID)) {
             $server_uid = $this->_decoder->getElementContent();
-            if ($server_uid !== false && !$this->_decoder->getElementEndTag()) {
-                throw new Horde_ActiveSync_Exception('Protocol Error - expecting </SERVERENTRYID>');
+            if (!$this->_decoder->getElementEndTag()) {
+                throw new Horde_ActiveSync_Exception('Protocol Error');
             }
         }
 
@@ -191,10 +189,8 @@ class Horde_ActiveSync_Request_FolderCreate extends Horde_ActiveSync_Request_Bas
 
             $this->_encoder->endTag();
         } elseif ($update) {
-            if ($status == self::STATUS_SUCCESS) {
-                $collections->updateFolderInHierarchy($folder, true);
-                $collections->save();
-            }
+            $collections->updateFolderInHierarchy($folder, true);
+            $collections->save();
 
             $this->_encoder->startTag(self::FOLDERUPDATE);
 
@@ -208,9 +204,7 @@ class Horde_ActiveSync_Request_FolderCreate extends Horde_ActiveSync_Request_Bas
 
             $this->_encoder->endTag();
         } elseif ($delete) {
-            if ($status == self::STATUS_SUCCESS) {
-                $collections->deleteFolderFromHierarchy($server_uid);
-            }
+            $collections->deleteFolderFromHierarchy($server_uid);
             $this->_encoder->startTag(self::FOLDERDELETE);
 
             $this->_encoder->startTag(Horde_ActiveSync::FOLDERHIERARCHY_STATUS);
@@ -225,11 +219,8 @@ class Horde_ActiveSync_Request_FolderCreate extends Horde_ActiveSync_Request_Bas
         }
 
         $this->_encoder->endTag();
-
-        if ($status == self::STATUS_SUCCESS) {
-            $this->_state->setNewSyncKey($newsynckey);
-            $this->_state->save();
-        }
+        $this->_state->setNewSyncKey($newsynckey);
+        $this->_state->save();
 
         return true;
     }

@@ -41,7 +41,6 @@ var IMP_Editor = Class.create({
     start: function()
     {
         if (!this.editor) {
-            this.config.height = $(this.id).getHeight() - 75;
             this.editor = CKEDITOR.replace(this.id, this.config);
         }
     },

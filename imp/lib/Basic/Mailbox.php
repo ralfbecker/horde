@@ -867,7 +867,7 @@ class IMP_Basic_Mailbox extends IMP_Basic_Base
                 'bg' => '',
                 'buid' => $imp_mailbox->getBuid($ob['mailbox'], $ob['uid']),
                 'class' => '',
-                'date' => strval(new IMP_Message_Date($ob['envelope']->date)),
+                'date' => $imp_ui->getDate($ob['envelope']->date),
                 'preview' => '',
                 'status' => '',
                 'size' => IMP::sizeFormat($ob['size'])
@@ -875,11 +875,10 @@ class IMP_Basic_Mailbox extends IMP_Basic_Base
 
             /* Generate the target link. */
             if ($mailbox->drafts || $mailbox->templates) {
-                $clink_copy = clone $clink_ob;
-                $clink_copy->args['buid'] = $msg['buid'];
-                $clink_copy->args['mailbox'] = $mailbox;
-                $target = $clink_copy->link()->add(array(
-                    'actionID' => ($mailbox->drafts ? 'draft' : 'template')
+                $target = $clink->copy()->add(array(
+                    'actionID' => ($mailbox->drafts ? 'draft' : 'template'),
+                    'buid' => $msg['buid'],
+                    'mailbox' => $mailbox
                 ));
             } else {
                 $target = $mailbox->url('message', $msg['buid']);

@@ -28,13 +28,11 @@ class Horde_Imap_Client_Interaction_Command
 extends Horde_Imap_Client_Data_Format_List
 {
     /**
-     * Debug string(s) to use instead of command text.
+     * Debug string to use instead of command text.
      *
-     * Multiple entries refer to the various steps in a continuation command.
-     *
-     * @var array
+     * @var string
      */
-    public $debug = array();
+    public $debug = null;
 
     /**
      * Use LITERAL+ if available
@@ -49,15 +47,6 @@ extends Horde_Imap_Client_Data_Format_List
      * @var boolean
      */
     public $literal8 = false;
-
-    /**
-     * A callback to run on error.
-     *
-     * @since 2.24.0
-     *
-     * @var callback
-     */
-    public $on_error = null;
 
     /**
      * Server response.

@@ -54,15 +54,7 @@ class Horde_Imap_Client_Socket_Connection_Base extends Horde\Socket\Client
             $timer->push();
         }
 
-        try {
-            parent::_connect($host, $port, $timeout, $secure, $retries);
-        } catch (Horde\Socket\Client\Exception $e) {
-            $this->_params['debug']->info(sprintf(
-                'Connection failed: %s',
-                $e->getMessage()
-            ));
-            throw $e;
-        }
+        parent::_connect($host, $port, $timeout, $secure, $retries);
 
         if ($timer) {
             $this->_params['debug']->info(sprintf(

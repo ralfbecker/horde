@@ -332,23 +332,17 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
                 $temp = $this->_connector->getFolders(Horde_ActiveSync::CLASS_CALENDAR, $multiplex);
                 if (is_array($temp)) {
                     foreach ($temp as $id => $folder) {
-                        try {
-                            $folders[] = $this->_getFolder(
-                                Horde_ActiveSync::CLASS_CALENDAR . ':' . $id,
-                                array(
-                                    'class' => Horde_ActiveSync::CLASS_CALENDAR,
-                                    'primary' => $folder['primary'],
-                                    'display' => $folder['display']
-                                )
-                            );
-                        } catch (Horde_ActiveSync_Exception $e) {
-                        }
+                        $folders[] = $this->_getFolder(
+                            Horde_ActiveSync::CLASS_CALENDAR . ':' . $id,
+                            array(
+                                'class' => Horde_ActiveSync::CLASS_CALENDAR,
+                                'primary' => $folder['primary'],
+                                'display' => $folder['display']
+                            )
+                        );
                     }
                 } else {
-                    try {
-                        $folders[] = $this->_getFolder($temp);
-                    } catch (Horde_ActiveSync_Exception $e) {
-                    }
+                    $folders[] = $this->_getFolder($temp);
                 }
             }
 
@@ -356,23 +350,17 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
                 $temp = $this->_connector->getFolders(Horde_ActiveSync::CLASS_CONTACTS, $multiplex);
                 if (is_array($temp)) {
                     foreach ($temp as $id => $folder) {
-                        try {
-                            $folders[] = $this->_getFolder(
-                                Horde_ActiveSync::CLASS_CONTACTS . ':' . $id,
-                                array(
-                                    'class' => Horde_ActiveSync::CLASS_CONTACTS,
-                                    'primary' => $folder['primary'],
-                                    'display' => $folder['display']
-                                )
-                            );
-                        } catch (Horde_ActiveSync_Exception $e) {
-                        }
+                        $folders[] = $this->_getFolder(
+                            Horde_ActiveSync::CLASS_CONTACTS . ':' . $id,
+                            array(
+                                'class' => Horde_ActiveSync::CLASS_CONTACTS,
+                                'primary' => $folder['primary'],
+                                'display' => $folder['display']
+                            )
+                        );
                     }
                 } else {
-                    try {
-                        $folders[] = $this->_getFolder($temp);
-                    } catch (Horde_ActiveSync_Exception $e) {
-                    }
+                    $folders[] = $this->_getFolder($temp);
                 }
             }
 
@@ -380,23 +368,17 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
                 $temp = $this->_connector->getFolders(Horde_ActiveSync::CLASS_TASKS, $multiplex);
                 if (is_array($temp)) {
                     foreach ($temp as $id => $folder) {
-                       try {
-                           $folders[] = $this->_getFolder(
-                                Horde_ActiveSync::CLASS_TASKS . ':' . $id,
-                                array(
-                                    'class' => Horde_ActiveSync::CLASS_TASKS,
-                                    'primary' => $folder['primary'],
-                                    'display' => $folder['display']
-                                )
-                            );
-                       } catch (Horde_ActiveSync_Exception $e) {
-                       }
+                       $folders[] = $this->_getFolder(
+                            Horde_ActiveSync::CLASS_TASKS . ':' . $id,
+                            array(
+                                'class' => Horde_ActiveSync::CLASS_TASKS,
+                                'primary' => $folder['primary'],
+                                'display' => $folder['display']
+                            )
+                        );
                     }
                 } else {
-                    try {
-                        $folders[] = $this->_getFolder($temp);
-                    } catch (Horde_ActiveSync_Exception $e) {
-                    }
+                    $folders[] = $this->_getFolder($temp);
                 }
             }
 
@@ -404,23 +386,17 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
                 $temp = $this->_connector->getFolders(Horde_ActiveSync::CLASS_NOTES, $multiplex);
                 if (is_array($temp)) {
                     foreach ($temp as $id => $folder) {
-                        try {
-                            $folders[] = $this->_getFolder(
-                                Horde_ActiveSync::CLASS_NOTES . ':' . $id,
-                                array(
-                                    'class' => Horde_ActiveSync::CLASS_NOTES,
-                                    'primary' => $folder['primary'],
-                                    'display' => $folder['display']
-                                )
-                            );
-                        } catch (Horde_ActiveSync_Exception $e) {
-                        }
+                        $folders[] = $this->_getFolder(
+                            Horde_ActiveSync::CLASS_NOTES . ':' . $id,
+                            array(
+                                'class' => Horde_ActiveSync::CLASS_NOTES,
+                                'primary' => $folder['primary'],
+                                'display' => $folder['display']
+                            )
+                        );
                     }
                 } else {
-                    try {
-                        $folders[] = $this->_getFolder($temp);
-                    } catch (Horde_ActiveSync_Exception $e) {
-                    }
+                    $folders[] = $this->_getFolder($temp);
                 }
             }
             if ($this->_version > Horde_ActiveSync::VERSION_TWELVEONE) {
@@ -621,9 +597,9 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
     /**
      * Change a folder on the server.
      *
-     * @param string $old_name  The server's existing folder id.
+     * @param string $old_name  The IMAP server's existing folder id.
      * @param string $new_name  The new display name.
-     * @param string $parent    The folder's parent server id, if needed.
+     * @param string $parent    The folder's parent IMAP server id, if needed.
      * @param string $uid       The existing folder uid, if this is an edit.
      *                          @since 2.5.0 (@todo Look at this for H6. It's
      *                          here now to save an extra DB lookup for data
@@ -631,7 +607,7 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
      * @param  integer $type    The EAS Folder type. @since 2.12.0
      *
      * @return Horde_ActiveSync_Message_Folder
-     * @throws Horde_ActiveSync_Exception
+     * @throws  Horde_ActiveSync_Exception
      */
     public function changeFolder($old_name, $new_name, $parent, $uid = null, $type = null)
     {
@@ -811,7 +787,7 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
      *      The ActiveSync folder object to request changes for.
      * @param integer $from_ts     The starting timestamp
      * @param integer $to_ts       The ending timestamp
-     * @param integer $cutoffdate  The earliest date to retrieve back to.
+     * @param integer $cutoffdate  The earliest date to retrieve back to. If
      *
      * @param boolean $ping        If true, returned changeset may
      *                             not contain the full changeset, but rather
@@ -1093,17 +1069,14 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
                 'flags' => Horde_ActiveSync::FLAG_NEWMESSAGE);
         }
 
-        // For CLASS_EMAIL, all changes are a change in flags, categories or
-        // softdelete.
+        // For CLASS_EMAIL, all changes are a change in flags or softdelete.
         if ($folder->collectionClass() == Horde_ActiveSync::CLASS_EMAIL) {
             $flags = $folder->flags();
-            $categories = $folder->categories();
             foreach ($changes['modify'] as $uid) {
                 $results[] = array(
                     'id' => $uid,
                     'type' => Horde_ActiveSync::CHANGE_TYPE_FLAGS,
-                    'flags' => $flags[$uid],
-                    'categories' => $categories[$uid]
+                    'flags' => $flags[$uid]
                 );
             }
         } else {
@@ -1434,21 +1407,6 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
     }
 
     /**
-     * Empty specified mailbox.
-     *
-     * @param array $params An array of parameters:
-     *   - folderid: The backend folderid of the mailbox to empty.
-     *   - subfolders: IGNORED for now.
-     *
-     * @throws Horde_ActiveSync_Exception
-     * @since 2.14.0
-     */
-    public function itemOperationsEmptyFolder($params)
-    {
-        $this->_imap->emptyMailbox($params['folderid']);
-    }
-
-    /**
      * Get message stat data
      *
      * @see framework/ActiveSync/lib/Horde/ActiveSync/Driver/Horde_ActiveSync_Driver_Base#statMessage($folderId, $id)
@@ -1626,11 +1584,6 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
      *        @since 2.5.0
      *
      * @return array|boolean    A stat array if successful, otherwise false.
-     *   Contains the following keys:
-     *   - id: (mixed)  The UID of the message/item.
-     *   - mod: (mixed) A value to indicate the last modification.
-     *   - flags: (array) an empty array if no flag changes.
-     *   - categories: (array|boolean) false if no changes.
      */
     public function changeMessage($folderid, $id, Horde_ActiveSync_Message_Base $message, $device)
     {
@@ -1760,8 +1713,7 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
                 $stat = array(
                     'id' => $id,
                     'mod' => 0,
-                    'flags' => array(),
-                    'categories' => false
+                    'flags' => array()
                 );
                 if ($message->read !== '') {
                     $this->setReadFlag($folderid, $id, $message->read);
@@ -1772,11 +1724,6 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
                     }
                     $this->_imap->setMessageFlag($folderid, $id, $message->flag);
                     $stat['flags'] = array_merge($stat['flags'], array('flagged' => $message->flag->flagstatus));
-                }
-                if ($message->propertyExists('categories')) {
-                    $this->_connector->mail_ensureMessageFlags($message->categories);
-                    $this->_imap->categoriesToFlags($folderid, $message->categories, $id);
-                    $stat['categories'] = $message->categories;
                 }
             } else {
                 $this->_endBuffer();
@@ -2049,16 +1996,6 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
      * @param array $settings  An array of settings to return. Currently
      *                         supported:
      *  - oof: The out of office message information.
-     *     @todo
-     *  - userinformation:  UserInformation requests.
-     *     - emailaddresses: User's From email addresses.
-     *     - primarysmtpaddress: (@deprecated) The SMTP address used for the
-     *                           default account. Only supported in EAS >= 14.1
-     *                           using accounts.
-     *     - status: EAS status code.
-     *     - accounts: Array with each entry containing emailaddresses, fullname
-     *         for additional identities. The primary address should be the
-     *         first in the emailaddresses array.
      *
      * @param stdClass $device  The device to obtain settings for.
      *
@@ -2091,27 +2028,20 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
                 );
                 break;
             case 'userinformation':
-                $identities= $GLOBALS['injector']
+                $ident = $GLOBALS['injector']
                     ->getInstance('Horde_Core_Factory_Identity')
                     ->create($GLOBALS['registry']->getAuth());
 
-                $default_email = $identities->getValue('from_addr');
-                $email_addresses = array($default_email);
-                $accounts = array();
+                $default_email = $ident->getValue('from_addr');
                 if ($this->_version >= Horde_ActiveSync::VERSION_FOURTEENONE) {
-                    // @TODO Do clients actually support multiple accounts?
-                    // Can't find one that does. For now, only return the
-                    // default identity.
-                    $ident = $identities->get();
-                    $emails = !empty($ident['alias_addr']) ? $ident['alias_addr'] : array();
-                    $emails[] = $ident['from_addr'];
-                    $accounts[] = array('fullname' => $ident['fullname'], 'emailaddresses' => array_reverse($emails));
+                    $email_addresses = array_keys(array_flip($ident->getAll('from_addr')));
+                } else {
+                    $email_addresses = array($default_email);
                 }
                 $res['userinformation'] = array(
                     'emailaddresses' => $email_addresses,
                     'primarysmtpaddress' => $default_email,
-                    'status' => Horde_ActiveSync_Request_Settings::STATUS_SUCCESS,
-                    'accounts' => $accounts
+                    'status' => Horde_ActiveSync_Request_Settings::STATUS_SUCCESS
                 );
             }
         }
@@ -2534,7 +2464,7 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
         if ($perms->exists('horde:activesync:max_devices')) {
             $max_devices = $this->_getPolicyValue('max_devices', $perms->getPermissions('horde:activesync:max_devices', $registry->getAuth()));
             $state = $injector->getInstance('Horde_ActiveSyncState');
-            $devices = $state->listDevices($registry->getAuth());
+            $devices = $state->listDevices($registry->getAuth(), false);
             if (count($devices) >= $max_devices) {
                 $this->_logger->info(sprintf(
                     'Maximum number of devices of %d reached for %s.',
@@ -3235,9 +3165,6 @@ class Horde_Core_ActiveSync_Driver extends Horde_ActiveSync_Driver_Base
             try {
                 $uid = $this->_imap->getUidFromMid($mid, $folder);
             } catch (Horde_Exception_NotFound $e) {
-                continue;
-            } catch (Horde_ActiveSync_Exception $e) {
-                $this->_logger->err($e->getMessage());
                 continue;
             }
             $s_changes[] = $uid;

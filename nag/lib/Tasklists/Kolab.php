@@ -50,5 +50,4 @@ class Nag_Tasklists_Kolab extends Nag_Tasklists_Base
     {
         $share->set('default', true);
     }
-
 }

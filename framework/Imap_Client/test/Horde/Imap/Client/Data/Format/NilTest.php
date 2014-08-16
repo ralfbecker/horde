@@ -24,36 +24,41 @@
  * @subpackage UnitTests
  */
 class Horde_Imap_Client_Data_Format_NilTest
-extends Horde_Imap_Client_Data_Format_TestBase
+extends PHPUnit_Framework_TestCase
 {
-    protected function getTestObs()
+    private $ob;
+    private $ob2;
+
+    public function setUp()
     {
-        return array(
-            new Horde_Imap_Client_Data_Format_Nil(),
-            /* Argument is ignored. */
-            new Horde_Imap_Client_Data_Format_Nil('Foo')
-        );
+        $this->ob = new Horde_Imap_Client_Data_Format_Nil();
+        /* Argument is ignored. */
+        $this->ob2 = new Horde_Imap_Client_Data_Format_Nil('Foo');
     }
 
-    /**
-     * @dataProvider obsProvider
-     */
-    public function testStringRepresentation($ob)
+    public function testStringRepresentation()
     {
         $this->assertEquals(
             '',
-            strval($ob)
+            strval($this->ob)
+        );
+
+        $this->assertEquals(
+            '',
+            strval($this->ob2)
         );
     }
 
-    /**
-     * @dataProvider obsProvider
-     */
-    public function testEscape($ob)
+    public function testEscape()
     {
         $this->assertEquals(
             'NIL',
-            $ob->escape()
+            $this->ob->escape()
+        );
+
+        $this->assertEquals(
+            'NIL',
+            $this->ob2->escape()
         );
     }
 

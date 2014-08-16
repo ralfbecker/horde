@@ -11,6 +11,11 @@ TODO
 
 - Email recurrence related properties for recurring meeting requests.
 
+- Email categories - possible to map to custom IMAP Flags?
+
+- Support EMPTY_FOLDER commands in ITEMOPERATIONS requests. Need a client that
+  sends this request to implement properly.
+
 - SCHEMA support in ITEMOPERATIONS requests. Don't have client that supports
   currently.
 
@@ -25,7 +30,6 @@ TODO
 - Perhaps if we use a shared memory solution, we can also possibly create
   some sort of top-like application to monitor EAS usage. Make it easier to
   find troublesome devices etc....
-
 
 BC BREAKING (i.e., Horde 6).
 ============================
@@ -89,13 +93,3 @@ BC BREAKING (i.e., Horde 6).
   backend and the let the backend decide what to do with it. Since the SMS
   ability of EAS uses the device to actually send the SMS, I could foresee
   some added ability in IMP, or maybe a separate app, that allows managing this.
-
-- Break up Horde_ActiveSync_Driver::getMessage(). Add _getCalendarMessage() etc...
-  and move base logic for calling the correct method into the base class.
-
-- Decouple the codepage definitions from the Encoder/Decoder class. Break them
-  out into individual classes.
-
-- Pass the Horde_ActiveSync::FILTERTYPE_ constant directly to the driver, and
-  let the driver calculate the needed time slice if needed. Needed to correctly
-  deal with Horde_ActiveSync::FILTERTYPE_INCOMPLETETASKS.

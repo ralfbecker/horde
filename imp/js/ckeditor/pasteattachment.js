@@ -10,6 +10,8 @@ CKEDITOR.plugins.add('pasteattachment', {
 
     init: function(editor)
     {
+        var active_img = [];
+
         function attachCallback(r)
         {
             var iframe = editor.getThemeSpace('contents').$.down('IFRAME');
@@ -19,7 +21,32 @@ CKEDITOR.plugins.add('pasteattachment', {
                     elt.setAttribute(r.img.related[0], r.img.related[1]);
                     elt.setAttribute('height', elt.height);
                     elt.setAttribute('width', elt.width);
-                    IMP_Ckeditor_Imagepoll.add(elt);
+
+                    /* CKEditor 3 doesn't support onchange event for content
+                     * body.  Poll the attached images to detect deletions,
+                     * since this may influence attachment limits. */
+                    if (!active_img.size()) {
+                        new PeriodicalExecuter(function(pe) {
+                            active_img.each(function(a) {
+                                if (!a.parentNode) {
+                                    active_img = active_img.without(a);
+
+                                    if (!active_img.size()) {
+                                        pe.stop();
+                                        DimpCore.doAction(
+                                            'deleteAttach',
+                                            DimpCompose.actionParams({
+                                                atc_indices: Object.toJSON([ a.getAttribute('dropatc_id') ]),
+                                                quiet: 1
+                                            })
+                                        );
+                                    }
+                                }
+                            });
+                        }, 2);
+                    }
+
+                    active_img.push(elt);
                 } else {
                     elt.parentNode.removeChild(elt);
                 }
@@ -28,7 +55,7 @@ CKEDITOR.plugins.add('pasteattachment', {
 
         function uploadAtc(files)
         {
-            DimpCompose.attachlist.uploadAttach(
+            DimpCompose.uploadAttachmentAjax(
                 files,
                 { img_data: 1 },
                 attachCallback
@@ -46,7 +73,7 @@ CKEDITOR.plugins.add('pasteattachment', {
             });
         }
 
-        function fireEventInParent(type, e)
+        function fireEventInParent(type)
         {
             var evt;
 
@@ -56,9 +83,6 @@ CKEDITOR.plugins.add('pasteattachment', {
                 evt = document.createEvent('DragEvent');
                 evt.initEvent(type, true, true);
             }
-
-            evt.memo = e.data.$;
-
             editor.getThemeSpace('contents').$.dispatchEvent(evt);
         }
 
@@ -68,19 +92,13 @@ CKEDITOR.plugins.add('pasteattachment', {
                     error = 0,
                     upload = [];
 
-                fireEventInParent('drop', e2);
+                fireEventInParent('drop');
 
                 /* Only handle file data here. For other data (i.e. text)
-                 * have the browser handle it natively, except for IE -- it is
-                 * buggy so grab the data from the dataTransfer object
-                 * ourselves and insert. */
-                if (!DragHandler.isFileDrag(d)) {
-                    if (Prototype.Browser.IE &&
-                        d.dataTransfer.types &&
-                        d.dataTransfer.types[0] === 'Text') {
-                        editor.insertText(d.dataTransfer.getData('Text'));
-                        e2.data.preventDefault();
-                    }
+                 * have the browser handle it natively. */
+                if (!d.dataTransfer ||
+                    !d.dataTransfer.files ||
+                    !d.dataTransfer.files.length) {
                     return;
                 }
 
@@ -105,12 +123,9 @@ CKEDITOR.plugins.add('pasteattachment', {
                     );
                 }
             });
-
-            editor.document.on('dragover', function(e3) {
-                if (Prototype.Browser.IE) {
-                    e3.data.preventDefault();
-                }
-                fireEventInParent('dragover', e3);
+            editor.document.on('dragover', function(e) {
+                e.data.preventDefault();
+                fireEventInParent('dragover');
             });
         });
 

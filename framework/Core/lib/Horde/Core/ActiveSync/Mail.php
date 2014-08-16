@@ -160,14 +160,8 @@ class Horde_Core_ActiveSync_Mail
     public function setRawMessage(Horde_ActiveSync_Rfc822 $raw)
     {
         $this->_headers = $raw->getHeaders();
-
-        // Attempt to always use the identity's From address, but fall back
-        // to the device's sent value if it's not present.
-        $from = $this->_getIdentityFromAddress();
-        if (!empty($from)) {
-            $this->_headers->removeHeader('From');
-            $this->_headers->addHeader('From', $from);
-        }
+        $this->_headers->removeHeader('From');
+        $this->_headers->addHeader('From', $this->_getIdentityFromAddress());
         $this->_raw = $raw;
     }
 
@@ -357,7 +351,9 @@ class Horde_Core_ActiveSync_Mail
             return $smart_text . $this->_forwardText($body_data, $base_part->getPart($plain_id));
         }
 
-        return $smart_text . $this->_replyText($body_data, $base_part->getPart($plain_id));
+        return ($this->_replyTop ? $smart_text : '')
+            . $this->_replyText($body_data, $base_part->getPart($plain_id))
+            . ($this->_replyTop ? '' : $smart_text);
     }
 
     /**
@@ -389,7 +385,9 @@ class Horde_Core_ActiveSync_Mail
         if ($this->_forward) {
             return $smart_text . $this->_forwardText($body_data, $base_part->getPart($html_id), true);
         }
-        return $smart_text . $this->_replyText($body_data, $base_part->getPart($html_id), true);
+        return ($this->_replyTop ? $smart_text : '')
+            . $this->_replyText($body_data, $base_part->getPart($html_id), true)
+            . ($this->_replyTop ? '' : $smart_text);
     }
 
     /**
@@ -421,9 +419,6 @@ class Horde_Core_ActiveSync_Mail
         $as_ident = $prefs->getValue('activesync_identity');
         $name = $ident->getValue('fullname', $as_ident == 'horde' ? $prefs->getValue('default_identity') : $prefs->getValue('activesync_identity'));
         $from_addr = $ident->getValue('from_addr', $as_ident == 'horde' ? $prefs->getValue('default_identity') : $prefs->getValue('activesync_identity'));
-        if (empty($from_addr)) {
-            return;
-        }
         $rfc822 = new Horde_Mail_Rfc822_Address($from_addr);
         $rfc822->personal = $name;
 
@@ -441,7 +436,18 @@ class Horde_Core_ActiveSync_Mail
      */
     protected function _forwardText(array $body_data, Horde_Mime_Part $part, $html = false)
     {
-        return $this->_msgBody($body_data, $part, $html);
+        $fwd_headers = $this->imapMessage->getForwardHeaders();
+        $from = $this->imapMessage->getFromAddress();
+
+        $msg = $this->_msgBody($body_data, $part, $html);
+        $msg_pre = "\n----- "
+            . ($from ? sprintf(Horde_Core_Translation::t("Forwarded message from %s"), $from) : Horde_Core_Translation::t("Forwarded message"))
+            . " -----\n" . $fwd_headers . "\n";
+        $msg_post = "\n\n----- " . Horde_Core_Translation::t("End forwarded message") . " -----\n";
+
+        return ($html ? self::text2html($msg_pre) : $msg_pre)
+            . $msg
+            . ($html ? self::text2html($msg_post) : $msg_post);
     }
 
     /**
@@ -455,13 +461,16 @@ class Horde_Core_ActiveSync_Mail
      */
     protected function _replyText(array $body_data, Horde_Mime_Part $part, $html = false)
     {
+        $headers = $this->imapMessage->getHeaders();
+        $from = strval($headers->getOb('from'));
+        $msg_pre = ($from ? sprintf(Horde_Core_Translation::t("Quoting %s"), $from) : Horde_Core_Translation::t("Quoted")) . "\n\n";
         $msg = $this->_msgBody($body_data, $part, $html, true);
         if (!empty($msg) && $html) {
-            return self::HTML_BLOCKQUOTE . $msg . '</blockquote><br /><br />';
+            return '<p>' . self::text2html($msg_pre) . '</p>' . self::HTML_BLOCKQUOTE . $msg . '</blockquote><br /><br />';
         }
         return empty($msg)
             ? '[' . Horde_Core_Translation::t("No message body text") . ']'
-            : $msg;
+            : $msg_pre . $msg;
     }
 
     /**

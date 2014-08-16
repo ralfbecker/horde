@@ -151,10 +151,7 @@ class IMP_Test extends Horde_Test
                 '<blockquote><em>Namespace Information</em><blockquote><pre>';
 
             try {
-                $namespaces = $imap_client->getNamespaces(
-                    array(),
-                    array('ob_return' => true)
-                );
+                $namespaces = $imap_client->getNamespaces();
                 foreach ($namespaces as $val) {
                     switch ($val->type) {
                     case $val::NS_PERSONAL:

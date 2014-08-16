@@ -52,67 +52,36 @@ class Horde_String_Transliterate
      */
     static public function toAscii($str)
     {
-        $methods = array(
-            '_intlToAscii',
-            '_iconvToAscii',
-            '_fallbackToAscii'
-        );
-
-        foreach ($methods as $val) {
-            if (($out = call_user_func(array(__CLASS__, $val), $str)) !== false) {
-                return $out;
-            }
+        switch (true) {
+        case class_exists('Transliterator'):
+            return self::_intlToAscii($str);
+        case extension_loaded('iconv'):
+            return self::_iconvToAscii($str);
+        default:
+            return self::_fallbackToAscii($str);
         }
-
-        return $str;
     }
 
     /**
-     * Transliterate using the Transliterator package.
-     *
-     * @param string $str  Input string (UTF-8).
-     *
-     * @return mixed  Transliterated string (UTF-8), or false on error.
      */
     static protected function _intlToAscii($str)
     {
-        if (class_exists('Transliterator')) {
-            if (!isset(self::$_transliterator)) {
-                self::$_transliterator = Transliterator::create(
-                    'Any-Latin; Latin-ASCII'
-                );
-            }
-
-            if (!is_null(self::$_transliterator)) {
-                /* Returns false on error. */
-                return self::$_transliterator->transliterate($str);
-            }
+        if (!isset(self::$_transliterator)) {
+            self::$_transliterator = Transliterator::create(
+                'Any-Latin; Latin-ASCII'
+            );
         }
-
-        return false;
+        return self::$_transliterator->transliterate($str);
     }
 
     /**
-     * Transliterate using the iconv extension.
-     *
-     * @param string $str  Input string (UTF-8).
-     *
-     * @return mixed  Transliterated string (UTF-8), or false on error.
      */
     static protected function _iconvToAscii($str)
     {
-        return extension_loaded('iconv')
-            /* Returns false on error. */
-            ? iconv('UTF-8', 'ASCII//TRANSLIT', $str)
-            : false;
+        return iconv('UTF-8', 'ASCII//TRANSLIT', $str);
     }
 
     /**
-     * Transliterate using a built-in ASCII mapping.
-     *
-     * @param string $str  Input string (UTF-8).
-     *
-     * @return string  Transliterated string (UTF-8).
      */
     static protected function _fallbackToAscii($str)
     {
@@ -189,7 +158,6 @@ class Horde_String_Transliterate
             );
         }
 
-        /* This should never return false. */
-        return strtr(strval($str), self::$_map);
+        return strtr($str, self::$_map);
     }
 }

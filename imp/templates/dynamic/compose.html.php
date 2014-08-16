@@ -156,10 +156,11 @@
      </td>
      <td>
       <div id="atcdrop" style="display:none">
-       <?php echo _("Drop file(s) here to attach.") ?>
+       <?php echo _("Drop file here to attach.") ?>
       </div>
       <div id="atcdiv">
        <span id="upload_limit" style="display:none"><?php echo _("The attachment limit has been reached.") ?></span>
+       <span id="upload_wait" style="display:none"></span>
        <span>
         <label id="compose_upload_add" for="upload"><?php echo _("Add Attachment") ?></label>
         <?php echo $this->fileFieldTag('file_upload[]', array('id' => 'upload', 'multiple' => 'multiple')) ?>
@@ -219,8 +220,3 @@
 <?php endif; ?>
  </div>
 </form>
-
-<div id="rteloading" style="display:none"></div>
-<span id="rteloadingtxt" style="display:none">
- <?php echo _("Loading...") ?>
-</span>

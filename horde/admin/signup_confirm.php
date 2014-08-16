@@ -11,7 +11,7 @@
  * @package  Horde
  */
 
-require_once __DIR__ . '/../lib/Application.php';
+require_once __DIR__ . '/../lib/base.php';
 Horde_Registry::appInit('horde', array('authentication' => 'none'));
 
 $vars = $injector->getInstance('Horde_Variables');

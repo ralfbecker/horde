@@ -10,9 +10,9 @@
   <email>jan@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-08-04</date>
+ <date>2014-06-23</date>
  <version>
-  <release>3.0.1</release>
+  <release>3.0.0</release>
   <api>3.0.0</api>
  </version>
  <stability>
@@ -21,7 +21,7 @@
  </stability>
  <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
  <notes>
-* 
+* [jan] Remove Freecode support.
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -286,23 +286,10 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-08-04</date>
+   <date>2014-06-23</date>
    <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
    <notes>
 * [jan] Remove Freecode support.
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>3.0.1</release>
-    <api>3.0.0</api></version>
-   <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-08-04</date>
-   <license uri="http://www.horde.org/licenses/lgpl21">LGPL-2.1</license>
-   <notes>
-* 
    </notes>
   </release>
  </changelog>

@@ -10,9 +10,9 @@
   <email>slusarz@horde.org</email>
   <active>yes</active>
  </lead>
- <date>2014-07-03</date>
+ <date>2014-02-11</date>
  <version>
-  <release>1.0.7</release>
+  <release>1.0.4</release>
   <api>1.0.0</api>
  </version>
  <stability>
@@ -157,46 +157,7 @@
    <stability>
     <release>stable</release>
     <api>stable</api></stability>
-   <date>2014-07-01</date>
-   <license uri="http://opensource.org/licenses/MIT">MIT (Expat)</license>
-   <notes>
-* [jan] Update lz4 source to r118 (CVE-2014-4611).
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>1.0.5</release>
-    <api>1.0.0</api></version>
-   <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-07-03</date>
-   <license uri="http://opensource.org/licenses/MIT">MIT (Expat)</license>
-   <notes>
-* [mms] Fix compilation on ancient versions of PHP 5.3 (Bug #13310).
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>1.0.6</release>
-    <api>1.0.0</api></version>
-   <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-07-03</date>
-   <license uri="http://opensource.org/licenses/MIT">MIT (Expat)</license>
-   <notes>
-* [jan] Update lz4 source to r119 (CVE-2014-4715).
-   </notes>
-  </release>
-  <release>
-   <version>
-    <release>1.0.7</release>
-    <api>1.0.0</api></version>
-   <stability>
-    <release>stable</release>
-    <api>stable</api></stability>
-   <date>2014-07-03</date>
+   <date>2014-02-10</date>
    <license uri="http://opensource.org/licenses/MIT">MIT (Expat)</license>
    <notes>
 * 

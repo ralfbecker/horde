@@ -220,10 +220,10 @@ class IMP_Crypt_Smime extends Horde_Crypt_Smime
             }
         } catch (Horde_Exception_HookNotSet $e) {}
 
-        $contacts = $injector->getInstance('IMP_Contacts');
+        $params = $injector->getInstance('IMP_Contacts')->getAddressbookSearchParams();
 
         try {
-            $key = $registry->call('contacts/getField', array($address, self::PUBKEY_FIELD, $contacts->sources, true, true));
+            $key = $registry->call('contacts/getField', array($address, self::PUBKEY_FIELD, $params['sources'], true, true));
         } catch (Horde_Exception $e) {
             /* See if the address points to the user's public key. */
             $personal_pubkey = $this->getPersonalPublicKey();
@@ -249,11 +249,11 @@ class IMP_Crypt_Smime extends Horde_Crypt_Smime
      */
     public function listPublicKeys()
     {
-        $sources = $GLOBALS['injector']->getInstance('IMP_Contacts')->sources;
+        $params = $GLOBALS['injector']->getInstance('IMP_Contacts')->getAddressbookSearchParams();
 
-        return empty($sources)
+        return empty($params['sources'])
             ? array()
-            : $GLOBALS['registry']->call('contacts/getAllAttributeValues', array(self::PUBKEY_FIELD, $sources));
+            : $GLOBALS['registry']->call('contacts/getAllAttributeValues', array(self::PUBKEY_FIELD, $params['sources']));
     }
 
     /**
@@ -265,17 +265,8 @@ class IMP_Crypt_Smime extends Horde_Crypt_Smime
      */
     public function deletePublicKey($email)
     {
-        global $injector, $registry;
-
-        $registry->call(
-            'contacts/deleteField',
-            array(
-                $email,
-                self::PUBKEY_FIELD,
-                $injector->getInstance('IMP_Contacts')->sources,
-                $params['sources']
-            )
-        );
+        $params = $GLOBALS['injector']->getInstance('IMP_Contacts')->getAddressbookSearchParams();
+        $GLOBALS['registry']->call('contacts/deleteField', array($email, self::PUBKEY_FIELD, $params['sources']));
     }
 
     /**

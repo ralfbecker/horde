@@ -42,6 +42,11 @@ class Horde_Imap_Client_MapTest extends PHPUnit_Framework_TestCase
         $this->map = new Horde_Imap_Client_Ids_Map($this->lookup);
     }
 
+    public function tearDown()
+    {
+        unset($this->lookup, $this->map);
+    }
+
     public function testUpdate()
     {
         $map = new Horde_Imap_Client_Ids_Map();
@@ -94,107 +99,100 @@ class Horde_Imap_Client_MapTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    /**
-     * @dataProvider lookupProvider
-     */
-    public function testLookup($range, $expected = null)
+    public function testLookup()
     {
         $map = clone $this->map;
 
         $this->assertEquals(
-            $expected ?: $map->map,
-            $map->lookup($range)
-        );
-    }
-
-    public function lookupProvider()
-    {
-        return array(
             array(
-                new Horde_Imap_Client_Ids('5:15'),
-                array(
-                    2 => 5,
-                    4 => 10,
-                    6 => 15
-                )
+                2 => 5,
+                4 => 10,
+                6 => 15
             ),
-            array(
-                new Horde_Imap_Client_Ids('2:6', true),
-                array(
-                    2 => 5,
-                    4 => 10,
-                    6 => 15
-                )
-            ),
-            array(
-                new Horde_Imap_Client_Ids(Horde_Imap_Client_Ids::ALL)
-            )
+            $map->lookup(new Horde_Imap_Client_Ids('5:15'))
         );
-    }
-
-    /**
-     * @dataProvider removeProvider
-     */
-    public function testRemove($range, $expected)
-    {
-        $map = clone $this->map;
-        $map->remove($range);
 
         $this->assertEquals(
-            $expected,
+            array(
+                2 => 5,
+                4 => 10,
+                6 => 15
+            ),
+            $map->lookup(new Horde_Imap_Client_Ids('2:6', true))
+        );
+
+        $this->assertEquals(
+            $map->map,
+            $map->lookup(new Horde_Imap_Client_Ids(Horde_Imap_Client_Ids::ALL))
+        );
+    }
+
+    public function testRemove()
+    {
+        $map = clone $this->map;
+        $map->remove(new Horde_Imap_Client_Ids('10'));
+
+        $this->assertEquals(
+            array(
+                2 => 5,
+                5 => 15,
+                7 => 20,
+                9 => 25,
+                11 => 30
+            ),
             $map->map
         );
-    }
 
-    public function removeProvider()
-    {
-        return array(
+        $map = clone $this->map;
+        $map->remove(new Horde_Imap_Client_Ids('4', true));
+
+        $this->assertEquals(
             array(
-                new Horde_Imap_Client_Ids('10'),
-                array(
-                    2 => 5,
-                    5 => 15,
-                    7 => 20,
-                    9 => 25,
-                    11 => 30
-                )
+                2 => 5,
+                5 => 15,
+                7 => 20,
+                9 => 25,
+                11 => 30
             ),
+            $map->map
+        );
+
+        $map = clone $this->map;
+        $map->remove(new Horde_Imap_Client_Ids('10:15,25'));
+
+        $this->assertEquals(
             array(
-                new Horde_Imap_Client_Ids('4', true),
-                array(
-                    2 => 5,
-                    5 => 15,
-                    7 => 20,
-                    9 => 25,
-                    11 => 30
-                )
+                2 => 5,
+                6 => 20,
+                9 => 30
             ),
+            $map->map
+        );
+
+        // Efficient sequence number remove.
+        $map = clone $this->map;
+        $map->remove(new Horde_Imap_Client_Ids(array('10', '6', '4'), true));
+
+        $this->assertEquals(
             array(
-                new Horde_Imap_Client_Ids('10:15,25'),
-                array(
-                    2 => 5,
-                    6 => 20,
-                    9 => 30
-                )
+                2 => 5,
+                6 => 20,
+                9 => 30
             ),
-            // Efficient sequence number remove.
+            $map->map
+        );
+
+        // Inefficient sequence number remove.
+        $map = clone $this->map;
+        $map->remove(new Horde_Imap_Client_Ids(array('4', '5', '8'), true));
+
+        $this->assertEquals(
             array(
-                new Horde_Imap_Client_Ids(array('10', '6', '4'), true),
-                array(
-                    2 => 5,
-                    6 => 20,
-                    9 => 30
-                )
+                2 => 5,
+                6 => 20,
+                9 => 30
             ),
-            // Inefficient sequence number remove.
-            array(
-                new Horde_Imap_Client_Ids(array('4', '5', '8'), true),
-                array(
-                    2 => 5,
-                    6 => 20,
-                    9 => 30
-                )
-            )
+            $map->map
         );
     }
 

@@ -23,7 +23,6 @@ var IngoNewFolder = {
             (folder = window.prompt(this.folderprompt + '\n', ''))  &&
             !folder.empty()) {
             this.setNewFolder(elt, folder);
-            e.stop();
         }
     },
 

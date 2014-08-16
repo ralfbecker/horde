@@ -24,46 +24,51 @@
  * @subpackage UnitTests
  */
 class Horde_Imap_Client_Data_Format_DateTest
-extends Horde_Imap_Client_Data_Format_TestBase
+extends PHPUnit_Framework_TestCase
 {
-    protected function getTestObs()
+    private $ob;
+    private $ob2;
+    private $ob3;
+
+    public function setUp()
     {
-        return array(
-            new Horde_Imap_Client_Data_Format_Date('January 1, 2010'),
-            new Horde_Imap_Client_Data_Format_Date('@1262304000')
+        $this->ob = new Horde_Imap_Client_DateTime('January 1, 2010');
+        $this->ob2 = new Horde_Imap_Client_Data_Format_Date($this->ob);
+        $this->ob3 = new Horde_Imap_Client_Data_Format_Date('@1262304000');
+    }
+
+    public function testConstructor()
+    {
+        $this->assertSame(
+            $this->ob,
+            $this->ob2->getData()
         );
     }
 
-    /**
-     * @dataProvider obsProvider
-     */
-    public function testConstructor($ob)
-    {
-        $this->assertEquals(
-            new Horde_Imap_Client_DateTime('January 1, 2010'),
-            $ob->getData()
-        );
-    }
-
-    /**
-     * @dataProvider obsProvider
-     */
-    public function testStringRepresentation($ob)
+    public function testStringRepresentation()
     {
         $this->assertEquals(
             '1-Jan-2010',
-            strval($ob)
+            strval($this->ob2)
+        );
+
+        $this->assertEquals(
+            '1-Jan-2010',
+            strval($this->ob3)
         );
     }
 
-    /**
-     * @dataProvider obsProvider
-     */
-    public function testEscape($ob)
+
+    public function testEscape()
     {
         $this->assertEquals(
             '1-Jan-2010',
-            $ob->escape()
+            $this->ob2->escape()
+        );
+
+        $this->assertEquals(
+            '1-Jan-2010',
+            $this->ob3->escape()
         );
     }
 

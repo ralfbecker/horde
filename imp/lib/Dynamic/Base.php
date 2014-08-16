@@ -77,7 +77,10 @@ abstract class IMP_Dynamic_Base
 
         $this->_addBaseVars();
 
-        $page_output->addScriptPackage('IMP_Script_Package_DynamicBase');
+        $page_output->addScriptFile('dimpcore.js');
+        $page_output->addScriptFile('viewport_utils.js');
+        $page_output->addScriptFile('contextsensitive.js', 'horde');
+        $page_output->addScriptFile('imple.js', 'horde');
 
         $mimecss = new Horde_Themes_Element('mime.css');
         $page_output->addStylesheet($mimecss->fs, $mimecss->uri);
@@ -123,11 +126,12 @@ abstract class IMP_Dynamic_Base
      */
     protected function _addBaseVars()
     {
-        global $prefs, $registry;
+        global $prefs, $registry, $session;
 
         /* Variables used in core javascript files. */
         $this->js_conf = array_filter(array(
             // URL variables
+            'MAX_FILE_SIZE' => intval($session->get('imp', 'file_upload')),
             'URI_COMPOSE' => strval(IMP_Dynamic_Compose::url()->setRaw(true)),
             'URI_VIEW' => strval(Horde::url('view.php')->add(IMP_Contents_View::addToken())),
 
@@ -189,7 +193,8 @@ abstract class IMP_Dynamic_Base
         /* Gettext strings used in core javascript files. */
         $this->js_text = array(
             'allparts_label' => _("Parts"),
-            'emailcopy' => _("Your browser security settings don't permit direct access to the clipboard.") . "\n" . _("You need to either use the keyboard (Ctrl/Cmd + C) or right click on the selected address to access the Copy command."),
+            'emailcopy' => _("Your browser security settings don't permit the editor to copy to the clipboard.") . "\n" . _("You need to manually use the keyboard instead (Ctrl/Cmd + C)."),
+            'loading' => _("Loading..."),
             'strip_warn' => _("Are you sure you wish to PERMANENTLY delete this attachment?"),
             'verify' => _("Verifying...")
         );

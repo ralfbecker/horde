@@ -94,7 +94,6 @@ class Ingo_Script_Sieve extends Ingo_Script_Base
         'greater than',
         'greater than or equal to',
         'regex',
-        'not regex',
         'matches',
         'not matches'
     );
@@ -698,7 +697,6 @@ class Ingo_Script_Sieve extends Ingo_Script_Base
                 case 'ends with':
                 case 'not ends with':
                 case 'regex':
-                case 'not regex':
                 case 'matches':
                 case 'not matches':
                     $comparator = (isset($condition['case']) &&
@@ -904,7 +902,6 @@ class Ingo_Script_Sieve extends Ingo_Script_Base
                         break;
 
                     case 'regex':
-                    case 'not regex':
                         $vals['match-type'] = ':regex';
                         if ($use_address_test) {
                             $tmp = new Ingo_Script_Sieve_Test_Address($vals);
@@ -912,9 +909,6 @@ class Ingo_Script_Sieve extends Ingo_Script_Base
                             $tmp = new Ingo_Script_Sieve_Test_Body($vals);
                         } else {
                             $tmp = new Ingo_Script_Sieve_Test_Header($vals);
-                        }
-                        if ($condition['match'] == 'not regex') {
-                            $tmp = new Ingo_Script_Sieve_Test_Not($tmp);
                         }
                         $test->addTest($tmp);
                         break;

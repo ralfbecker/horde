@@ -19,72 +19,9 @@
  * @copyright 2012-2014 Horde LLC
  * @license   http://www.horde.org/licenses/gpl GPL
  * @package   IMP
- *
- * @property-read boolean $changed  Has the internal data changed?
- * @property-read array $fields  The list of configured search fields.
- * @property-read array $sources  The list of configured sources.
- * @property-read array $source_list  The list of sources in the contacts
- *                                    backend.
  */
-class IMP_Contacts implements Serializable
+class IMP_Contacts
 {
-    /**
-     * Has the internal data changed?
-     *
-     * @var boolean
-     */
-    private $_changed = false;
-
-    /**
-     * The list of search fields.
-     *
-     * @var array
-     */
-    private $_fields;
-
-    /**
-     * The list of sources.
-     *
-     * @var array
-     */
-    private $_sources;
-
-    /**
-     */
-    public function __get($name)
-    {
-        global $registry;
-
-        switch ($name) {
-        case 'changed':
-            return $this->_changed;
-
-        case 'fields':
-        case 'sources':
-            if (!isset($this->_fields)) {
-                $this->_init();
-            }
-            return $this->{'_' . $name};
-
-        case 'source_list':
-            if ($registry->hasMethod('contacts/sources')) {
-                try {
-                    return $registry->call('contacts/sources');
-                } catch (Horde_Exception $e) {}
-            }
-            return array();
-        }
-    }
-
-    /**
-     * Clear cached contacts data.
-     */
-    public function clearCache()
-    {
-        unset($this->_fields, $this->_sources);
-        $this->_changed = true;
-    }
-
     /**
      * Adds a contact to the user defined address book.
      *
@@ -119,96 +56,21 @@ class IMP_Contacts implements Serializable
     }
 
     /**
-     * Search the addressbook for email addresses.
+     * Determines parameters needed to do an address search
      *
-     * @param string $str  The search string.
-     * @param array $opts  Additional options:
-     *   - email_exact: (boolean) Require exact match in e-mail?
-     *   - levenshtein: (boolean) Do levenshtein sorting of results?
-     *   - sources: (array) Use this list of sources instead of default.
-     *
-     * @return Horde_Mail_Rfc822_List  Results.
+     * @return array  An array with two keys: 'fields' and 'sources'.
      */
-    public function searchEmail($str, array $opts = array())
-    {
-        global $registry;
-
-        if (!$registry->hasMethod('contacts/search')) {
-            return new Horde_Mail_Rfc822_List();
-        }
-
-        $sources = empty($opts['sources'])
-            ? $this->sources
-            : $opts['sources'];
-
-        if (empty($opts['email_exact'])) {
-            $customStrict = array();
-            $fields = $this->fields;
-            $returnFields = array('email', 'name');
-        } else {
-            $customStrict = $returnFields = array('email');
-            $fields = array_fill_keys($sources, array('email'));
-        }
-
-        try {
-            $search = $registry->call('contacts/search', array($str, array(
-                'customStrict' => $customStrict,
-                'fields' => $fields,
-                'returnFields' => $returnFields,
-                'rfc822Return' => true,
-                'sources' => $sources
-            )));
-        } catch (Horde_Exception $e) {
-            Horde::log($e, 'ERR');
-            return new Horde_Mail_Rfc822_List();
-        }
-
-        if (empty($opts['levenshtein'])) {
-            return $search;
-        }
-
-        $sort_list = array();
-        foreach ($search->base_addresses as $val) {
-            $sort_list[strval($val)] = @levenshtein($str, $val);
-        }
-        asort($sort_list, SORT_NUMERIC);
-
-        return new Horde_Mail_Rfc822_List(array_keys($sort_list));
-    }
-
-    /**
-     * Initializes parameters needed to do an address search.
-     */
-    private function _init()
+    public function getAddressbookSearchParams()
     {
         global $prefs;
 
         $fields = json_decode($prefs->getValue('search_fields'), true);
         $src = json_decode($prefs->getValue('search_sources'));
 
-        $this->_fields = empty($fields) ? array() : $fields;
-        $this->_sources = empty($src) ? array() : $src;
-
-        $this->_changed = true;
-    }
-
-    /* Serializable methods. */
-
-    /**
-     */
-    public function serialize()
-    {
-        return json_encode(array(
-            $this->_fields,
-            $this->_sources
-        ));
-    }
-
-    /**
-     */
-    public function unserialize($data)
-    {
-        list($this->_fields, $this->_sources) = json_decode($data, true);
+        return array(
+            'fields' => empty($fields) ? array() : $fields,
+            'sources' => empty($src) ? array() : $src
+        );
     }
 
 }

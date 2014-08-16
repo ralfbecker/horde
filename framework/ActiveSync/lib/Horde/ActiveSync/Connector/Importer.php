@@ -185,21 +185,15 @@ class Horde_ActiveSync_Connector_Importer
         }
         $stat['serverid'] = $this->_folderId;
 
-        // Record the state of the message, but only if we aren't updating
-        // categories. @todo This should be fixed, but for now we can't
-        // differentiate between different flag changes. Note that categories
-        // only exists for email changes so for non email this will still
-        // work as before.
-        if (!array_key_exists('categories', $stat) || $stat['categories'] === false) {
-            $this->_state->updateState(
-                ($message instanceof Horde_ActiveSync_Message_Mail
-                    ? Horde_ActiveSync::CHANGE_TYPE_FLAGS
-                    : Horde_ActiveSync::CHANGE_TYPE_CHANGE),
-                $stat,
-                Horde_ActiveSync::CHANGE_ORIGIN_PIM,
-                $this->_as->driver->getUser(),
-                $clientid);
-        }
+        // Record the state of the message
+        $this->_state->updateState(
+            ($message instanceof Horde_ActiveSync_Message_Mail
+                ? Horde_ActiveSync::CHANGE_TYPE_FLAGS
+                : Horde_ActiveSync::CHANGE_TYPE_CHANGE),
+            $stat,
+            Horde_ActiveSync::CHANGE_ORIGIN_PIM,
+            $this->_as->driver->getUser(),
+            $clientid);
 
         return $stat['id'];
     }
@@ -209,14 +203,14 @@ class Horde_ActiveSync_Connector_Importer
      * modified.
      *
      * @param array $ids          Server message uids to delete
-     * @param string $class       The server collection class.
+     * @param string $collection  The server collection type.
      *
      * @return array  An array containing ids of successfully deleted messages.
      */
-    public function importMessageDeletion(array $ids, $class)
+    public function importMessageDeletion(array $ids, $collection)
     {
         // Don't support SMS, but can't tell client that.
-        if ($class == Horde_ActiveSync::CLASS_SMS) {
+        if ($collection == Horde_ActiveSync::CLASS_SMS) {
             return array();
         }
 
@@ -224,10 +218,8 @@ class Horde_ActiveSync_Connector_Importer
         $mod = $this->_as->driver->getSyncStamp($this->_folderId);
         $ids = $this->_as->driver->deleteMessage($this->_folderId, $ids);
         foreach ($ids as $id) {
-            // Ignore SMS changes.
-             if (strpos($id, "IGNORESMS_") === 0) {
-                continue;
-             }
+            // Update client state. Note this only modifies the various map
+            // tables to prevent mirroring back any changes.
             $change = array();
             $change['id'] = $id;
             $change['mod'] = $mod;
@@ -283,11 +275,7 @@ class Horde_ActiveSync_Connector_Importer
         if ($class == Horde_ActiveSync::CLASS_SMS) {
             return $uids;
         }
-        // Filter out SMS if $class is not CLASS_SMS
-        $uids = array_filter(
-            $uids,
-            function($e) { return strpos($e, 'IGNORESMS_') === false; }
-        );
+
         $collections = $this->_as->getCollectionsObject();
         $dst = $collections->getBackendIdForFolderUid($dst);
         $results = $this->_as->driver->moveMessage($this->_folderId, $uids, $dst);

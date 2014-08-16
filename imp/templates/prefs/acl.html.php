@@ -1,5 +1,4 @@
 <input type="hidden" name="acl_mbox" value="<?php echo $this->mbox ?>" />
-<input type="hidden" name="change_acl_mbox" id="change_acl_mbox" value="" />
 
 <?php if ($this->hasacl): ?>
 <div>
@@ -92,8 +91,8 @@
 
 <p>
  <span class="iconImg folderImg"></span>
- <strong><?php echo _("Change") ?>:</strong>
  <select id="aclmbox" name="mbox">
   <?php echo $this->options ?>
  </select>
+ <input type="submit" name="change_acl_mbox" id="change_acl_mbox" class="button" value="<?php echo _("Change") ?>" />
 </p>

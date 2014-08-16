@@ -100,6 +100,7 @@ class IMP_Compose_Attachment implements Serializable
         $this->_uuid = strval(new Horde_Support_Uuid());
 
         $storage = $this->storage;
+        $storage->forceLinked = true;
         $storage->write($tmp_file, $this->getPart());
         /* Need to save this information now, since it is possible that
          * storage backends change their linked status based on the data
@@ -121,10 +122,7 @@ class IMP_Compose_Attachment implements Serializable
             return $this->storage->link_url;
 
         case 'storage':
-            $linked = $this->linked
-                ? 'linked'
-                : (is_null($this->_linked) ? null : 'atc');
-            return $injector->getInstance('IMP_Factory_ComposeAtc')->create(null, $this->_uuid, $linked);
+            return $injector->getInstance('IMP_Factory_ComposeAtc')->create(null, $this->_uuid, $this->forceLinked || $this->_linked);
 
         case 'tmpfile':
             return $this->storage->getTempFile();

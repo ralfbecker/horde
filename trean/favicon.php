@@ -16,11 +16,7 @@ if (!$bookmark_id) {
     exit;
 }
 
-try {
-    $bookmark = $trean_gateway->getBookmark($bookmark_id);
-} catch (Horde_Exception $e) {
-    exit;
-}
+$bookmark = $trean_gateway->getBookmark($bookmark_id);
 if (!$bookmark || !$bookmark->favicon_url) {
     exit;
 }

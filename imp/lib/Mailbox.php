@@ -588,7 +588,7 @@ class IMP_Mailbox
             return $injector->getInstance('IMP_Mbox_Size')->getSize($this);
 
         case 'sortob':
-            return $this->imp_imap->access(IMP_Imap::ACCESS_SORT)
+            return $this->imp_imap->canSort()
                 ? $injector->getInstance('IMP_Prefs_Sort')
                 : $injector->getInstance('IMP_Prefs_Sort_None');
 
@@ -897,7 +897,9 @@ class IMP_Mailbox
      *
      * @param boolean $sub  True to subscribe, false to unsubscribe.
      * @param array $opts   Additional options:
+     * <pre>
      *   - subfolders: (boolean) If true, applies actions to all subfolders.
+     * </pre>
      *
      * @return boolean  True on success.
      */
@@ -1088,7 +1090,7 @@ class IMP_Mailbox
         global $prefs;
 
         if (!$this->access_flags) {
-            return true;
+            return $this->is_imap;
         }
 
         if ($prefs->getValue('use_trash')) {
@@ -1395,18 +1397,17 @@ class IMP_Mailbox
     static public function prefFrom($mbox)
     {
         $imp_imap = $GLOBALS['injector']->getInstance('IMP_Factory_Imap')->create();
-        if ($imp_imap->isImap()) {
-            $empty_ns = $imp_imap->getNamespace('');
 
-            if (!is_null($empty_ns) &&
-                (strpos($mbox, $empty_ns->delimiter) === 0)) {
-                /* Prefixed with delimiter => from empty namespace. */
-                return substr($mbox, strlen($empty_ns->delimiter));
-            } elseif ($imp_imap->getNamespace($mbox, true) === null) {
-                /* No namespace prefix => from personal namespace. */
-                $def_ns = $imp_imap->getNamespace($imp_imap::NS_DEFAULT);
-                return $def_ns->name . $mbox;
-            }
+        $empty_ns = $imp_imap->getNamespace('');
+
+        if (!is_null($empty_ns) &&
+            (strpos($mbox, $empty_ns->delimiter) === 0)) {
+            /* Prefixed with delimiter => from empty namespace. */
+            return substr($mbox, strlen($empty_ns->delimiter));
+        } elseif ($imp_imap->getNamespace($mbox, true) === null) {
+            /* No namespace prefix => from personal namespace. */
+            $def_ns = $imp_imap->getNamespace($imp_imap::NS_DEFAULT);
+            return $def_ns->name . $mbox;
         }
 
         return $mbox;
@@ -1567,17 +1568,17 @@ class IMP_Mailbox
                 break;
 
             case self::SPECIAL_SENT:
-                if (in_array($this->_mbox, $val)) {
-                    $out = _("Sent");
-
-                    /* Add identity information to label, if sent-mail mailbox
-                     * is unique to an identity. */
-                    $identity = $injector->getInstance('IMP_Identity');
-                    $sm_all = $identity->getAllSentmail(false);
-                    if (count($sm_all) > 1) {
-                        $sm = array_keys($sm_all, $this->_mbox);
-                        if (count($sm) === 1) {
-                            $out .= ' (' . $identity->getValue('id', reset($sm)) . ')';
+                if (count($val) == 1) {
+                    if (strval(reset($val)) == $this->_mbox) {
+                        $out = _("Sent");
+                    }
+                } else {
+                    $sent = self::getPref(self::MBOX_SENT);
+                    foreach ($val as $mbox) {
+                        if (($mbox == $sent) &&
+                            (strval($mbox) == $this->_mbox)) {
+                            $out = _("Sent");
+                            break;
                         }
                     }
                 }

@@ -20,16 +20,8 @@
  * @license   http://www.horde.org/licenses/lgpl21 LGPL 2.1
  * @package   Imap_Client
  */
-class Horde_Imap_Client_Data_Format_Mailbox
-extends Horde_Imap_Client_Data_Format_Astring
+class Horde_Imap_Client_Data_Format_Mailbox extends Horde_Imap_Client_Data_Format_Astring
 {
-    /**
-     * Mailbox encoding.
-     *
-     * @var string
-     */
-    protected $_encoding = 'utf7imap';
-
     /**
      * Mailbox object.
      *
@@ -44,7 +36,7 @@ extends Horde_Imap_Client_Data_Format_Astring
     {
         $this->_mailbox = Horde_Imap_Client_Mailbox::get($data);
 
-        parent::__construct($this->_mailbox->{$this->_encoding});
+        parent::__construct($this->_mailbox->utf7imap);
     }
 
     /**
@@ -84,7 +76,7 @@ extends Horde_Imap_Client_Data_Format_Astring
      */
     public function length()
     {
-        return strlen($this->_mailbox->{$this->_encoding});
+        return strlen($this->_mailbox->utf7imap);
     }
 
     /**
@@ -92,7 +84,7 @@ extends Horde_Imap_Client_Data_Format_Astring
     public function getStream()
     {
         $stream = new Horde_Stream_Temp();
-        $stream->add($this->_mailbox->{$this->_encoding});
+        $stream->add($this->_mailbox->utf7imap);
         return $stream;
     }
 

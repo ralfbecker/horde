@@ -54,13 +54,8 @@ extends Horde_Core_Ajax_Application_Handler
      */
     public function smartmobileAutocomplete()
     {
-        return array_map(
-            'htmlspecialchars',
-            $GLOBALS['injector']->getInstance('IMP_Contacts')->searchEmail(
-                $this->vars->search,
-                array('levenshtein' => true)
-            )->base_addresses
-        );
+        $imple = new IMP_Ajax_Imple_ContactAutoCompleter();
+        return array_map('htmlspecialchars', $imple->getAddressList($this->vars->search)->base_addresses);
     }
 
     /**

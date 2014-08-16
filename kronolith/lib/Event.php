@@ -714,10 +714,8 @@ abstract class Kronolith_Event
             $params = array();
             if ($this->timezone) {
                 try {
-                    if (!$this->baseid) {
-                        $tz = $GLOBALS['injector']->getInstance('Horde_Timezone');
-                        $vEvents[] = $tz->getZone($this->timezone)->toVtimezone();
-                    }
+                    $tz = $GLOBALS['injector']->getInstance('Horde_Timezone');
+                    $vEvents[] = $tz->getZone($this->timezone)->toVtimezone();
                     $params['TZID'] = $this->timezone;
                 } catch (Horde_Exception $e) {
                     Horde::log('Unable to locate the tz database.', 'WARN');
@@ -1150,29 +1148,30 @@ abstract class Kronolith_Event
         try {
             $start = $vEvent->getAttribute('DTSTART');
             $startParams = $vEvent->getAttribute('DTSTART', true);
-            // We don't support different timezones for different attributes,
-            // so use the DTSTART timezone for the complete event.
-            if (isset($startParams[0]['TZID'])) {
-                // Horde_Date supports timezone aliases, so try that first.
-                $tz = $startParams[0]['TZID'];
-                try {
-                    // Check if the timezone name is supported by PHP natively.
-                    new DateTimeZone($tz);
-                    $this->timezone = $tzid = $tz;
-                } catch (Exception $e) {
-                }
-            }
             if (!is_array($start)) {
                 // Date-Time field
-                $this->start = new Horde_Date($start, $tzid);
+                $this->start = new Horde_Date($start);
             } else {
                 // Date field
                 $this->start = new Horde_Date(
                     array('year'  => (int)$start['year'],
                           'month' => (int)$start['month'],
-                          'mday'  => (int)$start['mday']),
-                    $tzid
+                          'mday'  => (int)$start['mday'])
                 );
+            }
+            // We don't support different timezones for different attributes,
+            // so use the DTSTART timezone for the complete event.
+            if (isset($startParams[0]['TZID'])) {
+                // Horde_Date supports timezone aliases, so try that first.
+                $this->start->timezone = $startParams[0]['TZID'];
+                try {
+                    // Check if the timezone name is supported by PHP natively.
+                    new DateTimeZone($this->start->timezone);
+                    $this->timezone = $tzid = $this->start->timezone;
+                } catch (Exception $e) {
+                    // Reset to default timezone.
+                    $this->start->timezone = null;
+                }
             }
         } catch (Horde_Icalendar_Exception $e) {
             throw new Kronolith_Exception($e);
@@ -1691,9 +1690,11 @@ abstract class Kronolith_Event
         }
 
         $message->setSubject($this->getTitle());
-        $message->starttime = clone($this->start);
-        $message->endtime = clone($this->end);
-        $message->alldayevent = $this->isAllDay();
+        $message->setDatetime(array(
+            'start' => $this->start,
+            'end' => $this->end,
+            'allday' => $this->isAllDay())
+        );
         $message->setTimezone($this->start);
 
         // Organizer
@@ -2143,7 +2144,7 @@ abstract class Kronolith_Event
 
         if ($this->recurs()) {
             $eventDate = $this->recurrence->nextRecurrence($time);
-            if (!$eventDate || ($eventDate && $this->recurrence->hasException($eventDate->year, $eventDate->month, $eventDate->mday))) {
+            if ($eventDate && $this->recurrence->hasException($eventDate->year, $eventDate->month, $eventDate->mday)) {
                 return;
             }
             $start = clone $eventDate;

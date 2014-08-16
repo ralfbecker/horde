@@ -24,14 +24,12 @@ class Horde_Prefs_Special_Activesync implements Horde_Core_Prefs_Ui_Special
      */
     public function display(Horde_Core_Prefs_Ui $ui)
     {
-        global $injector, $page_output, $prefs, $registry;
+        global $conf, $injector, $page_output, $prefs, $registry;
 
-        try {
-            $state = $injector->getInstance('Horde_ActiveSyncState');
-        } catch (Horde_Exception $e) {
+        if (empty($conf['activesync']['enabled'])) {
             return _("ActiveSync not activated.");
         }
-
+        $state = $injector->getInstance('Horde_ActiveSyncState');
         $devices = $state->listDevices($registry->getAuth());
 
         $view = new Horde_View(array(
@@ -63,7 +61,7 @@ class Horde_Prefs_Special_Activesync implements Horde_Core_Prefs_Ui_Special
                 ->getInstance('Horde_Core_Factory_Identity')
                 ->create($registry->getAuth());
             $view->identities = $ident->getAll('id');
-            $view->identities['horde'] = _("Use Horde Default");
+            $view->identities['horde'] = _("Configured Horde Default");
             $view->default = $prefs->getValue('activesync_identity');
             if (is_null($view->default)) {
                 $view->default = $prefs->getValue('default_identity');
@@ -96,7 +94,7 @@ class Horde_Prefs_Special_Activesync implements Horde_Core_Prefs_Ui_Special
                 $state->setDeviceRWStatus($ui->vars->wipeid, Horde_ActiveSync::RWSTATUS_PENDING);
                 $notification->push(sprintf(_("A remote wipe for device id %s has been initiated. The device will be wiped during the next synchronisation."), $ui->vars->wipe));
             } elseif ($ui->vars->cancelwipe) {
-                if (!$state->deviceExists($ui->vars->cancelwipe, $auth)) {
+                if (!$state->deviceExists($ui->vars->wipeid, $auth)) {
                     throw new Horde_Exception_PermissionDenied();
                 }
                 $state->setDeviceRWStatus($ui->vars->cancelwipe, Horde_ActiveSync::RWSTATUS_OK);

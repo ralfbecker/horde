@@ -69,8 +69,6 @@ class IMP_Maillog_Storage_History extends IMP_Maillog_Storage_Base
         try {
             $this->_history->log($this->_getUniqueHistoryId($msg), $data);
             return true;
-        } catch (RuntimeException $e) {
-            /* This is an invalid/missing Message-ID. Ignore. */
         } catch (Exception $e) {
             /* On error, log the error message only since informing the user is
              * just a waste of time and a potential point of confusion,
@@ -182,19 +180,13 @@ class IMP_Maillog_Storage_History extends IMP_Maillog_Storage_Base
      *                    the parent ID.
      *
      * @return string  The unique log ID.
-     * @throws RuntimeException
      */
     protected function _getUniqueHistoryId($msg = null)
     {
-        $msgid = $msg ? $msg->msgid : null;
-        if ($msgid === '') {
-            throw new RuntimeException('Message-ID missing.');
-        }
-
         return implode(':', array_filter(array(
             'imp',
             str_replace('.', '*', $this->_user),
-            $msgid
+            $msg ? $msg->msgid : null
         )));
     }
 

@@ -33,6 +33,7 @@ class IMP_Ftree_Select
      * Constructor.
      *
      * @param array $opts  Optional parameters:
+     * <pre>
      *   - abbrev: (boolean) Abbreviate long mailbox names by replacing the
      *             middle of the name with '...'?
      *             DEFAULT: Yes
@@ -55,6 +56,7 @@ class IMP_Ftree_Select
      *               DEFAULT: false
      *   - selected: (string) The mailbox to have selected by default.
      *               DEFAULT: None
+     * </pre>
      */
     public function __construct(array $opts = array())
     {

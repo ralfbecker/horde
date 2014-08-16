@@ -42,26 +42,6 @@ Administration => Configuration and update anything that's highlighted as
 outdated.
 
 
-Upgrading IMP From 6.2.x To x.x
-===============================
-
-Configuration Options (conf.php)
---------------------------------
-
-The following options have been removed::
-
-   $conf['compose']['use_vfs']
-
-
-Hooks (hooks.php)
------------------
-
-The following hooks have been added::
-
-   dynamic_prefs
-
-
-
 Upgrading IMP From 6.1.x To 6.2
 ===============================
 

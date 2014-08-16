@@ -74,8 +74,7 @@ class IMP_Mime_Viewer_Rfc822 extends Horde_Mime_Viewer_Rfc822
     {
         switch ($header) {
         case 'date':
-            $date_ob = new IMP_Message_Date($ob->getValue('date'));
-            return $date_ob->format($date_ob::DATE_LOCAL);
+            return $GLOBALS['injector']->getInstance('IMP_Message_Ui')->getLocalTime(new Horde_Imap_Client_DateTime($ob->getValue('date')));
 
         default:
             return parent::_getHeaderValue($ob, $header);

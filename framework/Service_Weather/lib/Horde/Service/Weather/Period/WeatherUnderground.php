@@ -35,7 +35,7 @@ class Horde_Service_Weather_Period_WeatherUnderground extends Horde_Service_Weat
         'icon_url' => 'icon_url',
         'precipitation_percent' => 'pop',
         'period' => 'period',
-        'humidity' => 'avehumidity',
+        'humidity' => 'maxhumidity',
     );
 
     /**
@@ -70,7 +70,7 @@ class Horde_Service_Weather_Period_WeatherUnderground extends Horde_Service_Weat
             if ($this->_forecast->weather->units == Horde_Service_Weather::UNITS_STANDARD) {
                 return $this->_properties['high']->fahrenheit !== '' ?
                     $this->_properties['high']->fahrenheit :
-                    Horde_Service_Weather_Translation::t("N/A");
+                    Horde_Service_Weather_Translation::t('N/A');
             }
             return $this->_properties['high']->celsius;
 
@@ -78,7 +78,7 @@ class Horde_Service_Weather_Period_WeatherUnderground extends Horde_Service_Weat
             if ($this->_forecast->weather->units == Horde_Service_Weather::UNITS_STANDARD) {
                 return $this->_properties['low']->fahrenheit !== '' ?
                     $this->_properties['low']->fahrenheit :
-                    Horde_Service_Weather_Translation::t("N/A");
+                    Horde_Service_Weather_Translation::t('N/A');
             }
             return $this->_properties['low']->celsius;
 
@@ -86,24 +86,16 @@ class Horde_Service_Weather_Period_WeatherUnderground extends Horde_Service_Weat
             return $this->_forecast->weather->iconMap[$this->_properties['icon']];
 
         case 'wind_direction':
-            return strlen($this->_properties['avewind']->dir)
-                ? Horde_Service_Weather_Translation::t($this->_properties['avewind']->dir)
-                : Horde_Service_Weather_Translation::t("N/A");
+            return Horde_Service_Weather_Translation::t($this->_properties['avewind']->dir);
 
         case 'wind_degrees':
-            return strlen($this->_properties['avewind']->dir)
-                ? $this->_properties['avewind']->degrees
-                : Horde_Service_Weather_Translation::t("N/A");
+            return $this->_properties['avewind']->degrees;
 
         case 'wind_speed':
-            if (strlen($this->_properties['avewind']->dir)) {
-                if ($this->_forecast->weather->units == Horde_Service_Weather::UNITS_STANDARD) {
-                    return $this->_properties['avewind']->mph;
-                }
-                return $this->_properties['avewind']->kph;
-            } else {
-                return Horde_Service_Weather_Translation::t("N/A");
-            }
+           if ($this->_forecast->weather->units == Horde_Service_Weather::UNITS_STANDARD) {
+               return $this->_properties['avewind']->mph;
+           }
+           return $this->_properties['avewind']->kph;
 
         case 'wind_gust':
            if ($this->_forecast->weather->units == Horde_Service_Weather::UNITS_STANDARD) {

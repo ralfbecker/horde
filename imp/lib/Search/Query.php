@@ -218,10 +218,7 @@ class IMP_Search_Query implements Serializable
                     $iterator = new IMP_Ftree_IteratorFilter(
                         $injector->getInstance('IMP_Ftree')
                     );
-                    $iterator->add(array(
-                        $iterator::CONTAINERS,
-                        $iterator::NONIMAP
-                    ));
+                    $iterator->add($iterator::CONTAINERS);
 
                     foreach ($iterator as $val) {
                         $mbox[] = $val->mbox_ob;

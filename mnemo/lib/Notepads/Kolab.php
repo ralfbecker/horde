@@ -67,5 +67,4 @@ class Mnemo_Notepads_Kolab extends Mnemo_Notepads_Base
     {
         $share->set('default', true);
     }
-
 }

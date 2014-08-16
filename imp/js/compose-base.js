@@ -9,7 +9,6 @@
 var ImpComposeBase = {
 
     // Vars defaulting to null: editor_on, identities, rte_sig
-    ac: $H(),
 
     getSpellChecker: function()
     {
@@ -161,9 +160,16 @@ var ImpComposeBase = {
         return val;
     },
 
+    autocompleteHandlers: function()
+    {
+        var handlers = {};
+        $(document).fire('AutoComplete:handlers', handlers);
+        return $H(handlers);
+    },
+
     autocompleteProcess: function(r)
     {
-        this.ac.each(function(pair) {
+        this.autocompleteHandlers().each(function(pair) {
             var ob = $H(pair.value.toObject(true));
             ob.values().each(function(v) {
                 v.className = pair.value.p.listClassItem;
@@ -183,7 +189,7 @@ var ImpComposeBase = {
         params = $H(params);
 
         if (ac) {
-            this.ac.each(function(pair) {
+            this.autocompleteHandlers().each(function(pair) {
                 $H(pair.value.toObject()).each(function(pair2) {
                     out.push({
                         addr: pair2.value,

@@ -115,9 +115,7 @@ if (count($memos)) {
             $notification->push($e);
             continue;
         }
-        if ($view->showNotepad) {
-            $memo['notepad'] = Mnemo::getLabel($share);
-        }
+
         if ($share->hasPermission($registry->getAuth(), Horde_Perms::EDIT)) {
             $label = sprintf(_("Edit \"%s\""), $memo['desc']);
             $memo['edit'] = Horde::url('memo.php')
